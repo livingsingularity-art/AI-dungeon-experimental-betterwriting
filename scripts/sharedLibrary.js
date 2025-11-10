@@ -311,10 +311,16 @@ const BonepokeAnalysis = (() => {
         const systemTerms = ['system', 'sequence', 'signal', 'process', 'loop', 'protocol'];
         const actionVerbs = ['pressed', 'moved', 'spoke', 'acted', 'responded', 'decided', 'changed'];
 
-        return lines.filter(line =>
-            systemTerms.some(t => line.toLowerCase().includes(t)) &&
-            !actionVerbs.some(a => line.toLowerCase().includes(a))
-        ).map(l => l.trim());
+        return lines.filter(line => {
+            // Ignore lines that are pure dialogue (between quotes)
+            if (/^[^"]*"[^"]*"[^"]*$/.test(line.trim())) {
+                return false;
+            }
+
+            // Check for system terms without action verbs
+            return systemTerms.some(t => line.toLowerCase().includes(t)) &&
+                   !actionVerbs.some(a => line.toLowerCase().includes(a));
+        }).map(l => l.trim());
     };
 
     /**

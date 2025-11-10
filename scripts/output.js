@@ -36,6 +36,9 @@ const modifier = (text) => {
         output = output.replace(/- never mention.*?output/gi, '');
         output = output.replace(/from the unlikely tails.*?distribution/gi, '');
 
+        // Remove trailing "stop" (AI Dungeon quirk)
+        output = output.replace(/\bstop\s*$/i, '').trim();
+
         // Remove empty lines at start/end
         output = output.trim();
 
