@@ -1,17 +1,8 @@
 /**
  * ============================================================================
- * AI DUNGEON CONTEXT SCRIPT
+ * AI DUNGEON CONTEXT SCRIPT (FIXED v2.1)
  * Modifies the context sent to the AI model
  * ============================================================================
- *
- * This script runs AFTER sharedLibrary and modifies the full context.
- * This is where:
- * - Verbalized Sampling instructions are injected
- * - Dynamic corrections are applied based on history
- * - Custom author's notes are added
- *
- * Available params: text, state, history, info, storyCards
- * Returns: { text } or { text, stop }
  */
 
 const modifier = (text) => {
@@ -70,7 +61,6 @@ const modifier = (text) => {
     }
 
     // Custom Continue handling
-    // If user hit Continue, add instruction to continue from last response
     const handleContinue = () => {
         const lastEntry = history[history.length - 1];
         if (lastEntry?.type === 'continue') {
@@ -90,6 +80,7 @@ const modifier = (text) => {
     text += handleContinue();
 
     // Inject Verbalized Sampling instruction
+    // FIX: Use better formatting to prevent leakage
     if (CONFIG.vs.enabled) {
         text += '\n\n' + VerbalizedSampling.getInstruction();
     }
@@ -103,8 +94,8 @@ const modifier = (text) => {
     return { text };
 };
 
-// Execute modifier
-modifier(text);
+// FIX: Don't manually call modifier - let AI Dungeon call it
+// The engine automatically calls modifier(text)
+// Calling it here causes double execution
 
-// Best Practice: Always end lifecycle scripts with void 0
 void 0;

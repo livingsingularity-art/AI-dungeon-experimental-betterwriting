@@ -33,7 +33,7 @@ const CONFIG = {
     // Bonepoke Analysis
     bonepoke: {
         enabled: true,
-        fatigueThreshold: 3,    // Word repetition threshold
+        fatigueThreshold: 5,    // Word repetition threshold (was 3, too aggressive)
         qualityThreshold: 2.5,  // Minimum average score
         maxRegenAttempts: 2,    // Regeneration limit
         enableDynamicCorrection: true,  // Auto-inject guidance

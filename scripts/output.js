@@ -1,23 +1,52 @@
 /**
  * ============================================================================
- * AI DUNGEON OUTPUT SCRIPT
+ * AI DUNGEON OUTPUT SCRIPT (FIXED v2.1)
  * Analyzes and optionally modifies AI output before showing to player
  * ============================================================================
- *
- * This script runs AFTER sharedLibrary and can:
- * - Analyze output quality (Bonepoke)
- * - Trigger regeneration if quality is too low
- * - Clean up formatting issues
- * - Track analytics
- *
- * Available params: text, state, history, info, storyCards
- * Returns: { text } or { text, stop } (stop=true triggers regeneration)
  */
 
 const modifier = (text) => {
     // Initialize regeneration counter if needed
     state.regenCount = state.regenCount || 0;
     state.regenThisOutput = state.regenThisOutput || 0;
+
+    // CRITICAL FIX: Clean output FIRST before analysis
+    // This prevents VS instructions from being analyzed as part of the story
+    const cleanOutput = (output) => {
+        // Remove any accidental XML tags
+        output = output.replace(/<\/?response>/g, '');
+        output = output.replace(/<\/?probability>/g, '');
+        output = output.replace(/<\/?text>/g, '');
+        output = output.replace(/<\/?candidate[^>]*>/g, '');
+        output = output.replace(/<\/?selected>/g, '');
+
+        // CRITICAL: Remove VS instruction if it leaked through
+        // Pattern: [Internal Sampling Protocol: ... ]
+        output = output.replace(/\[Internal Sampling Protocol:[\s\S]*?\]/g, '');
+
+        // Also catch if brackets got stripped but content remains
+        output = output.replace(/Internal Sampling Protocol:[\s\S]*?never mention this process[^\n]*/g, '');
+
+        // Remove any remaining instruction fragments
+        output = output.replace(/- (mentally )?generate \d+ distinct.*?candidates/gi, '');
+        output = output.replace(/- for each.*?probability p/gi, '');
+        output = output.replace(/- only consider candidates where p <.*?\)/gi, '');
+        output = output.replace(/- randomly select one.*?candidates/gi, '');
+        output = output.replace(/- output ONLY.*?response/gi, '');
+        output = output.replace(/- never mention.*?output/gi, '');
+        output = output.replace(/from the unlikely tails.*?distribution/gi, '');
+
+        // Remove empty lines at start/end
+        output = output.trim();
+
+        // Normalize multiple newlines to max 2
+        output = output.replace(/\n{3,}/g, '\n\n');
+
+        return output;
+    };
+
+    // Clean BEFORE analysis
+    text = cleanOutput(text);
 
     // Analyze output quality with Bonepoke
     const analysis = CONFIG.bonepoke.enabled ?
@@ -101,33 +130,8 @@ const modifier = (text) => {
     // Record analytics
     Analytics.recordOutput(analysis);
 
-    // Clean up output formatting
-    const cleanOutput = (output) => {
-        // Remove any accidental XML tags that might have leaked through
-        output = output.replace(/<\/?response>/g, '');
-        output = output.replace(/<\/?probability>/g, '');
-        output = output.replace(/<\/?text>/g, '');
-        output = output.replace(/<\/?candidate[^>]*>/g, '');
-        output = output.replace(/<\/?selected>/g, '');
-
-        // Remove VS instruction if it leaked through
-        output = output.replace(/\[Internal Sampling Protocol:[\s\S]*?\]/g, '');
-
-        // Remove empty lines at start/end
-        output = output.trim();
-
-        // Normalize multiple newlines to max 2
-        output = output.replace(/\n{3,}/g, '\n\n');
-
-        return output;
-    };
-
-    text = cleanOutput(text);
-
-    // Prevent starting with starting message on first output
-    // (Only show custom starting message or blank, never AI-generated intro)
+    // Prevent starting with AI-generated intro on first output
     if (info.actionCount === 0) {
-        // Return blank or custom start message
         const customStart = state.customStartMessage || ' ';
         return { text: customStart };
     }
@@ -135,8 +139,5 @@ const modifier = (text) => {
     return { text };
 };
 
-// Execute modifier
-modifier(text);
-
-// Best Practice: Always end lifecycle scripts with void 0
+// FIX: Don't manually call modifier
 void 0;

@@ -1,18 +1,8 @@
 /**
  * ============================================================================
- * AI DUNGEON INPUT SCRIPT
+ * AI DUNGEON INPUT SCRIPT (FIXED v2.1)
  * Pre-processes user input before it reaches the AI
  * ============================================================================
- *
- * This script runs AFTER sharedLibrary and modifies the player's input.
- * Use cases:
- * - Fix common typos
- * - Expand shorthand commands
- * - Normalize formatting
- * - Add input metadata to state
- *
- * Available params: text, state, history, info, storyCards
- * Returns: { text } or { text, stop }
  */
 
 const modifier = (text) => {
@@ -76,8 +66,5 @@ const modifier = (text) => {
     return { text };
 };
 
-// Execute modifier
-modifier(text);
-
-// Best Practice: Always end lifecycle scripts with void 0
+// FIX: Don't manually call modifier
 void 0;
