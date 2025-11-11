@@ -37,7 +37,8 @@ const modifier = (text) => {
         output = output.replace(/from the unlikely tails.*?distribution/gi, '');
 
         // Remove trailing "stop" (AI Dungeon quirk)
-        output = output.replace(/\bstop\s*$/i, '').trim();
+        // Handles both "the stop" and "thestop" (with or without space)
+        output = output.replace(/stop\s*$/i, '').trim();
 
         // Remove empty lines at start/end
         output = output.trim();
@@ -133,10 +134,16 @@ const modifier = (text) => {
     // Record analytics
     Analytics.recordOutput(analysis);
 
-    // Prevent starting with AI-generated intro on first output
+    // Prevent AI-generated intro on first output (optional)
+    // If you want a custom start message, set state.customStartMessage
+    // Otherwise, this returns empty string to skip the AI's initial output
     if (info.actionCount === 0) {
-        const customStart = state.customStartMessage || ' ';
-        return { text: customStart };
+        if (state.customStartMessage !== undefined) {
+            return { text: state.customStartMessage };
+        }
+        // Return empty to skip AI's first output entirely
+        // User will provide the first input instead
+        return { text: '' };
     }
 
     return { text };
