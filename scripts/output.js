@@ -134,8 +134,13 @@ const modifier = (text) => {
     // Record analytics
     Analytics.recordOutput(analysis);
 
-    // Let AI generate first response normally
-    // (No special handling for actionCount === 0)
+    // Safety check: If text is empty after cleaning, don't return nothing
+    // This prevents "no text output" errors
+    if (!text || text.trim() === '') {
+        safeLog('Warning: Output was empty after cleaning, returning space', 'warn');
+        return { text: ' ' };
+    }
+
     return { text };
 };
 
