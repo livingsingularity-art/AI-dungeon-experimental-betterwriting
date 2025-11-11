@@ -52,6 +52,37 @@ const modifier = (text) => {
     // Clean BEFORE analysis
     text = cleanOutput(text);
 
+    // Remove duplicate text at the start (AI repeating last phrase)
+    // Get the last output from history to check for duplicates
+    const lastAIOutput = history
+        .slice()
+        .reverse()
+        .find(h => h.type === 'ai');
+
+    if (lastAIOutput && lastAIOutput.text) {
+        // Get last 100 characters of previous output
+        const lastChunk = lastAIOutput.text.slice(-100);
+
+        // Check if current output starts with any suffix of last output
+        // This handles cases like:
+        // Previous: "...she"
+        // Current: "she says..." (duplicate "she")
+        for (let len = 50; len >= 10; len--) {
+            const suffix = lastChunk.slice(-len).trim();
+            if (suffix && text.trim().startsWith(suffix)) {
+                // Found duplicate - remove it
+                text = text.trim().slice(suffix.length).trim();
+                safeLog(`Removed duplicate start: "${suffix.slice(0, 30)}..."`, 'info');
+                break;
+            }
+        }
+    }
+
+    // Add space to start of every reply (user requirement)
+    if (!text.startsWith(' ')) {
+        text = ' ' + text;
+    }
+
     // Analyze output quality with Bonepoke
     const analysis = CONFIG.bonepoke.enabled ?
         BonepokeAnalysis.analyze(text) : null;
