@@ -134,18 +134,8 @@ const modifier = (text) => {
     // Record analytics
     Analytics.recordOutput(analysis);
 
-    // Prevent AI-generated intro on first output (optional)
-    // If you want a custom start message, set state.customStartMessage
-    // Otherwise, this returns empty string to skip the AI's initial output
-    if (info.actionCount === 0) {
-        if (state.customStartMessage !== undefined) {
-            return { text: state.customStartMessage };
-        }
-        // Return empty to skip AI's first output entirely
-        // User will provide the first input instead
-        return { text: '' };
-    }
-
+    // Let AI generate first response normally
+    // (No special handling for actionCount === 0)
     return { text };
 };
 
