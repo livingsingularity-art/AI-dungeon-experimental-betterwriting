@@ -1,0 +1,16 @@
+if (typeof Library === 'undefined') {
+    var Library = {};
+}
+
+const modifier = (text, context) => {
+
+    if (!text || typeof text !== 'string') return { text: '' };
+    text = AutoCards("output", text);
+    text = delete_cliches(text);
+    if (Library.enforceParagraphBreak) text = Library.enforceParagraphBreak(text);
+    if (Library.removeRepeatedPhrases) text = Library.removeRepeatedPhrases(text, context, 10, 1);
+
+    return { text: text.trim() + "\n\n" };
+};
+
+modifier(text, contextData);
