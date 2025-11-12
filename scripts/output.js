@@ -42,8 +42,8 @@ const modifier = (text) => {
         output = output.replace(/from the unlikely tails.*?distribution/gi, '');
 
         // Remove trailing "stop" (AI Dungeon quirk)
-        // Handles both "the stop" and "thestop" (with or without space)
-        output = output.replace(/stop\s*$/i, '').trim();
+        // Handles "stop", "Stop.", "stop!", etc. at the end
+        output = output.replace(/stop[.!?,;\s]*$/i, '').trim();
 
         // Remove empty lines at start/end
         output = output.trim();
