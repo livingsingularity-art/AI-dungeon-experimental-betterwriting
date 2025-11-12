@@ -9,7 +9,7 @@
  * - Bonepoke Protocol for quality control
  * - AI Dungeon best practices
  *
- * @version 2.2.0
+ * @version 2.3.0
  * @license MIT
  * ============================================================================
  */
@@ -184,13 +184,28 @@ const ensureBannedWordsCard = () => {
         return false; // Already exists
     }
 
-    // Create template card
+    // Create template card with USC-style format
+    const templateText =
+`# Put phrases/words here to remove them from AI output.
+# Inspired by USC scripts - direct removal, no regeneration needed.
+#
+# {AGGRESSIVE} - Removes entire sentence containing the phrase
+# {PRECISE} - Removes just the phrase from within sentence
+#
+# Examples:
+
+{AGGRESSIVE}
+unshed tears, well well well,
+
+{PRECISE}
+suddenly, meanwhile, literally, `;
+
     const templateCard = buildCard(
         'Banned Words',
-        'Add words to ban here (comma or newline separated):\n\n',
+        templateText,
         'Custom',
         'banned_words',
-        'Words that trigger regeneration if detected in AI output',
+        'Phrases removed from AI output (AGGRESSIVE=sentence, PRECISE=phrase)',
         100 // Low priority
     );
 

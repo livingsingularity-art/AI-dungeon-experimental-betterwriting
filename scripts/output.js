@@ -1,7 +1,12 @@
 /**
  * ============================================================================
- * AI DUNGEON OUTPUT SCRIPT v2.2
+ * AI DUNGEON OUTPUT SCRIPT v2.3
  * Analyzes and optionally modifies AI output before showing to player
+ *
+ * v2.3 Updates (USC-inspired):
+ * - Word banning via direct removal (AGGRESSIVE/PRECISE modes)
+ * - No regeneration attempts (doesn't work reliably in AI Dungeon)
+ * - Quality analysis kept for logging/awareness only
  *
  * v2.2 Updates:
  * - Minimum length check (prevents short/malformed outputs)
@@ -11,9 +16,8 @@
  */
 
 const modifier = (text) => {
-    // Initialize regeneration counter if needed
+    // Initialize quality tracking counter if needed
     state.regenCount = state.regenCount || 0;
-    state.regenThisOutput = state.regenThisOutput || 0;
 
     // CRITICAL FIX: Clean output FIRST before analysis
     // This prevents VS instructions from being analyzed as part of the story
@@ -57,40 +61,81 @@ const modifier = (text) => {
     // Clean BEFORE analysis
     text = cleanOutput(text);
 
-    // Check for banned words (user-defined story card)
+    // Remove banned words/phrases (user-defined story card)
+    // Inspired by USC scripts - directly remove instead of regenerating
     const bannedCard = storyCards.find(c => c.keys && c.keys.includes('banned_words'));
     if (bannedCard && bannedCard.entry) {
-        const bannedWords = bannedCard.entry
-            .toLowerCase()
-            .split(/[,\n]+/)
-            .map(w => w.trim())
-            .filter(w => w.length > 0);
+        const lines = bannedCard.entry.split('\n');
+        const aggressive = []; // Remove entire sentence
+        const precise = [];    // Remove just the phrase
 
-        if (bannedWords.length > 0) {
-            const textLower = text.toLowerCase();
-            const foundBanned = bannedWords.filter(word => {
-                const regex = new RegExp(`\\b${word}\\b`, 'i');
-                return regex.test(textLower);
-            });
+        let currentMode = 'precise'; // default
 
-            if (foundBanned.length > 0 && state.regenThisOutput < CONFIG.bonepoke.maxRegenAttempts) {
-                safeLog(`⛔ Banned words detected: ${foundBanned.join(', ')}`, 'warn');
-                safeLog(`Triggering regeneration (attempt ${state.regenThisOutput + 1}/${CONFIG.bonepoke.maxRegenAttempts})`, 'warn');
-                state.regenCount += 1;
-                state.regenThisOutput += 1;
-                Analytics.recordRegeneration();
-                return { text: '', stop: true };
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.startsWith('#')) continue;
+
+            // Check for mode markers
+            if (/^\{AGGRESSIVE:?\}/i.test(trimmed)) {
+                currentMode = 'aggressive';
+                continue;
             }
+            if (/^\{PRECISE:?\}/i.test(trimmed)) {
+                currentMode = 'precise';
+                continue;
+            }
+
+            // Parse comma-separated phrases
+            const phrases = trimmed.split(',').map(p => p.trim()).filter(p => p.length > 0);
+            if (currentMode === 'aggressive') {
+                aggressive.push(...phrases);
+            } else {
+                precise.push(...phrases);
+            }
+        }
+
+        // AGGRESSIVE: Remove entire sentences containing banned phrases
+        if (aggressive.length > 0) {
+            const sentences = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [];
+            const filtered = [];
+
+            for (const sentence of sentences) {
+                const shouldDelete = aggressive.some(phrase =>
+                    sentence.toLowerCase().includes(phrase.toLowerCase())
+                );
+
+                if (shouldDelete) {
+                    safeLog(`⛔ Removed sentence containing: "${aggressive.find(p =>
+                        sentence.toLowerCase().includes(p.toLowerCase())
+                    )}"`, 'warn');
+                    // Keep quotes if sentence had dialogue
+                    filtered.push(sentence.includes('"') ? (sentence.match(/"/g) || []).join('') : '');
+                } else {
+                    filtered.push(sentence);
+                }
+            }
+
+            text = filtered.join('');
+        }
+
+        // PRECISE: Remove just the banned phrases
+        const foundBanned = [];
+        for (const phrase of precise) {
+            const regex = new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+            if (regex.test(text)) {
+                foundBanned.push(phrase);
+                text = text.replace(regex, '');
+            }
+        }
+
+        if (foundBanned.length > 0) {
+            safeLog(`⛔ Removed banned phrases: ${foundBanned.join(', ')}`, 'warn');
         }
     }
 
-    // Minimum length check - reject very short outputs
-    if (text.trim().length < 20 && state.regenThisOutput < CONFIG.bonepoke.maxRegenAttempts) {
-        safeLog(`⚠️ Output too short (${text.trim().length} chars), triggering regeneration`, 'warn');
-        state.regenCount += 1;
-        state.regenThisOutput += 1;
-        Analytics.recordRegeneration();
-        return { text: '', stop: true };
+    // Minimum length warning (no regeneration - doesn't work reliably)
+    if (text.trim().length < 20) {
+        safeLog(`⚠️ Output very short (${text.trim().length} chars) - may want to manually regenerate`, 'warn');
     }
 
     // Remove duplicate text at the start (AI repeating last phrase)
@@ -142,81 +187,26 @@ const modifier = (text) => {
         state.lastBonepokeScore = analysis.avgScore;
     }
 
-    // Quality-gated regeneration
-    const shouldRegenerate = () => {
-        if (!CONFIG.bonepoke.enabled) return false;
-        if (!analysis) return false;
-        if (state.regenThisOutput >= CONFIG.bonepoke.maxRegenAttempts) {
-            safeLog('Max regeneration attempts reached, accepting output', 'warn');
-            return false;
-        }
-
+    // Quality analysis and logging (no regeneration - doesn't work reliably)
+    if (CONFIG.bonepoke.enabled && analysis) {
         const isBelowThreshold = analysis.avgScore < CONFIG.bonepoke.qualityThreshold;
 
         if (isBelowThreshold) {
             safeLog(
-                `Quality below threshold: ${analysis.avgScore.toFixed(2)} < ${CONFIG.bonepoke.qualityThreshold}`,
+                `⚠️ Quality below threshold: ${analysis.avgScore.toFixed(2)} < ${CONFIG.bonepoke.qualityThreshold}`,
                 'warn'
             );
 
-            // Log specific issues
+            // Log specific issues for user awareness
             if (analysis.suggestions.length > 0) {
-                safeLog('Issues detected:', 'warn');
+                safeLog('⚠️ Issues detected (consider manual regeneration):', 'warn');
                 analysis.suggestions.slice(0, 3).forEach(s => safeLog(`  - ${s}`, 'warn'));
             }
 
-            return true;
+            // Track low quality occurrences
+            state.regenCount = (state.regenCount || 0) + 1;
+            Analytics.recordRegeneration();
         }
-
-        return false;
-    };
-
-    // Check if we should regenerate
-    if (shouldRegenerate()) {
-        state.regenCount += 1;
-        state.regenThisOutput += 1;
-        Analytics.recordRegeneration();
-
-        safeLog(`Triggering regeneration (attempt ${state.regenThisOutput}/${CONFIG.bonepoke.maxRegenAttempts})`, 'warn');
-
-        // ITERATIVE REFINEMENT: Add critique card to guide next generation
-        // This implements "test-time compute" from research - spend more inference for better results
-        if (CONFIG.bonepoke.enableDynamicCorrection && analysis.suggestions.length > 0) {
-            const critiqueText = `The previous AI response had quality issues that need addressing:\n${
-                analysis.suggestions.slice(0, 3).map((s, i) => `${i + 1}. ${s}`).join('\n')
-            }\n\nIn your next response, specifically fix these issues while maintaining narrative coherence and flow.`;
-
-            const critiqueCard = buildCard(
-                'Quality Critique',
-                critiqueText,
-                'Custom',
-                'critique quality refinement',
-                'Specific issues to address in regeneration',
-                0 // High priority (0 = top)
-            );
-
-            const existingCritique = storyCards.findIndex(c => c.keys && c.keys.includes('critique'));
-            if (existingCritique >= 0) {
-                storyCards[existingCritique] = critiqueCard;
-            } else {
-                storyCards.push(critiqueCard);
-            }
-
-            safeLog('📝 Added critique card to guide regeneration', 'info');
-        }
-
-        // Return with stop=true to trigger regeneration
-        return { text: '', stop: true };
-    }
-
-    // Reset regen counter on successful output
-    state.regenThisOutput = 0;
-
-    // Remove critique card on successful output (no longer needed)
-    const critiqueIndex = storyCards.findIndex(c => c.keys && c.keys.includes('critique'));
-    if (critiqueIndex >= 0) {
-        storyCards.splice(critiqueIndex, 1);
-        safeLog('✓ Removed critique card (quality acceptable)', 'info');
     }
 
     // Log quality if enabled
