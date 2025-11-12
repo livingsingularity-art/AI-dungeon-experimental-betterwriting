@@ -9,7 +9,7 @@
  * - Bonepoke Protocol for quality control
  * - AI Dungeon best practices
  *
- * @version 2.0.0
+ * @version 2.2.0
  * @license MIT
  * ============================================================================
  */
@@ -170,6 +170,32 @@ const removeCard = (title) => {
         return true;
     }
     return false;
+};
+
+/**
+ * Create banned words template card if it doesn't exist
+ * This allows users to ban specific words/phrases from AI output
+ * @returns {boolean} True if card was created, false if already exists
+ */
+const ensureBannedWordsCard = () => {
+    // Check if card already exists
+    const existing = storyCards.find(c => c.keys && c.keys.includes('banned_words'));
+    if (existing) {
+        return false; // Already exists
+    }
+
+    // Create template card
+    const templateCard = buildCard(
+        'Banned Words',
+        'Add words to ban here (comma or newline separated):\n\n',
+        'Custom',
+        'banned_words',
+        'Words that trigger regeneration if detected in AI output',
+        100 // Low priority
+    );
+
+    safeLog('📝 Created banned words template card - edit it to add words', 'success');
+    return true;
 };
 
 // #endregion
@@ -638,6 +664,9 @@ initState();
 if (CONFIG.vs.enabled) {
     VerbalizedSampling.ensureCard();
 }
+
+// Ensure banned words template card exists
+ensureBannedWordsCard();
 
 // #endregion
 
