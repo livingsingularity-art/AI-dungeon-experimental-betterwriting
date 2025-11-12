@@ -37,14 +37,15 @@ if (text.trim().length < 20) {
 
 **How to use:**
 
-1. Create a story card in your scenario
-2. Add key: `banned_words`
-3. List words to ban (comma or newline separated):
+1. **Card auto-created on first run!** Look for "Banned Words" in your story cards
+2. Edit the card entry to add words to ban (comma or newline separated):
 
 ```
 Entry text:
 suddenly, meanwhile, however, literally
 ```
+
+**Note:** The system automatically creates an empty template card when you first load the scripts. You just need to edit it and add your banned words.
 
 **What it does:**
 - Checks each AI output for banned words
@@ -107,6 +108,14 @@ CONFIG.bonepoke.enableDynamicCorrection = true; // Must be enabled
 Triggering regeneration (attempt 1/2)
 [AI regenerates with critique]
 ✓ Removed critique card (quality acceptable)
+```
+
+**First run initialization logs:**
+```
+Input Modifier:
+✅ State initialized
+✅ VS card created
+📝 Created banned words template card - edit it to add words
 ```
 
 ---
