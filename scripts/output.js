@@ -1,17 +1,18 @@
 /**
  * ============================================================================
- * AI DUNGEON OUTPUT SCRIPT v2.3
+ * AI DUNGEON OUTPUT SCRIPT v2.4
  * Analyzes and optionally modifies AI output before showing to player
+ *
+ * v2.4 Updates (Bonepoke Integration):
+ * - Three separate word bank cards (PRECISE, AGGRESSIVE, REPLACER)
+ * - Auto-replacement of fatigued words with synonyms
+ * - Bonepoke fatigue → automatic REPLACER additions
+ * - 16-word synonym dictionary for common overused words
  *
  * v2.3 Updates (USC-inspired):
  * - Word banning via direct removal (AGGRESSIVE/PRECISE modes)
  * - No regeneration attempts (doesn't work reliably in AI Dungeon)
  * - Quality analysis kept for logging/awareness only
- *
- * v2.2 Updates:
- * - Minimum length check (prevents short/malformed outputs)
- * - Word banning system (via story cards)
- * - Iterative refinement (critique cards guide regeneration)
  * ============================================================================
  */
 
@@ -61,40 +62,67 @@ const modifier = (text) => {
     // Clean BEFORE analysis
     text = cleanOutput(text);
 
-    // Remove banned words/phrases (user-defined story card)
-    // Inspired by USC scripts - directly remove instead of regenerating
-    const bannedCard = storyCards.find(c => c.keys && c.keys.includes('banned_words'));
-    if (bannedCard && bannedCard.entry) {
-        const lines = bannedCard.entry.split('\n');
-        const aggressive = []; // Remove entire sentence
-        const precise = [];    // Remove just the phrase
+    // Analyze output quality with Bonepoke FIRST (to detect fatigue)
+    const analysis = CONFIG.bonepoke.enabled ?
+        BonepokeAnalysis.analyze(text) : null;
 
-        let currentMode = 'precise'; // default
+    // Store analysis in history
+    if (analysis) {
+        state.bonepokeHistory = state.bonepokeHistory || [];
+        state.bonepokeHistory.push(analysis);
+
+        // Keep only last 20 analyses for memory efficiency
+        if (state.bonepokeHistory.length > 20) {
+            state.bonepokeHistory = state.bonepokeHistory.slice(-20);
+        }
+
+        // Store last score for context script
+        state.lastBonepokeScore = analysis.avgScore;
+    }
+
+    // USC-style word removal/replacement system (3 modes)
+    // Reads from three separate word bank cards + Bonepoke fatigue data
+
+    // === MODE 1: PRECISE removal (just the phrase) ===
+    const preciseCard = storyCards.find(c => c.keys && c.keys.includes('banned_words'));
+    if (preciseCard && preciseCard.entry) {
+        const lines = preciseCard.entry.split('\n');
+        const precise = [];
 
         for (const line of lines) {
             const trimmed = line.trim();
             if (!trimmed || trimmed.startsWith('#')) continue;
-
-            // Check for mode markers
-            if (/^\{AGGRESSIVE:?\}/i.test(trimmed)) {
-                currentMode = 'aggressive';
-                continue;
-            }
-            if (/^\{PRECISE:?\}/i.test(trimmed)) {
-                currentMode = 'precise';
-                continue;
-            }
-
-            // Parse comma-separated phrases
             const phrases = trimmed.split(',').map(p => p.trim()).filter(p => p.length > 0);
-            if (currentMode === 'aggressive') {
-                aggressive.push(...phrases);
-            } else {
-                precise.push(...phrases);
+            precise.push(...phrases);
+        }
+
+        const foundPrecise = [];
+        for (const phrase of precise) {
+            const regex = new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+            if (regex.test(text)) {
+                foundPrecise.push(phrase);
+                text = text.replace(regex, '');
             }
         }
 
-        // AGGRESSIVE: Remove entire sentences containing banned phrases
+        if (foundPrecise.length > 0) {
+            safeLog(`⛔ PRECISE removed: ${foundPrecise.join(', ')}`, 'warn');
+        }
+    }
+
+    // === MODE 2: AGGRESSIVE removal (entire sentence) ===
+    const aggressiveCard = storyCards.find(c => c.keys && c.keys.includes('aggressive_removal'));
+    if (aggressiveCard && aggressiveCard.entry) {
+        const lines = aggressiveCard.entry.split('\n');
+        const aggressive = [];
+
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.startsWith('#')) continue;
+            const phrases = trimmed.split(',').map(p => p.trim()).filter(p => p.length > 0);
+            aggressive.push(...phrases);
+        }
+
         if (aggressive.length > 0) {
             const sentences = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [];
             const filtered = [];
@@ -105,9 +133,10 @@ const modifier = (text) => {
                 );
 
                 if (shouldDelete) {
-                    safeLog(`⛔ Removed sentence containing: "${aggressive.find(p =>
+                    const matchedPhrase = aggressive.find(p =>
                         sentence.toLowerCase().includes(p.toLowerCase())
-                    )}"`, 'warn');
+                    );
+                    safeLog(`⛔ AGGRESSIVE removed sentence with: "${matchedPhrase}"`, 'warn');
                     // Keep quotes if sentence had dialogue
                     filtered.push(sentence.includes('"') ? (sentence.match(/"/g) || []).join('') : '');
                 } else {
@@ -117,19 +146,55 @@ const modifier = (text) => {
 
             text = filtered.join('');
         }
+    }
 
-        // PRECISE: Remove just the banned phrases
-        const foundBanned = [];
-        for (const phrase of precise) {
-            const regex = new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    // === MODE 3: REPLACER (word substitution/synonyms) ===
+    const replacerCard = storyCards.find(c => c.keys && c.keys.includes('word_replacer'));
+    const replacements = [];
+
+    // Add user-defined replacements from card
+    if (replacerCard && replacerCard.entry) {
+        const lines = replacerCard.entry.split('\n');
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.startsWith('#')) continue;
+
+            const arrowIndex = trimmed.indexOf('=>');
+            if (arrowIndex === -1) continue;
+
+            const original = trimmed.slice(0, arrowIndex).trim();
+            const replacement = trimmed.slice(arrowIndex + 2).trim();
+
+            if (original && replacement) {
+                replacements.push([original, replacement]);
+            }
+        }
+    }
+
+    // Add Bonepoke-detected fatigued words (auto-replacements)
+    if (analysis && analysis.composted.fatigue) {
+        Object.keys(analysis.composted.fatigue).forEach(fatigued => {
+            const synonym = getSynonym(fatigued);
+            if (synonym !== fatigued) {
+                replacements.push([fatigued, synonym]);
+                safeLog(`🔄 Auto-replacing fatigued word: "${fatigued}" → "${synonym}"`, 'info');
+            }
+        });
+    }
+
+    // Apply all replacements
+    if (replacements.length > 0) {
+        const applied = [];
+        for (const [target, replacementStr] of replacements) {
+            const regex = new RegExp(`\\b${target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
             if (regex.test(text)) {
-                foundBanned.push(phrase);
-                text = text.replace(regex, '');
+                applied.push(`${target} → ${replacementStr}`);
+                text = text.replace(regex, replacementStr);
             }
         }
 
-        if (foundBanned.length > 0) {
-            safeLog(`⛔ Removed banned phrases: ${foundBanned.join(', ')}`, 'warn');
+        if (applied.length > 0) {
+            safeLog(`🔄 REPLACER applied: ${applied.join(', ')}`, 'info');
         }
     }
 
@@ -167,24 +232,6 @@ const modifier = (text) => {
     // Add space to start of every reply (user requirement)
     if (!text.startsWith(' ')) {
         text = ' ' + text;
-    }
-
-    // Analyze output quality with Bonepoke
-    const analysis = CONFIG.bonepoke.enabled ?
-        BonepokeAnalysis.analyze(text) : null;
-
-    // Store analysis in history
-    if (analysis) {
-        state.bonepokeHistory = state.bonepokeHistory || [];
-        state.bonepokeHistory.push(analysis);
-
-        // Keep only last 20 analyses for memory efficiency
-        if (state.bonepokeHistory.length > 20) {
-            state.bonepokeHistory = state.bonepokeHistory.slice(-20);
-        }
-
-        // Store last score for context script
-        state.lastBonepokeScore = analysis.avgScore;
     }
 
     // Quality analysis and logging (no regeneration - doesn't work reliably)

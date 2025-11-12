@@ -9,7 +9,7 @@
  * - Bonepoke Protocol for quality control
  * - AI Dungeon best practices
  *
- * @version 2.3.0
+ * @version 2.4.0
  * @license MIT
  * ============================================================================
  */
@@ -186,31 +186,123 @@ const ensureBannedWordsCard = () => {
 
     // Create template card with USC-style format
     const templateText =
-`# Put phrases/words here to remove them from AI output.
-# Inspired by USC scripts - direct removal, no regeneration needed.
-#
-# {AGGRESSIVE} - Removes entire sentence containing the phrase
-# {PRECISE} - Removes just the phrase from within sentence
-#
-# Examples:
+`# PRECISE mode: Removes just the phrase from within sentence
+# Add phrases/words separated by commas or newlines
 
-{AGGRESSIVE}
-unshed tears, well well well,
-
-{PRECISE}
 suddenly, meanwhile, literally, `;
 
     const templateCard = buildCard(
-        'Banned Words',
+        'Word Bank - PRECISE',
         templateText,
         'Custom',
-        'banned_words',
-        'Phrases removed from AI output (AGGRESSIVE=sentence, PRECISE=phrase)',
+        'banned_words precise_removal',
+        'Phrases removed from AI output (just the phrase)',
         100 // Low priority
     );
 
-    safeLog('📝 Created banned words template card - edit it to add words', 'success');
+    safeLog('📝 Created PRECISE word bank card', 'success');
     return true;
+};
+
+/**
+ * Create aggressive removal card template
+ * @returns {boolean} True if card was created
+ */
+const ensureAggressiveCard = () => {
+    const existing = storyCards.find(c => c.keys && c.keys.includes('aggressive_removal'));
+    if (existing) {
+        return false;
+    }
+
+    const templateText =
+`# AGGRESSIVE mode: Removes entire sentence containing the phrase
+# Add phrases/words separated by commas or newlines
+# Bonepoke auto-adds repeated phrases here
+
+unshed tears, well well well, `;
+
+    const templateCard = buildCard(
+        'Word Bank - AGGRESSIVE',
+        templateText,
+        'Custom',
+        'aggressive_removal banned_sentences',
+        'Entire sentences removed if containing these phrases',
+        101
+    );
+
+    safeLog('📝 Created AGGRESSIVE word bank card', 'success');
+    return true;
+};
+
+/**
+ * Create word replacer card template
+ * @returns {boolean} True if card was created
+ */
+const ensureReplacerCard = () => {
+    const existing = storyCards.find(c => c.keys && c.keys.includes('word_replacer'));
+    if (existing) {
+        return false;
+    }
+
+    const templateText =
+`# REPLACER mode: Substitutes one word for another (synonyms)
+# Format: original => replacement (one per line)
+# Bonepoke auto-adds fatigued words here with synonyms
+
+utilize => use
+robust => strong
+commence => begin
+`;
+
+    const templateCard = buildCard(
+        'Word Bank - REPLACER',
+        templateText,
+        'Custom',
+        'word_replacer synonyms',
+        'Word-to-word replacements (original => replacement)',
+        102
+    );
+
+    safeLog('📝 Created REPLACER word bank card', 'success');
+    return true;
+};
+
+/**
+ * Common synonym mappings for word replacement
+ * Used when Bonepoke detects fatigued words
+ */
+const SYNONYM_MAP = {
+    'suddenly': ['abruptly', 'quickly', 'unexpectedly', 'swiftly'],
+    'very': ['extremely', 'quite', 'remarkably', 'considerably'],
+    'good': ['excellent', 'fine', 'pleasant', 'favorable'],
+    'bad': ['poor', 'unpleasant', 'unfavorable', 'awful'],
+    'said': ['stated', 'mentioned', 'remarked', 'noted'],
+    'that': ['which', 'this'],
+    'your': ['the', 'their', 'its'],
+    'something': ['an object', 'a thing', 'it'],
+    'someone': ['a person', 'they', 'a figure'],
+    'really': ['truly', 'genuinely', 'indeed'],
+    'just': ['merely', 'only', 'simply'],
+    'literally': ['actually', 'truly', 'genuinely'],
+    'things': ['matters', 'items', 'objects', 'elements'],
+    'stuff': ['items', 'objects', 'materials'],
+    'got': ['obtained', 'received', 'acquired'],
+    'get': ['obtain', 'receive', 'acquire']
+};
+
+/**
+ * Get a random synonym for a word
+ * @param {string} word - The word to find synonym for
+ * @returns {string} Synonym or original word if none found
+ */
+const getSynonym = (word) => {
+    const lower = word.toLowerCase();
+    const synonyms = SYNONYM_MAP[lower];
+    if (!synonyms || synonyms.length === 0) {
+        return word; // No synonym found, return original
+    }
+    const randomIndex = Math.floor(Math.random() * synonyms.length);
+    return synonyms[randomIndex];
 };
 
 // #endregion
@@ -680,8 +772,10 @@ if (CONFIG.vs.enabled) {
     VerbalizedSampling.ensureCard();
 }
 
-// Ensure banned words template card exists
-ensureBannedWordsCard();
+// Ensure all word bank template cards exist
+ensureBannedWordsCard();   // PRECISE removal
+ensureAggressiveCard();     // AGGRESSIVE sentence removal
+ensureReplacerCard();       // REPLACER synonyms
 
 // #endregion
 
