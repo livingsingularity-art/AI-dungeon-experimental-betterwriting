@@ -186,13 +186,13 @@ const modifier = (text) => {
                 analysis.suggestions.slice(0, 3).map((s, i) => `${i + 1}. ${s}`).join('\n')
             }\n\nIn your next response, specifically fix these issues while maintaining narrative coherence and flow.`;
 
-            const critiqueCard = Utilities.buildCard(
+            const critiqueCard = buildCard(
                 'Quality Critique',
                 critiqueText,
-                'quality_critique',
-                ['critique', 'quality', 'refinement'],
+                'Custom',
+                'critique quality refinement',
                 'Specific issues to address in regeneration',
-                9999 // High priority
+                0 // High priority (0 = top)
             );
 
             const existingCritique = storyCards.findIndex(c => c.keys && c.keys.includes('critique'));
