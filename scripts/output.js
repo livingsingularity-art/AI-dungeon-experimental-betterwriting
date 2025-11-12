@@ -1,7 +1,12 @@
 /**
  * ============================================================================
- * AI DUNGEON OUTPUT SCRIPT (FIXED v2.1)
+ * AI DUNGEON OUTPUT SCRIPT v2.2
  * Analyzes and optionally modifies AI output before showing to player
+ *
+ * v2.2 Updates:
+ * - Minimum length check (prevents short/malformed outputs)
+ * - Word banning system (via story cards)
+ * - Iterative refinement (critique cards guide regeneration)
  * ============================================================================
  */
 
@@ -51,6 +56,42 @@ const modifier = (text) => {
 
     // Clean BEFORE analysis
     text = cleanOutput(text);
+
+    // Check for banned words (user-defined story card)
+    const bannedCard = storyCards.find(c => c.keys && c.keys.includes('banned_words'));
+    if (bannedCard && bannedCard.entry) {
+        const bannedWords = bannedCard.entry
+            .toLowerCase()
+            .split(/[,\n]+/)
+            .map(w => w.trim())
+            .filter(w => w.length > 0);
+
+        if (bannedWords.length > 0) {
+            const textLower = text.toLowerCase();
+            const foundBanned = bannedWords.filter(word => {
+                const regex = new RegExp(`\\b${word}\\b`, 'i');
+                return regex.test(textLower);
+            });
+
+            if (foundBanned.length > 0 && state.regenThisOutput < CONFIG.bonepoke.maxRegenAttempts) {
+                safeLog(`⛔ Banned words detected: ${foundBanned.join(', ')}`, 'warn');
+                safeLog(`Triggering regeneration (attempt ${state.regenThisOutput + 1}/${CONFIG.bonepoke.maxRegenAttempts})`, 'warn');
+                state.regenCount += 1;
+                state.regenThisOutput += 1;
+                Analytics.recordRegeneration();
+                return { text: '', stop: true };
+            }
+        }
+    }
+
+    // Minimum length check - reject very short outputs
+    if (text.trim().length < 20 && state.regenThisOutput < CONFIG.bonepoke.maxRegenAttempts) {
+        safeLog(`⚠️ Output too short (${text.trim().length} chars), triggering regeneration`, 'warn');
+        state.regenCount += 1;
+        state.regenThisOutput += 1;
+        Analytics.recordRegeneration();
+        return { text: '', stop: true };
+    }
 
     // Remove duplicate text at the start (AI repeating last phrase)
     // Get the last output from history to check for duplicates
@@ -138,12 +179,45 @@ const modifier = (text) => {
 
         safeLog(`Triggering regeneration (attempt ${state.regenThisOutput}/${CONFIG.bonepoke.maxRegenAttempts})`, 'warn');
 
+        // ITERATIVE REFINEMENT: Add critique card to guide next generation
+        // This implements "test-time compute" from research - spend more inference for better results
+        if (CONFIG.bonepoke.enableDynamicCorrection && analysis.suggestions.length > 0) {
+            const critiqueText = `The previous AI response had quality issues that need addressing:\n${
+                analysis.suggestions.slice(0, 3).map((s, i) => `${i + 1}. ${s}`).join('\n')
+            }\n\nIn your next response, specifically fix these issues while maintaining narrative coherence and flow.`;
+
+            const critiqueCard = Utilities.buildCard(
+                'Quality Critique',
+                critiqueText,
+                'quality_critique',
+                ['critique', 'quality', 'refinement'],
+                'Specific issues to address in regeneration',
+                9999 // High priority
+            );
+
+            const existingCritique = storyCards.findIndex(c => c.keys && c.keys.includes('critique'));
+            if (existingCritique >= 0) {
+                storyCards[existingCritique] = critiqueCard;
+            } else {
+                storyCards.push(critiqueCard);
+            }
+
+            safeLog('📝 Added critique card to guide regeneration', 'info');
+        }
+
         // Return with stop=true to trigger regeneration
         return { text: '', stop: true };
     }
 
     // Reset regen counter on successful output
     state.regenThisOutput = 0;
+
+    // Remove critique card on successful output (no longer needed)
+    const critiqueIndex = storyCards.findIndex(c => c.keys && c.keys.includes('critique'));
+    if (critiqueIndex >= 0) {
+        storyCards.splice(critiqueIndex, 1);
+        safeLog('✓ Removed critique card (quality acceptable)', 'info');
+    }
 
     // Log quality if enabled
     if (analysis && (CONFIG.bonepoke.debugLogging || CONFIG.vs.debugLogging)) {
