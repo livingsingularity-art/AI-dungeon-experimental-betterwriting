@@ -81,6 +81,42 @@ const modifier = (text) => {
     // Clean BEFORE analysis
     text = cleanOutput(text);
 
+    // === DIALOGUE FORMATTER ===
+    // Fixes common dialogue formatting issues:
+    // - Missing commas: says "text → says, "Text
+    // - Capitalization after quotes
+    // - Missing punctuation before closing quotes
+    // - Replace generic "say" with specific verbs (begin, ask, shout)
+
+    // Fix dialogue tags with missing commas and capitalization
+    if (text.match(/".*,,/)) {
+        // Special case: double commas after dialogue
+        text = text.replace(/says? "\s*(\S)(.*),,\s*(\S)/i, (m, a, b, c) =>
+            a.toLowerCase() + b.trim() + ', "' + c.toUpperCase()
+        );
+        // Fix pronoun capitalization
+        text = text.replace(/(you |i )(your? |i )(\S)/i, (m, a, b, c) =>
+            b.charAt(0).toUpperCase() + b.slice(1) + c.toLowerCase()
+        );
+    } else {
+        // Normal case: add comma and capitalize
+        text = text.replace(/\bi says/i, 'I say');
+        text = text.replace(/(says?) "\s*(\S)/i, (m, a, b) =>
+            a + ', "' + b.toUpperCase()
+        );
+    }
+
+    // Add period before closing quote if missing
+    if (text.match(/[^.,?!]"\n/)) {
+        text = text.replace(/\s*"\n/, '."\n');
+    } else {
+        // Replace generic "say" with specific verbs based on punctuation
+        text = text.replace(/(say)(s?, ".*)([,?!]")/i, (m, a, b, c) => {
+            const verb = c == ',"' ? 'begin' : c == '?"' ? 'ask' : c == '!"' ? 'shout' : '';
+            return verb ? verb + b.trim() + c : m;
+        });
+    }
+
     // Analyze output quality with Bonepoke FIRST (to detect fatigue)
     const analysis = CONFIG.bonepoke.enabled ?
         BonepokeAnalysis.analyze(text) : null;
