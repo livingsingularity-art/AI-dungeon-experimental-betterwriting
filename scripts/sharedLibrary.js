@@ -489,6 +489,8 @@ const BonepokeAnalysis = (() => {
         'about', 'above', 'below', 'beneath', 'beside', 'besides', 'between',
         'after', 'before', 'during', 'within', 'without', 'across', 'along',
         'around', 'behind', 'beyond', 'down', 'inside', 'outside', 'over', 'under',
+        'against', 'at', 'by', 'among', 'amongst', 'near', 'off', 'past', 'since',
+        'till', 'until', 'toward', 'towards', 'via', 'of', 'to', 'in', 'on',
 
         // Articles & demonstratives
         'the', 'a', 'an', 'this', 'that', 'these', 'those',
