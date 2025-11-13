@@ -473,15 +473,44 @@ const BonepokeAnalysis = (() => {
     /**
      * Track word repetition (fatigue)
      * Now includes: single words, 2-word phrases, and sound effects
+     * Excludes: proper nouns (names, places - consistently capitalized)
      */
     const traceFatigue = (fragment) => {
         const allFatigue = {};
 
-        // 1. Single word detection
+        // First pass: identify proper nouns (consistently capitalized words)
+        // These are likely character names and should never be flagged
+        const originalWords = fragment
+            .replace(/[^\w\s]/g, ' ')
+            .split(/\s+/)
+            .filter(w => w.length > 3);
+
+        const properNouns = new Set();
+        const wordCapitalization = {};
+
+        originalWords.forEach(word => {
+            const lower = word.toLowerCase();
+            if (!wordCapitalization[lower]) {
+                wordCapitalization[lower] = { cap: 0, total: 0 };
+            }
+            wordCapitalization[lower].total++;
+            if (word[0] === word[0].toUpperCase()) {
+                wordCapitalization[lower].cap++;
+            }
+        });
+
+        // If a word is capitalized >50% of the time, it's likely a proper noun
+        Object.entries(wordCapitalization).forEach(([word, stats]) => {
+            if (stats.total >= 2 && stats.cap / stats.total > 0.5) {
+                properNouns.add(word);
+            }
+        });
+
+        // 1. Single word detection (excluding proper nouns)
         const words = fragment.toLowerCase()
             .replace(/[^\w\s]/g, ' ')
             .split(/\s+/)
-            .filter(w => w.length > 3);  // Ignore short words
+            .filter(w => w.length > 3 && !properNouns.has(w));  // Exclude proper nouns
 
         const wordCounts = {};
         words.forEach(w => wordCounts[w] = (wordCounts[w] || 0) + 1);
@@ -491,9 +520,20 @@ const BonepokeAnalysis = (() => {
             .forEach(([w, c]) => allFatigue[w] = c);
 
         // 2. Two-word phrase detection (catches "combat boots", "emerald eyes", etc.)
+        // Build from full word list, then filter out phrases containing proper nouns
+        const allWordsLower = fragment.toLowerCase()
+            .replace(/[^\w\s]/g, ' ')
+            .split(/\s+/)
+            .filter(w => w.length > 3);
+
         const phrases = [];
-        for (let i = 0; i < words.length - 1; i++) {
-            phrases.push(`${words[i]} ${words[i + 1]}`);
+        for (let i = 0; i < allWordsLower.length - 1; i++) {
+            const phrase = `${allWordsLower[i]} ${allWordsLower[i + 1]}`;
+            // Skip phrases containing proper nouns
+            const containsProperNoun = phrase.split(' ').some(w => properNouns.has(w));
+            if (!containsProperNoun) {
+                phrases.push(phrase);
+            }
         }
 
         const phraseCounts = {};
