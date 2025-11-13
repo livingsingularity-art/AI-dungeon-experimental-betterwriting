@@ -3,9 +3,13 @@
  * AI DUNGEON OUTPUT SCRIPT v2.8
  * Analyzes and optionally modifies AI output before showing to player
  *
- * v2.8 Updates (CROSS-OUTPUT TRACKING):
- * - N-gram extraction: Tracks 2-5 word sequences across outputs
- * - Output history: Stores last 5 outputs for comparison
+ * v2.8 Updates (CROSS-OUTPUT TRACKING - MEMORY OPTIMIZED):
+ * - N-gram extraction: Tracks 2-3 word sequences (reduced from 2-5 for memory)
+ * - Output history: Stores last 3 outputs (reduced from 5)
+ * - Only stores significant n-grams (appear 2+ times OR contain proper nouns)
+ * - Compressed data structure (c/s/p/j keys instead of full names)
+ * - No full text storage (only n-gram keys)
+ * - Bonepoke history: 5 outputs (reduced from 20)
  * - Adaptive thresholds: "Jack and Jill" needs higher count than "the door"
  *   * Base threshold: 2 appearances
  *   * +1 for each proper noun (harder to vary)
@@ -137,9 +141,9 @@ const modifier = (text) => {
         state.bonepokeHistory = state.bonepokeHistory || [];
         state.bonepokeHistory.push(analysis);
 
-        // Keep only last 20 analyses for memory efficiency
-        if (state.bonepokeHistory.length > 20) {
-            state.bonepokeHistory = state.bonepokeHistory.slice(-20);
+        // Keep only last 5 analyses for memory efficiency
+        if (state.bonepokeHistory.length > 5) {
+            state.bonepokeHistory = state.bonepokeHistory.slice(-5);
         }
 
         // Store last score for context script
@@ -151,18 +155,32 @@ const modifier = (text) => {
     state.outputHistory = state.outputHistory || [];
     state.turnCount = (state.turnCount || 0) + 1;
 
-    // Extract n-grams from current output
-    const currentNGrams = BonepokeAnalysis.extractNGrams(text, 2, 5);
+    // Extract n-grams from current output (2-3 words only for memory efficiency)
+    const allNGrams = BonepokeAnalysis.extractNGrams(text, 2, 3);
 
-    // Store current output in history
-    state.outputHistory.push({
-        text: text,
-        turn: state.turnCount,
-        ngrams: currentNGrams
+    // Only keep n-grams that might be significant (appear 2+ times OR have proper nouns)
+    // This drastically reduces state size
+    const significantNGrams = {};
+    Object.entries(allNGrams).forEach(([key, data]) => {
+        if (data.count >= 2 || data.properNouns > 0) {
+            // Store minimal data
+            significantNGrams[key] = {
+                c: data.count,        // count (shortened key)
+                s: data.size,         // size
+                p: data.properNouns,  // properNouns
+                j: data.conjunctions  // conjunctions (join)
+            };
+        }
     });
 
-    // Keep only last 5 outputs for memory efficiency
-    if (state.outputHistory.length > 5) {
+    // Store current output in history (NO FULL TEXT - too large!)
+    state.outputHistory.push({
+        turn: state.turnCount,
+        ngrams: significantNGrams  // Only significant n-grams, compressed keys
+    });
+
+    // Keep only last 3 outputs for memory efficiency (reduced from 5)
+    if (state.outputHistory.length > 3) {
         state.outputHistory.shift();
     }
 

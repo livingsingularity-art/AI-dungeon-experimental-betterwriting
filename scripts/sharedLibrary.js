@@ -830,7 +830,7 @@ const BonepokeAnalysis = (() => {
 
     /**
      * Compare n-grams across multiple outputs to find repeated phrases
-     * @param {Array} outputs - Array of recent outputs with n-grams
+     * @param {Array} outputs - Array of recent outputs with compressed n-grams
      * @returns {Array} List of repeated phrases with metadata
      */
     const findCrossOutputRepeats = (outputs) => {
@@ -842,8 +842,12 @@ const BonepokeAnalysis = (() => {
         outputs.forEach((output, idx) => {
             Object.entries(output.ngrams).forEach(([key, data]) => {
                 if (!allNGrams[key]) {
+                    // Decompress data structure (c/s/p/j → count/size/properNouns/conjunctions)
                     allNGrams[key] = {
-                        ...data,
+                        phrase: key,  // The key IS the phrase
+                        size: data.s || data.size || 0,
+                        properNouns: data.p || data.properNouns || 0,
+                        conjunctions: data.j || data.conjunctions || 0,
                         appearances: []
                     };
                 }
@@ -862,7 +866,7 @@ const BonepokeAnalysis = (() => {
 
                 if (data.appearances.length >= threshold) {
                     repeats.push({
-                        phrase: data.text,
+                        phrase: data.phrase,
                         count: data.appearances.length,
                         threshold: threshold,
                         size: data.size,
