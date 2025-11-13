@@ -1,7 +1,15 @@
 /**
  * ============================================================================
- * AI DUNGEON OUTPUT SCRIPT v2.6
+ * AI DUNGEON OUTPUT SCRIPT v2.7
  * Analyzes and optionally modifies AI output before showing to player
+ *
+ * v2.7 Updates (REPLACEMENT > REMOVAL):
+ * - Massively expanded synonym map: 200+ entries (verbs, nouns, adjectives)
+ * - Single words (verbs/adjectives/nouns) → ALWAYS replaced, NEVER removed
+ * - Phrases → Try replacement first, only remove as last resort
+ * - Missing synonyms logged for future expansion (kept in text)
+ * - Stopwords: 120+ functional words protected (pronouns, prepositions, etc.)
+ * - Proper nouns: Names automatically detected and preserved
  *
  * v2.6 Updates (Replace-first strategy):
  * - ALL overused content → Try synonym replacement FIRST
@@ -160,22 +168,27 @@ const modifier = (text) => {
     }
 
     // === MODE 3: Auto-replace ALL fatigue types ===
-    // Try synonym replacement first for EVERYTHING (words, phrases, sounds)
-    // Only remove if no synonym exists (fallback)
-    // User can force removal via PRECISE/AGGRESSIVE cards
+    // REPLACEMENT FIRST strategy:
+    // - Try to replace everything (words, phrases, sounds)
+    // - Only remove PHRASES as last resort (if no synonym)
+    // - NEVER remove single words (verbs/adjectives/nouns) - log warning instead
+    // User can still force removal via PRECISE/AGGRESSIVE cards
 
     if (analysis && analysis.composted.fatigue) {
         const replaced = [];
         const removed = [];
+        const needsSynonym = [];  // Track words missing synonyms
 
         Object.keys(analysis.composted.fatigue).forEach(fatigued => {
             const synonym = getSynonym(fatigued);
+            const isPhrase = fatigued.includes(' ');
+            const isSound = fatigued.includes('*');
+            const isSingleWord = !isPhrase && !isSound;
 
             // Try replacement first
             if (synonym !== fatigued) {
                 // For sound effects and phrases, match without word boundaries
-                const isSoundOrPhrase = fatigued.includes('*') || fatigued.includes(' ');
-                const pattern = isSoundOrPhrase
+                const pattern = (isSound || isPhrase)
                     ? fatigued.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
                     : `\\b${fatigued.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`;
 
@@ -185,27 +198,34 @@ const modifier = (text) => {
                     replaced.push(`${fatigued} → ${synonym}`);
                 }
             }
-            // Fallback: remove if no synonym available
+            // No synonym available - decide based on type
             else {
-                const isSoundOrPhrase = fatigued.includes('*') || fatigued.includes(' ');
-                const pattern = isSoundOrPhrase
-                    ? fatigued.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-                    : `\\b${fatigued.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`;
-
-                const regex = new RegExp(pattern, 'gi');
-                if (regex.test(text)) {
-                    text = text.replace(regex, '');
-                    removed.push(fatigued);
+                // ONLY remove phrases as last resort
+                // NEVER remove single words (verbs/adjectives/nouns)
+                if (isPhrase || isSound) {
+                    const pattern = fatigued.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const regex = new RegExp(pattern, 'gi');
+                    if (regex.test(text)) {
+                        text = text.replace(regex, '');
+                        removed.push(fatigued);
+                    }
+                }
+                // Single word without synonym - keep it, but log
+                else if (isSingleWord) {
+                    needsSynonym.push(fatigued);
                 }
             }
         });
 
         // Log what was done
         if (replaced.length > 0) {
-            safeLog(`🔄 Auto-replaced overused: ${replaced.join(', ')}`, 'info');
+            safeLog(`🔄 Replaced: ${replaced.join(', ')}`, 'info');
         }
         if (removed.length > 0) {
-            safeLog(`⚠️ Auto-removed (no synonym): ${removed.join(', ')}`, 'warn');
+            safeLog(`⚠️ Removed phrases (no synonym): ${removed.join(', ')}`, 'warn');
+        }
+        if (needsSynonym.length > 0) {
+            safeLog(`📝 Needs synonym: ${needsSynonym.join(', ')} (kept in text)`, 'warn');
         }
     }
 
