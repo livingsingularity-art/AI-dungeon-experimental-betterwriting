@@ -471,9 +471,52 @@ const BonepokeAnalysis = (() => {
     };
 
     /**
+     * Stopwords: Common functional words that should NEVER be flagged as repetitive
+     * These are structural words essential to English grammar
+     */
+    const STOPWORDS = new Set([
+        // Pronouns
+        'your', 'you', 'yours', 'yourself', 'yourselves',
+        'they', 'them', 'their', 'theirs', 'themselves',
+        'he', 'him', 'his', 'himself',
+        'she', 'her', 'hers', 'herself',
+        'it', 'its', 'itself',
+        'we', 'us', 'our', 'ours', 'ourselves',
+        'i', 'me', 'my', 'mine', 'myself',
+
+        // Prepositions
+        'with', 'from', 'into', 'onto', 'upon', 'through', 'throughout',
+        'about', 'above', 'below', 'beneath', 'beside', 'besides', 'between',
+        'after', 'before', 'during', 'within', 'without', 'across', 'along',
+        'around', 'behind', 'beyond', 'down', 'inside', 'outside', 'over', 'under',
+
+        // Articles & demonstratives
+        'the', 'a', 'an', 'this', 'that', 'these', 'those',
+
+        // Conjunctions
+        'and', 'but', 'or', 'nor', 'for', 'yet', 'so', 'if', 'when', 'while',
+
+        // Common verbs & auxiliaries
+        'have', 'has', 'had', 'having',
+        'been', 'being',
+        'were', 'was', 'are', 'is', 'am',
+        'do', 'does', 'did', 'doing',
+        'can', 'could', 'will', 'would', 'should', 'shall', 'might', 'must', 'may',
+
+        // Common adverbs & interrogatives
+        'then', 'there', 'here', 'where', 'when', 'why', 'how', 'what', 'which', 'who', 'whom', 'whose',
+        'not', 'now', 'just', 'also', 'more', 'most', 'less', 'least', 'much', 'many', 'some', 'such',
+
+        // Other common functional words
+        'both', 'each', 'every', 'all', 'any', 'none', 'either', 'neither',
+        'same', 'other', 'another', 'than', 'too', 'very', 'only', 'even'
+    ]);
+
+    /**
      * Track word repetition (fatigue)
      * Now includes: single words, 2-word phrases, and sound effects
      * Excludes: proper nouns (names, places - consistently capitalized)
+     * Excludes: stopwords (functional words essential to grammar)
      */
     const traceFatigue = (fragment) => {
         const allFatigue = {};
@@ -506,11 +549,11 @@ const BonepokeAnalysis = (() => {
             }
         });
 
-        // 1. Single word detection (excluding proper nouns)
+        // 1. Single word detection (excluding proper nouns AND stopwords)
         const words = fragment.toLowerCase()
             .replace(/[^\w\s]/g, ' ')
             .split(/\s+/)
-            .filter(w => w.length > 3 && !properNouns.has(w));  // Exclude proper nouns
+            .filter(w => w.length > 3 && !properNouns.has(w) && !STOPWORDS.has(w));  // Exclude stopwords
 
         const wordCounts = {};
         words.forEach(w => wordCounts[w] = (wordCounts[w] || 0) + 1);
@@ -520,7 +563,7 @@ const BonepokeAnalysis = (() => {
             .forEach(([w, c]) => allFatigue[w] = c);
 
         // 2. Two-word phrase detection (catches "combat boots", "emerald eyes", etc.)
-        // Build from full word list, then filter out phrases containing proper nouns
+        // Build from full word list, then filter out phrases containing proper nouns or stopwords
         const allWordsLower = fragment.toLowerCase()
             .replace(/[^\w\s]/g, ' ')
             .split(/\s+/)
@@ -529,9 +572,11 @@ const BonepokeAnalysis = (() => {
         const phrases = [];
         for (let i = 0; i < allWordsLower.length - 1; i++) {
             const phrase = `${allWordsLower[i]} ${allWordsLower[i + 1]}`;
-            // Skip phrases containing proper nouns
-            const containsProperNoun = phrase.split(' ').some(w => properNouns.has(w));
-            if (!containsProperNoun) {
+            const words = phrase.split(' ');
+            // Skip phrases containing proper nouns or stopwords
+            const containsProperNoun = words.some(w => properNouns.has(w));
+            const containsStopword = words.some(w => STOPWORDS.has(w));
+            if (!containsProperNoun && !containsStopword) {
                 phrases.push(phrase);
             }
         }
