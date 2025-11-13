@@ -33,7 +33,7 @@ const CONFIG = {
     // Bonepoke Analysis
     bonepoke: {
         enabled: true,
-        fatigueThreshold: 5,    // Word repetition threshold
+        fatigueThreshold: 3,    // Word repetition threshold (lowered for better detection)
         qualityThreshold: 2.5,  // Minimum average score (for logging)
         enableDynamicCorrection: true,  // Create guidance cards to prevent future issues
         debugLogging: false
@@ -267,18 +267,59 @@ commence => begin
 };
 
 /**
- * Common synonym mappings for word replacement
+ * Robust synonym mappings for word replacement
  * Used when Bonepoke detects fatigued words
  * NOTE: Only actual synonyms - no pronoun changes or POV shifts
  */
 const SYNONYM_MAP = {
-    'suddenly': ['abruptly', 'quickly', 'unexpectedly', 'swiftly'],
-    'very': ['extremely', 'quite', 'remarkably', 'considerably'],
-    'said': ['stated', 'mentioned', 'remarked', 'noted'],
-    'really': ['truly', 'genuinely', 'indeed'],
-    'literally': ['actually', 'truly', 'genuinely'],
-    'got': ['obtained', 'received', 'acquired'],
-    'get': ['obtain', 'receive', 'acquire']
+    // Adverbs
+    'suddenly': ['abruptly', 'quickly', 'unexpectedly', 'swiftly', 'instantly', 'promptly', 'sharply'],
+    'very': ['extremely', 'quite', 'remarkably', 'considerably', 'exceptionally', 'intensely', 'highly'],
+    'really': ['truly', 'genuinely', 'indeed', 'certainly', 'absolutely', 'definitely'],
+    'literally': ['actually', 'truly', 'genuinely', 'precisely', 'exactly'],
+    'just': ['merely', 'only', 'simply', 'barely'],
+    'finally': ['eventually', 'ultimately', 'lastly', 'at last'],
+    'slowly': ['gradually', 'steadily', 'leisurely', 'unhurriedly'],
+    'quickly': ['rapidly', 'swiftly', 'speedily', 'hastily', 'promptly'],
+
+    // Common verbs
+    'said': ['stated', 'mentioned', 'remarked', 'noted', 'declared', 'expressed', 'uttered', 'voiced'],
+    'got': ['obtained', 'received', 'acquired', 'gained', 'secured'],
+    'get': ['obtain', 'receive', 'acquire', 'gain', 'secure'],
+    'went': ['moved', 'proceeded', 'traveled', 'headed', 'walked'],
+    'came': ['arrived', 'approached', 'entered', 'appeared'],
+    'made': ['created', 'formed', 'crafted', 'produced', 'fashioned'],
+    'looked': ['gazed', 'stared', 'glanced', 'peered', 'observed'],
+    'turned': ['rotated', 'pivoted', 'spun', 'twisted', 'shifted'],
+    'walked': ['strode', 'paced', 'stepped', 'moved', 'proceeded'],
+    'asked': ['inquired', 'questioned', 'queried', 'requested'],
+
+    // Body parts/actions (common in repetitive prose)
+    'eyes': ['gaze', 'stare', 'glance', 'look'],
+    'hands': ['fingers', 'palms', 'grip'],
+    'face': ['visage', 'features', 'countenance', 'expression'],
+    'voice': ['tone', 'words', 'speech'],
+
+    // Common adjectives
+    'big': ['large', 'huge', 'enormous', 'massive', 'substantial'],
+    'small': ['tiny', 'little', 'minuscule', 'compact'],
+    'good': ['fine', 'excellent', 'pleasant', 'favorable', 'decent'],
+    'bad': ['poor', 'unpleasant', 'unfavorable', 'awful', 'terrible'],
+    'old': ['aged', 'ancient', 'elderly', 'weathered'],
+    'new': ['fresh', 'recent', 'modern', 'novel'],
+    'dark': ['dim', 'shadowy', 'murky', 'gloomy'],
+    'light': ['bright', 'illuminated', 'radiant', 'luminous'],
+
+    // Common nouns
+    'thing': ['object', 'item', 'element', 'matter'],
+    'stuff': ['items', 'objects', 'materials', 'belongings'],
+    'place': ['location', 'spot', 'site', 'area'],
+    'time': ['moment', 'period', 'instant', 'duration'],
+    'way': ['manner', 'method', 'approach', 'path'],
+    'room': ['chamber', 'space', 'quarters'],
+    'door': ['entrance', 'doorway', 'portal', 'threshold'],
+    'wall': ['partition', 'barrier', 'surface'],
+    'floor': ['ground', 'surface', 'flooring']
 };
 
 /**
@@ -412,19 +453,53 @@ const BonepokeAnalysis = (() => {
 
     /**
      * Track word repetition (fatigue)
+     * Now includes: single words, 2-word phrases, and sound effects
      */
     const traceFatigue = (fragment) => {
+        const allFatigue = {};
+
+        // 1. Single word detection
         const words = fragment.toLowerCase()
             .replace(/[^\w\s]/g, ' ')
             .split(/\s+/)
             .filter(w => w.length > 3);  // Ignore short words
 
-        const counts = {};
-        words.forEach(w => counts[w] = (counts[w] || 0) + 1);
+        const wordCounts = {};
+        words.forEach(w => wordCounts[w] = (wordCounts[w] || 0) + 1);
 
-        return Object.fromEntries(
-            Object.entries(counts).filter(([w, c]) => c >= CONFIG.bonepoke.fatigueThreshold)
-        );
+        Object.entries(wordCounts)
+            .filter(([w, c]) => c >= CONFIG.bonepoke.fatigueThreshold)
+            .forEach(([w, c]) => allFatigue[w] = c);
+
+        // 2. Two-word phrase detection (catches "combat boots", "emerald eyes", etc.)
+        const phrases = [];
+        for (let i = 0; i < words.length - 1; i++) {
+            phrases.push(`${words[i]} ${words[i + 1]}`);
+        }
+
+        const phraseCounts = {};
+        phrases.forEach(p => phraseCounts[p] = (phraseCounts[p] || 0) + 1);
+
+        Object.entries(phraseCounts)
+            .filter(([p, c]) => c >= 3)  // Phrase threshold: 3+ occurrences
+            .forEach(([p, c]) => allFatigue[p] = c);
+
+        // 3. Sound effect detection (catches *scuff*, *schlick*, etc.)
+        const soundEffects = fragment.match(/\*[^*]+\*/g) || [];
+        const soundCounts = {};
+
+        soundEffects.forEach(s => {
+            const clean = s.replace(/\*/g, '').toLowerCase().trim();
+            if (clean.length > 0) {
+                soundCounts[clean] = (soundCounts[clean] || 0) + 1;
+            }
+        });
+
+        Object.entries(soundCounts)
+            .filter(([s, c]) => c >= 2)  // Sound effect threshold: 2+ occurrences
+            .forEach(([s, c]) => allFatigue[`*${s}*`] = c);
+
+        return allFatigue;
     };
 
     /**
