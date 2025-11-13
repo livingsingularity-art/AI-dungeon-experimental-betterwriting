@@ -1,7 +1,18 @@
 /**
  * ============================================================================
- * AI DUNGEON OUTPUT SCRIPT v2.7
+ * AI DUNGEON OUTPUT SCRIPT v2.8
  * Analyzes and optionally modifies AI output before showing to player
+ *
+ * v2.8 Updates (CROSS-OUTPUT TRACKING):
+ * - N-gram extraction: Tracks 2-5 word sequences across outputs
+ * - Output history: Stores last 5 outputs for comparison
+ * - Adaptive thresholds: "Jack and Jill" needs higher count than "the door"
+ *   * Base threshold: 2 appearances
+ *   * +1 for each proper noun (harder to vary)
+ *   * +1 for each conjunction (indicates compound phrase)
+ * - Proper noun preservation: "Jack and Jill went up" → "Jack and Jill"
+ * - Cross-output replacement: Detects phrases repeated across turns
+ * - Smart filtering: Distinguishes true repeats from natural variation
  *
  * v2.7 Updates (REPLACEMENT > REMOVAL):
  * - Massively expanded synonym map: 200+ entries (verbs, nouns, adjectives)
@@ -133,6 +144,73 @@ const modifier = (text) => {
 
         // Store last score for context script
         state.lastBonepokeScore = analysis.avgScore;
+    }
+
+    // === CROSS-OUTPUT TRACKING ===
+    // Track last 5 outputs with n-grams to detect repeated phrases across turns
+    state.outputHistory = state.outputHistory || [];
+    state.turnCount = (state.turnCount || 0) + 1;
+
+    // Extract n-grams from current output
+    const currentNGrams = BonepokeAnalysis.extractNGrams(text, 2, 5);
+
+    // Store current output in history
+    state.outputHistory.push({
+        text: text,
+        turn: state.turnCount,
+        ngrams: currentNGrams
+    });
+
+    // Keep only last 5 outputs for memory efficiency
+    if (state.outputHistory.length > 5) {
+        state.outputHistory.shift();
+    }
+
+    // Find phrases repeated across outputs
+    const crossOutputRepeats = BonepokeAnalysis.findCrossOutputRepeats(state.outputHistory);
+
+    // Handle cross-output repeated phrases
+    if (crossOutputRepeats.length > 0) {
+        const handled = [];
+
+        crossOutputRepeats.forEach(repeat => {
+            // Extract proper nouns from the phrase
+            const words = repeat.phrase.split(' ');
+            const properNouns = [];
+
+            words.forEach((word, idx) => {
+                // Skip first word (might be sentence start)
+                if (idx > 0 && word[0] === word[0].toUpperCase() && word[0] !== word[0].toLowerCase()) {
+                    properNouns.push(word);
+                }
+            });
+
+            // If phrase contains proper nouns, preserve them but vary the rest
+            if (properNouns.length > 0 && repeat.size > 2) {
+                const preservedText = properNouns.join(' and ');
+                const regex = new RegExp(repeat.phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+
+                if (regex.test(text)) {
+                    text = text.replace(regex, preservedText);
+                    handled.push(`${repeat.phrase} → ${preservedText} (cross-output, preserved names)`);
+                }
+            }
+            // Otherwise, try synonym replacement via existing system
+            else {
+                const synonym = getSynonym(repeat.phrase.toLowerCase());
+                if (synonym !== repeat.phrase.toLowerCase()) {
+                    const regex = new RegExp(repeat.phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                    if (regex.test(text)) {
+                        text = text.replace(regex, synonym);
+                        handled.push(`${repeat.phrase} → ${synonym} (cross-output)`);
+                    }
+                }
+            }
+        });
+
+        if (handled.length > 0) {
+            safeLog(`🔄 Cross-output repeats: ${handled.join(', ')}`, 'info');
+        }
     }
 
     // USC-style word removal/replacement system (3 modes)

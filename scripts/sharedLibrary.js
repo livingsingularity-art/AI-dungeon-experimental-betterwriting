@@ -748,6 +748,137 @@ const BonepokeAnalysis = (() => {
     };
 
     /**
+     * Extract n-grams (word sequences) from text for cross-output comparison
+     * @param {string} text - Text to extract n-grams from
+     * @param {number} minN - Minimum n-gram size (default: 2)
+     * @param {number} maxN - Maximum n-gram size (default: 5)
+     * @returns {Object} Map of n-grams to their counts
+     */
+    const extractNGrams = (text, minN = 2, maxN = 5) => {
+        const ngrams = {};
+
+        // Tokenize into words (preserve case for proper noun detection)
+        const words = text
+            .replace(/[^\w\s]/g, ' ')
+            .split(/\s+/)
+            .filter(w => w.length > 0);
+
+        // Extract n-grams of varying lengths
+        for (let n = minN; n <= maxN; n++) {
+            for (let i = 0; i <= words.length - n; i++) {
+                const ngram = words.slice(i, i + n).join(' ');
+                const ngramLower = ngram.toLowerCase();
+
+                // Skip if contains only stopwords
+                const ngramWords = ngramLower.split(' ');
+                const allStopwords = ngramWords.every(w => STOPWORDS.has(w));
+                if (allStopwords) continue;
+
+                // Store with metadata
+                if (!ngrams[ngramLower]) {
+                    ngrams[ngramLower] = {
+                        text: ngram,  // Preserve original case
+                        count: 0,
+                        size: n,
+                        properNouns: countProperNounsInPhrase(ngram),
+                        conjunctions: (ngram.match(/\b(and|or|but|with)\b/gi) || []).length
+                    };
+                }
+                ngrams[ngramLower].count++;
+            }
+        }
+
+        return ngrams;
+    };
+
+    /**
+     * Count proper nouns in a phrase (capitalized words not at start)
+     * @param {string} phrase - Phrase to analyze
+     * @returns {number} Count of proper nouns
+     */
+    const countProperNounsInPhrase = (phrase) => {
+        const words = phrase.split(' ');
+        let count = 0;
+
+        for (let i = 1; i < words.length; i++) {  // Skip first word (might be capitalized for sentence start)
+            if (words[i][0] === words[i][0].toUpperCase() && words[i][0] !== words[i][0].toLowerCase()) {
+                count++;
+            }
+        }
+
+        return count;
+    };
+
+    /**
+     * Calculate adaptive threshold for phrase repetition
+     * Phrases with proper nouns and conjunctions need higher thresholds
+     * (e.g., "Jack and Jill" has limited variation options)
+     * @param {Object} ngramData - N-gram metadata
+     * @returns {number} Adjusted threshold
+     */
+    const calculateAdaptiveThreshold = (ngramData) => {
+        const baseThreshold = 2;  // Lower base for cross-output detection
+
+        // Add 1 for each proper noun (harder to vary)
+        const properNounBonus = ngramData.properNouns;
+
+        // Add 1 for each conjunction (indicates compound phrase)
+        const conjunctionBonus = ngramData.conjunctions;
+
+        return baseThreshold + properNounBonus + conjunctionBonus;
+    };
+
+    /**
+     * Compare n-grams across multiple outputs to find repeated phrases
+     * @param {Array} outputs - Array of recent outputs with n-grams
+     * @returns {Array} List of repeated phrases with metadata
+     */
+    const findCrossOutputRepeats = (outputs) => {
+        if (outputs.length < 2) return [];
+
+        const allNGrams = {};
+
+        // Collect all n-grams from all outputs
+        outputs.forEach((output, idx) => {
+            Object.entries(output.ngrams).forEach(([key, data]) => {
+                if (!allNGrams[key]) {
+                    allNGrams[key] = {
+                        ...data,
+                        appearances: []
+                    };
+                }
+                allNGrams[key].appearances.push({
+                    outputIndex: idx,
+                    turn: output.turn
+                });
+            });
+        });
+
+        // Find phrases that appear across multiple outputs
+        const repeats = [];
+        Object.entries(allNGrams).forEach(([key, data]) => {
+            if (data.appearances.length >= 2) {  // Appears in 2+ outputs
+                const threshold = calculateAdaptiveThreshold(data);
+
+                if (data.appearances.length >= threshold) {
+                    repeats.push({
+                        phrase: data.text,
+                        count: data.appearances.length,
+                        threshold: threshold,
+                        size: data.size,
+                        properNouns: data.properNouns,
+                        conjunctions: data.conjunctions,
+                        appearances: data.appearances
+                    });
+                }
+            }
+        });
+
+        // Sort by count (most repeated first)
+        return repeats.sort((a, b) => b.count - a.count);
+    };
+
+    /**
      * Detect ungrounded system-speak (drift)
      */
     const detectDrift = (fragment) => {
@@ -889,7 +1020,11 @@ const BonepokeAnalysis = (() => {
         traceFatigue,
         detectDrift,
         scoreOutput,
-        generateSuggestions
+        generateSuggestions,
+        // Cross-output tracking functions
+        extractNGrams,
+        findCrossOutputRepeats,
+        calculateAdaptiveThreshold
     };
 })();
 
