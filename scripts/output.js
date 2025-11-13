@@ -1,13 +1,18 @@
 /**
  * ============================================================================
- * AI DUNGEON OUTPUT SCRIPT v2.4
+ * AI DUNGEON OUTPUT SCRIPT v2.5
  * Analyzes and optionally modifies AI output before showing to player
+ *
+ * v2.5 Updates (Auto-cleanup):
+ * - Overused phrases → Auto-removed (no manual intervention)
+ * - Sound effects → Auto-removed (no manual intervention)
+ * - Single words → Auto-replaced with synonyms
+ * - Detection: threshold=3 for words/phrases, threshold=2 for sounds
  *
  * v2.4 Updates (Bonepoke Integration):
  * - Three separate word bank cards (PRECISE, AGGRESSIVE, REPLACER)
- * - Auto-replacement of fatigued words with synonyms
- * - Bonepoke fatigue → automatic REPLACER additions
- * - 16-word synonym dictionary for common overused words
+ * - Enhanced fatigue detection (words + phrases + sound effects)
+ * - 50+ word synonym dictionary
  *
  * v2.3 Updates (USC-inspired):
  * - Word banning via direct removal (AGGRESSIVE/PRECISE modes)
@@ -148,13 +153,64 @@ const modifier = (text) => {
         }
     }
 
-    // === MODE 3: REPLACER (word substitution/synonyms) ===
-    const replacerCard = storyCards.find(c => c.keys && c.keys.includes('word_replacer'));
-    const replacements = [];
+    // === MODE 3: Auto-handle ALL fatigue types ===
+    // Phrases → Remove entirely
+    // Sound effects → Remove entirely
+    // Single words → Replace with synonyms
 
-    // Add user-defined replacements from card
+    if (analysis && analysis.composted.fatigue) {
+        const phrasesRemoved = [];
+        const soundsRemoved = [];
+        const wordsReplaced = [];
+
+        Object.keys(analysis.composted.fatigue).forEach(fatigued => {
+            // Check if it's a sound effect (contains asterisks)
+            if (fatigued.includes('*')) {
+                const regex = new RegExp(fatigued.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                if (regex.test(text)) {
+                    text = text.replace(regex, '');
+                    soundsRemoved.push(fatigued);
+                }
+            }
+            // Check if it's a phrase (contains space)
+            else if (fatigued.includes(' ')) {
+                const regex = new RegExp(fatigued.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                if (regex.test(text)) {
+                    text = text.replace(regex, '');
+                    phrasesRemoved.push(fatigued);
+                }
+            }
+            // Single word - try synonym replacement
+            else {
+                const synonym = getSynonym(fatigued);
+                if (synonym !== fatigued) {
+                    const regex = new RegExp(`\\b${fatigued.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+                    if (regex.test(text)) {
+                        text = text.replace(regex, synonym);
+                        wordsReplaced.push(`${fatigued} → ${synonym}`);
+                    }
+                }
+            }
+        });
+
+        // Log what was done
+        if (phrasesRemoved.length > 0) {
+            safeLog(`⛔ Auto-removed overused phrases: ${phrasesRemoved.join(', ')}`, 'warn');
+        }
+        if (soundsRemoved.length > 0) {
+            safeLog(`⛔ Auto-removed overused sound effects: ${soundsRemoved.join(', ')}`, 'warn');
+        }
+        if (wordsReplaced.length > 0) {
+            safeLog(`🔄 Auto-replaced fatigued words: ${wordsReplaced.join(', ')}`, 'info');
+        }
+    }
+
+    // === MODE 4: User-defined REPLACER card (manual overrides) ===
+    const replacerCard = storyCards.find(c => c.keys && c.keys.includes('word_replacer'));
     if (replacerCard && replacerCard.entry) {
         const lines = replacerCard.entry.split('\n');
+        const applied = [];
+
         for (const line of lines) {
             const trimmed = line.trim();
             if (!trimmed || trimmed.startsWith('#')) continue;
@@ -166,35 +222,16 @@ const modifier = (text) => {
             const replacement = trimmed.slice(arrowIndex + 2).trim();
 
             if (original && replacement) {
-                replacements.push([original, replacement]);
-            }
-        }
-    }
-
-    // Add Bonepoke-detected fatigued words (auto-replacements)
-    if (analysis && analysis.composted.fatigue) {
-        Object.keys(analysis.composted.fatigue).forEach(fatigued => {
-            const synonym = getSynonym(fatigued);
-            if (synonym !== fatigued) {
-                replacements.push([fatigued, synonym]);
-                safeLog(`🔄 Auto-replacing fatigued word: "${fatigued}" → "${synonym}"`, 'info');
-            }
-        });
-    }
-
-    // Apply all replacements
-    if (replacements.length > 0) {
-        const applied = [];
-        for (const [target, replacementStr] of replacements) {
-            const regex = new RegExp(`\\b${target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
-            if (regex.test(text)) {
-                applied.push(`${target} → ${replacementStr}`);
-                text = text.replace(regex, replacementStr);
+                const regex = new RegExp(`\\b${original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+                if (regex.test(text)) {
+                    text = text.replace(regex, replacement);
+                    applied.push(`${original} → ${replacement}`);
+                }
             }
         }
 
         if (applied.length > 0) {
-            safeLog(`🔄 REPLACER applied: ${applied.join(', ')}`, 'info');
+            safeLog(`🔄 User REPLACER applied: ${applied.join(', ')}`, 'info');
         }
     }
 
