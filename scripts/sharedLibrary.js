@@ -33,10 +33,9 @@ const CONFIG = {
     // Bonepoke Analysis
     bonepoke: {
         enabled: true,
-        fatigueThreshold: 5,    // Word repetition threshold (was 3, too aggressive)
-        qualityThreshold: 2.5,  // Minimum average score
-        maxRegenAttempts: 2,    // Regeneration limit
-        enableDynamicCorrection: true,  // Auto-inject guidance
+        fatigueThreshold: 5,    // Word repetition threshold
+        qualityThreshold: 2.5,  // Minimum average score (for logging)
+        enableDynamicCorrection: true,  // Create guidance cards to prevent future issues
         debugLogging: false
     },
 
@@ -270,22 +269,14 @@ commence => begin
 /**
  * Common synonym mappings for word replacement
  * Used when Bonepoke detects fatigued words
+ * NOTE: Only actual synonyms - no pronoun changes or POV shifts
  */
 const SYNONYM_MAP = {
     'suddenly': ['abruptly', 'quickly', 'unexpectedly', 'swiftly'],
     'very': ['extremely', 'quite', 'remarkably', 'considerably'],
-    'good': ['excellent', 'fine', 'pleasant', 'favorable'],
-    'bad': ['poor', 'unpleasant', 'unfavorable', 'awful'],
     'said': ['stated', 'mentioned', 'remarked', 'noted'],
-    'that': ['which', 'this'],
-    'your': ['the', 'their', 'its'],
-    'something': ['an object', 'a thing', 'it'],
-    'someone': ['a person', 'they', 'a figure'],
     'really': ['truly', 'genuinely', 'indeed'],
-    'just': ['merely', 'only', 'simply'],
     'literally': ['actually', 'truly', 'genuinely'],
-    'things': ['matters', 'items', 'objects', 'elements'],
-    'stuff': ['items', 'objects', 'materials'],
     'got': ['obtained', 'received', 'acquired'],
     'get': ['obtain', 'receive', 'acquire']
 };
