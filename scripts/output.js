@@ -1,7 +1,13 @@
 /**
  * ============================================================================
- * AI DUNGEON OUTPUT SCRIPT v2.5
+ * AI DUNGEON OUTPUT SCRIPT v2.6
  * Analyzes and optionally modifies AI output before showing to player
+ *
+ * v2.6 Updates (Replace-first strategy):
+ * - ALL overused content → Try synonym replacement FIRST
+ * - Phrases, sounds, words → All get synonyms if available
+ * - Removal only as fallback or via user cards (PRECISE/AGGRESSIVE)
+ * - Expanded synonym map: 60+ entries including phrases & sound effects
  *
  * v2.5 Updates (Auto-cleanup):
  * - Overused phrases → Auto-removed (no manual intervention)
@@ -153,55 +159,53 @@ const modifier = (text) => {
         }
     }
 
-    // === MODE 3: Auto-handle ALL fatigue types ===
-    // Phrases → Remove entirely
-    // Sound effects → Remove entirely
-    // Single words → Replace with synonyms
+    // === MODE 3: Auto-replace ALL fatigue types ===
+    // Try synonym replacement first for EVERYTHING (words, phrases, sounds)
+    // Only remove if no synonym exists (fallback)
+    // User can force removal via PRECISE/AGGRESSIVE cards
 
     if (analysis && analysis.composted.fatigue) {
-        const phrasesRemoved = [];
-        const soundsRemoved = [];
-        const wordsReplaced = [];
+        const replaced = [];
+        const removed = [];
 
         Object.keys(analysis.composted.fatigue).forEach(fatigued => {
-            // Check if it's a sound effect (contains asterisks)
-            if (fatigued.includes('*')) {
-                const regex = new RegExp(fatigued.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+            const synonym = getSynonym(fatigued);
+
+            // Try replacement first
+            if (synonym !== fatigued) {
+                // For sound effects and phrases, match without word boundaries
+                const isSoundOrPhrase = fatigued.includes('*') || fatigued.includes(' ');
+                const pattern = isSoundOrPhrase
+                    ? fatigued.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+                    : `\\b${fatigued.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`;
+
+                const regex = new RegExp(pattern, 'gi');
                 if (regex.test(text)) {
-                    text = text.replace(regex, '');
-                    soundsRemoved.push(fatigued);
+                    text = text.replace(regex, synonym);
+                    replaced.push(`${fatigued} → ${synonym}`);
                 }
             }
-            // Check if it's a phrase (contains space)
-            else if (fatigued.includes(' ')) {
-                const regex = new RegExp(fatigued.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-                if (regex.test(text)) {
-                    text = text.replace(regex, '');
-                    phrasesRemoved.push(fatigued);
-                }
-            }
-            // Single word - try synonym replacement
+            // Fallback: remove if no synonym available
             else {
-                const synonym = getSynonym(fatigued);
-                if (synonym !== fatigued) {
-                    const regex = new RegExp(`\\b${fatigued.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
-                    if (regex.test(text)) {
-                        text = text.replace(regex, synonym);
-                        wordsReplaced.push(`${fatigued} → ${synonym}`);
-                    }
+                const isSoundOrPhrase = fatigued.includes('*') || fatigued.includes(' ');
+                const pattern = isSoundOrPhrase
+                    ? fatigued.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+                    : `\\b${fatigued.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`;
+
+                const regex = new RegExp(pattern, 'gi');
+                if (regex.test(text)) {
+                    text = text.replace(regex, '');
+                    removed.push(fatigued);
                 }
             }
         });
 
         // Log what was done
-        if (phrasesRemoved.length > 0) {
-            safeLog(`⛔ Auto-removed overused phrases: ${phrasesRemoved.join(', ')}`, 'warn');
+        if (replaced.length > 0) {
+            safeLog(`🔄 Auto-replaced overused: ${replaced.join(', ')}`, 'info');
         }
-        if (soundsRemoved.length > 0) {
-            safeLog(`⛔ Auto-removed overused sound effects: ${soundsRemoved.join(', ')}`, 'warn');
-        }
-        if (wordsReplaced.length > 0) {
-            safeLog(`🔄 Auto-replaced fatigued words: ${wordsReplaced.join(', ')}`, 'info');
+        if (removed.length > 0) {
+            safeLog(`⚠️ Auto-removed (no synonym): ${removed.join(', ')}`, 'warn');
         }
     }
 

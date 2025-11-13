@@ -319,7 +319,26 @@ const SYNONYM_MAP = {
     'room': ['chamber', 'space', 'quarters'],
     'door': ['entrance', 'doorway', 'portal', 'threshold'],
     'wall': ['partition', 'barrier', 'surface'],
-    'floor': ['ground', 'surface', 'flooring']
+    'floor': ['ground', 'surface', 'flooring'],
+
+    // Common 2-word phrases (will be matched as complete phrases)
+    'combat boots': ['military footwear', 'tactical boots', 'heavy boots', 'steel-toed boots'],
+    'emerald eyes': ['green eyes', 'jade gaze', 'verdant eyes', 'forest-green eyes'],
+    'nervous laugh': ['awkward chuckle', 'uneasy giggle', 'tense laugh', 'forced chuckle'],
+    'deep breath': ['long inhale', 'steady breath', 'calming breath', 'slow inhale'],
+    'slight smile': ['faint grin', 'subtle smirk', 'small smile', 'hint of a smile'],
+    'quick glance': ['brief look', 'fleeting glimpse', 'rapid peek', 'swift glance'],
+    'long sigh': ['deep exhale', 'heavy breath', 'weary sigh', 'prolonged exhale'],
+
+    // Sound effects (common overused ones)
+    '*scuff*': ['*scrape*', '*shuffle*', '*scratch*', '*drag*'],
+    '*gulp*': ['*swallow*', '*glug*', '*swig*'],
+    '*schlick*': ['*squelch*', '*slurp*', '*slosh*'],
+    '*schlorp*': ['*slurp*', '*gulp*', '*glug*'],
+    '*thud*': ['*thump*', '*bang*', '*crash*', '*slam*'],
+    '*click*': ['*snap*', '*clack*', '*tick*'],
+    '*creak*': ['*groan*', '*squeak*', '*scrape*'],
+    '*rustle*': ['*swish*', '*whisper*', '*flutter*']
 };
 
 /**
