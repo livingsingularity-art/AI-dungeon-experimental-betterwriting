@@ -333,34 +333,39 @@ const SYNONYM_MAP = {
     'lifted': ['raised', 'hoisted', 'elevated', 'picked up'],
     'dropped': ['released', 'let fall', 'let go of', 'discarded'],
 
-    // Body parts - REMOVED MOST
-    // Body parts are specific anatomical terms and shouldn't be "synonymized"
-    // Replacing "fingers" with "hands" or "eyes" with "gaze" changes meaning
-    // Only keeping a few true informal/slang variations
+    // Body parts - CREATIVE WRITING CONTEXT
+    // In narrative prose, metonymy and part-for-whole are standard
+    'eyes': ['gaze', 'stare', 'glance'],  // Metonymy: "her eyes" = "her gaze"
+    'fingers': ['digits'],  // Fingers ARE digits (anatomically correct)
+    'face': ['visage', 'features'],  // Literary synonyms
+    'hair': ['locks', 'tresses'],  // Poetic variations
+    'lips': ['mouth'],  // Part-for-whole (acceptable in context)
     'noggin': ['head'],  // Slang → proper
     'ticker': ['heart'], // Slang → proper
-    // Everything else: let body parts repeat naturally - they're specific references
+    'breath': ['exhale', 'inhale'],  // Context-dependent but common
 
-    // Common adjectives - SIMILAR INTENSITY ONLY
-    // Don't escalate/de-escalate: "small" should not become "minuscule"
-    'big': ['large', 'sizeable'],  // Similar intensity
-    'small': ['little', 'compact'],  // Removed: tiny, minuscule (too extreme)
-    'huge': ['enormous', 'massive'],  // Extreme size adjectives
-    'tiny': ['minuscule'],  // Extreme small adjectives
-    'good': ['fine', 'decent'],  // Removed: excellent (too strong)
-    'excellent': ['superb', 'outstanding'],  // Strong positives
-    'bad': ['poor', 'unfavorable'],  // Removed: awful, terrible (too strong)
-    'awful': ['terrible', 'dreadful'],  // Strong negatives
-    'old': ['aged', 'elderly'],  // Removed: ancient (too extreme)
-    'ancient': ['archaic', 'primeval'],  // Extreme age
-    'new': ['fresh', 'recent'],  // Removed: modern, novel (different connotations)
-    'dark': ['dim', 'shadowy'],  // Removed: murky, gloomy (different meanings)
-    'light': ['bright', 'illuminated'],  // Removed: radiant, luminous (too poetic/strong)
-    // Colors - REMOVED
-    // "Red", "crimson", "scarlet" are different SHADES, not synonyms
-    // Replacing "red eyes" with "crimson eyes" changes the specific shade
-    // Only keeping gray/grey spelling variation
-    'gray': ['grey'],  // Spelling variation only
+    // Common adjectives - INTENSITY MATCHED
+    // Keep similar intensity but allow creative writing flexibility
+    'big': ['large', 'sizeable'],
+    'small': ['little', 'compact'],  // NOT minuscule (too extreme)
+    'huge': ['enormous', 'massive'],
+    'tiny': ['minuscule'],
+    'good': ['fine', 'decent'],
+    'excellent': ['superb', 'outstanding'],
+    'bad': ['poor', 'unfavorable'],
+    'awful': ['terrible', 'dreadful'],
+    'old': ['aged', 'elderly'],
+    'ancient': ['archaic'],
+    'new': ['fresh', 'recent'],
+    'dark': ['dim', 'shadowy', 'murky'],  // Shades acceptable in creative writing
+    'light': ['bright', 'illuminated'],
+    // Colors - shades ARE acceptable in descriptive prose
+    'red': ['crimson', 'scarlet'],  // Shade variations OK for creative writing
+    'blue': ['azure', 'cobalt'],
+    'green': ['emerald', 'jade'],
+    'white': ['pale', 'ivory'],
+    'black': ['ebony', 'obsidian'],
+    'gray': ['grey', 'silver'],  // Spelling + shade variation
     'soft': ['gentle', 'tender'],  // Similar meaning
     'hard': ['solid', 'firm'],  // Removed: rigid, stiff (slightly different)
     'hot': ['heated'],  // Removed intensity variations
@@ -400,20 +405,22 @@ const SYNONYM_MAP = {
     'gorgeous': ['stunning'],  // Strong beauty
     'ugly': ['unattractive', 'unsightly'],  // Removed: hideous, grotesque (too extreme)
 
-    // Common nouns - TRUE SYNONYMS ONLY
-    'thing': ['object', 'item'],  // General objects
-    'stuff': ['things', 'items'],  // Informal plural
-    'place': ['location', 'spot'],  // Removed: site, area, venue (different contexts)
-    'way': ['manner', 'method'],  // Removed: path, route (physical ways, not manner)
-    'room': ['chamber'],  // Removed: space, quarters, compartment (different meanings)
-    'door': ['doorway', 'portal'],  // Removed: entrance, threshold, entry (not the door itself)
-    'wall': ['partition'],  // Removed: barrier, surface, panel (different or too specific)
-    // floor, window, table, chair: REMOVED - too specific, no true synonyms
-    'sound': ['noise'],  // Removed: audio, tone, resonance (different contexts)
-    'smell': ['scent', 'odor'],  // Removed: aroma, fragrance (positive connotations)
-    'aroma': ['fragrance'],  // Pleasant smells
-    // touch, taste: REMOVED - too specific
-    'street': ['road'],  // Removed: avenue, lane, pathway (different types)
+    // Common nouns - CREATIVE WRITING CONTEXT
+    // Poetic/metaphorical usage is standard in narrative prose
+    'thing': ['object', 'item'],
+    'stuff': ['things', 'items'],
+    'place': ['location', 'spot'],
+    'way': ['manner', 'method'],
+    'room': ['chamber'],
+    'door': ['doorway', 'portal', 'threshold'],  // Threshold acceptable in creative writing
+    'wall': ['partition', 'barrier'],  // Metaphorical use is fine
+    'window': ['pane'],  // Part-for-whole acceptable
+    'light': ['illumination', 'glow', 'lamp'],  // Metonymy: "turn on the light" = "lamp"
+    'fire': ['flame', 'blaze'],  // Part-for-whole common in prose
+    'sound': ['noise'],
+    'smell': ['scent', 'odor'],
+    'aroma': ['fragrance'],
+    'street': ['road', 'avenue'],  // Common variations
     'house': ['home', 'dwelling', 'residence'],  // True synonyms
     'building': ['structure', 'edifice'],  // Removed: construction (the act, not the thing)
     'city': ['town'],  // Removed: metropolis, municipality (different sizes/types)
