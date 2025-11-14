@@ -282,56 +282,73 @@ const SYNONYM_MAP = {
     'slowly': ['gradually', 'steadily', 'leisurely', 'unhurriedly'],
     'quickly': ['rapidly', 'swiftly', 'speedily', 'hastily', 'promptly'],
 
-    // Common verbs
-    'said': ['stated', 'mentioned', 'remarked', 'noted', 'declared', 'expressed', 'uttered', 'voiced'],
-    'got': ['obtained', 'received', 'acquired', 'gained', 'secured'],
-    'get': ['obtain', 'receive', 'acquire', 'gain', 'secure'],
-    'went': ['moved', 'proceeded', 'traveled', 'headed', 'walked'],
-    'came': ['arrived', 'approached', 'entered', 'appeared'],
-    'made': ['created', 'formed', 'crafted', 'produced', 'fashioned'],
-    'looked': ['gazed', 'stared', 'glanced', 'peered', 'observed'],
-    'turned': ['rotated', 'pivoted', 'spun', 'twisted', 'shifted'],
-    'walked': ['strode', 'paced', 'stepped', 'moved', 'proceeded'],
-    'asked': ['inquired', 'questioned', 'queried', 'requested'],
-    'took': ['grabbed', 'seized', 'grasped', 'snatched', 'clutched'],
-    'gave': ['offered', 'handed', 'presented', 'provided', 'extended'],
-    'felt': ['sensed', 'perceived', 'experienced', 'noticed'],
-    'heard': ['detected', 'caught', 'perceived', 'noticed'],
-    'saw': ['spotted', 'noticed', 'observed', 'glimpsed', 'caught sight of'],
-    'moved': ['shifted', 'stirred', 'budged', 'relocated'],
-    'stood': ['rose', 'remained upright', 'positioned herself', 'positioned himself'],
-    'sat': ['settled', 'perched', 'rested', 'seated herself', 'seated himself'],
-    'pulled': ['tugged', 'yanked', 'drew', 'dragged'],
-    'pushed': ['shoved', 'pressed', 'thrust', 'nudged'],
-    'held': ['gripped', 'clutched', 'grasped', 'clenched'],
-    'opened': ['unlocked', 'unsealed', 'spread', 'unlatched'],
-    'closed': ['shut', 'sealed', 'latched', 'fastened'],
-    'grabbed': ['seized', 'snatched', 'clutched', 'gripped'],
-    'touched': ['grazed', 'brushed', 'contacted', 'felt'],
+    // Common verbs - BASIC TO COLLEGE LEVEL
+    'said': ['stated', 'mentioned', 'remarked', 'noted', 'declared', 'expressed', 'uttered', 'voiced', 'articulated', 'proclaimed', 'asserted'],
+    'got': ['obtained', 'received', 'acquired', 'gained', 'secured', 'procured'],
+    'get': ['obtain', 'receive', 'acquire', 'gain', 'secure', 'procure'],
+    'went': ['moved', 'proceeded', 'traveled', 'headed', 'walked', 'traversed', 'ventured'],
+    'came': ['arrived', 'approached', 'entered', 'appeared', 'emerged', 'materialized'],
+    'made': ['created', 'formed', 'crafted', 'produced', 'fashioned', 'constructed', 'fabricated'],
+    'looked': ['gazed', 'stared', 'glanced', 'peered', 'observed', 'scrutinized', 'examined'],
+    'turned': ['rotated', 'pivoted', 'spun', 'twisted', 'shifted', 'revolved'],
+    'walked': ['strode', 'paced', 'stepped', 'moved', 'proceeded', 'ambled', 'sauntered', 'traversed'],
+    'asked': ['inquired', 'questioned', 'queried', 'requested', 'interrogated'],
+    'took': ['grabbed', 'seized', 'grasped', 'snatched', 'clutched', 'appropriated', 'commandeered'],
+    'gave': ['offered', 'handed', 'presented', 'provided', 'extended', 'bestowed', 'conferred'],
+    'felt': ['sensed', 'perceived', 'experienced', 'noticed', 'discerned'],
+    'heard': ['detected', 'caught', 'perceived', 'noticed', 'discerned', 'ascertained'],
+    'saw': ['spotted', 'noticed', 'observed', 'glimpsed', 'caught sight of', 'beheld', 'witnessed', 'perceived'],
+    'moved': ['shifted', 'stirred', 'budged', 'relocated', 'transitioned', 'migrated'],
+    'stood': ['rose', 'remained upright', 'positioned herself', 'positioned himself', 'erected himself', 'erected herself'],
+    'sat': ['settled', 'perched', 'rested', 'seated herself', 'seated himself', 'reclined'],
+    'pulled': ['tugged', 'yanked', 'drew', 'dragged', 'hauled', 'extracted'],
+    'pushed': ['shoved', 'pressed', 'thrust', 'nudged', 'propelled', 'impelled'],
+    'held': ['gripped', 'clutched', 'grasped', 'clenched', 'clasped', 'retained'],
+    'opened': ['unlocked', 'unsealed', 'spread', 'unlatched', 'unfurled'],
+    'closed': ['shut', 'sealed', 'latched', 'fastened', 'secured'],
+    'grabbed': ['seized', 'snatched', 'clutched', 'gripped', 'apprehended'],
+    'touched': ['grazed', 'brushed', 'contacted', 'felt', 'caressed'],
     'smiled': ['grinned', 'beamed', 'smirked'],
-    'laughed': ['chuckled', 'giggled', 'snickered', 'cackled'],
-    'nodded': ['bobbed her head', 'bobbed his head', 'dipped her chin', 'dipped his chin'],
-    'shook': ['trembled', 'quivered', 'shuddered', 'vibrated'],
-    'whispered': ['murmured', 'muttered', 'breathed', 'hissed'],
-    'shouted': ['yelled', 'called out', 'hollered', 'bellowed'],
-    'spoke': ['talked', 'conversed', 'verbalized', 'articulated'],
-    'watched': ['observed', 'monitored', 'studied', 'eyed'],
-    'waited': ['paused', 'lingered', 'remained', 'stayed'],
-    'tried': ['attempted', 'endeavored', 'sought', 'ventured'],
-    'knew': ['understood', 'realized', 'recognized', 'comprehended'],
-    'thought': ['considered', 'pondered', 'reflected', 'mused'],
-    'wanted': ['desired', 'craved', 'wished', 'yearned'],
-    'needed': ['required', 'demanded', 'necessitated'],
+    'laughed': ['chuckled', 'giggled', 'snickered', 'cackled', 'guffawed'],
+    'nodded': ['bobbed her head', 'bobbed his head', 'dipped her chin', 'dipped his chin', 'acquiesced'],
+    'shook': ['trembled', 'quivered', 'shuddered', 'vibrated', 'oscillated'],
+    'whispered': ['murmured', 'muttered', 'breathed', 'hissed', 'susurrated'],
+    'shouted': ['yelled', 'called out', 'hollered', 'bellowed', 'exclaimed', 'proclaimed'],
+    'spoke': ['talked', 'conversed', 'verbalized', 'articulated', 'discoursed'],
+    'watched': ['observed', 'monitored', 'studied', 'eyed', 'surveyed', 'scrutinized'],
+    'waited': ['paused', 'lingered', 'remained', 'stayed', 'tarried', 'loitered'],
+    'tried': ['attempted', 'endeavored', 'sought', 'ventured', 'undertook'],
+    'knew': ['understood', 'realized', 'recognized', 'comprehended', 'discerned', 'apprehended'],
+    'thought': ['considered', 'pondered', 'reflected', 'mused', 'contemplated', 'ruminated'],
+    'wanted': ['desired', 'craved', 'wished', 'yearned', 'coveted', 'longed for'],
+    'needed': ['required', 'demanded', 'necessitated', 'mandated'],
     'seemed': ['appeared', 'looked', 'sounded'],
-    'began': ['started', 'commenced', 'initiated', 'launched'],
-    'stopped': ['halted', 'ceased', 'paused', 'froze'],
-    'continued': ['proceeded', 'persisted', 'carried on', 'maintained'],
-    'followed': ['trailed', 'pursued', 'tracked', 'shadowed'],
-    'reached': ['extended', 'stretched', 'arrived at', 'attained'],
-    'leaned': ['tilted', 'inclined', 'bent', 'slanted'],
-    'pressed': ['pushed', 'squeezed', 'compressed', 'applied pressure'],
-    'lifted': ['raised', 'hoisted', 'elevated', 'picked up'],
-    'dropped': ['released', 'let fall', 'let go of', 'discarded'],
+    'began': ['started', 'commenced', 'initiated', 'launched', 'inaugurated', 'embarked'],
+    'stopped': ['halted', 'ceased', 'paused', 'froze', 'terminated', 'discontinued'],
+    'continued': ['proceeded', 'persisted', 'carried on', 'maintained', 'sustained', 'perpetuated'],
+    'followed': ['trailed', 'pursued', 'tracked', 'shadowed', 'succeeded'],
+    'reached': ['extended', 'stretched', 'arrived at', 'attained', 'achieved'],
+    'leaned': ['tilted', 'inclined', 'bent', 'slanted', 'reclined'],
+    'pressed': ['pushed', 'squeezed', 'compressed', 'applied pressure', 'exerted force'],
+    'lifted': ['raised', 'hoisted', 'elevated', 'picked up', 'heaved'],
+    'dropped': ['released', 'let fall', 'let go of', 'discarded', 'relinquished'],
+    'showed': ['displayed', 'exhibited', 'demonstrated', 'revealed', 'manifested'],
+    'found': ['discovered', 'located', 'uncovered', 'detected', 'ascertained'],
+    'brought': ['carried', 'conveyed', 'transported', 'delivered'],
+    'kept': ['retained', 'maintained', 'preserved', 'sustained'],
+    'left': ['departed', 'exited', 'abandoned', 'vacated', 'withdrew'],
+    'ran': ['sprinted', 'dashed', 'rushed', 'bolted', 'hastened'],
+    'fell': ['dropped', 'descended', 'plummeted', 'tumbled', 'collapsed'],
+    'died': ['perished', 'expired', 'succumbed', 'passed away'],
+    'lived': ['existed', 'resided', 'dwelled', 'inhabited'],
+    'grew': ['expanded', 'increased', 'developed', 'flourished', 'burgeoned'],
+    'changed': ['altered', 'modified', 'transformed', 'converted', 'metamorphosed'],
+    'helped': ['assisted', 'aided', 'supported', 'facilitated'],
+    'hurt': ['injured', 'harmed', 'wounded', 'damaged'],
+    'broke': ['shattered', 'fractured', 'splintered', 'ruptured'],
+    'built': ['constructed', 'erected', 'assembled', 'fabricated'],
+    'wrote': ['penned', 'composed', 'authored', 'inscribed', 'transcribed'],
+    'read': ['perused', 'scanned', 'examined', 'studied'],
 
     // Body parts - CREATIVE WRITING CONTEXT
     // In narrative prose, metonymy and part-for-whole are standard
@@ -344,104 +361,138 @@ const SYNONYM_MAP = {
     'ticker': ['heart'], // Slang → proper
     'breath': ['exhale', 'inhale'],  // Context-dependent but common
 
-    // Common adjectives - INTENSITY MATCHED
-    // Keep similar intensity but allow creative writing flexibility
-    'big': ['large', 'sizeable'],
-    'small': ['little', 'compact'],  // NOT minuscule (too extreme)
-    'huge': ['enormous', 'massive'],
-    'tiny': ['minuscule'],
-    'good': ['fine', 'decent'],
-    'excellent': ['superb', 'outstanding'],
-    'bad': ['poor', 'unfavorable'],
-    'awful': ['terrible', 'dreadful'],
-    'old': ['aged', 'elderly'],
-    'ancient': ['archaic'],
-    'new': ['fresh', 'recent'],
-    'dark': ['dim', 'shadowy', 'murky'],  // Shades acceptable in creative writing
-    'light': ['bright', 'illuminated'],
+    // Common adjectives - BASIC TO COLLEGE LEVEL
+    // Vocabulary range from common to sophisticated
+    'big': ['large', 'sizeable', 'substantial', 'considerable'],
+    'small': ['little', 'compact', 'diminutive'],  // NOT minuscule (too extreme)
+    'huge': ['enormous', 'massive', 'colossal', 'immense', 'prodigious', 'gargantuan'],
+    'tiny': ['minuscule', 'infinitesimal', 'microscopic'],
+    'good': ['fine', 'decent', 'admirable', 'commendable'],
+    'excellent': ['superb', 'outstanding', 'exemplary', 'exceptional', 'superlative'],
+    'bad': ['poor', 'unfavorable', 'inferior', 'substandard'],
+    'awful': ['terrible', 'dreadful', 'abysmal', 'atrocious', 'deplorable'],
+    'old': ['aged', 'elderly', 'antiquated', 'venerable'],
+    'ancient': ['archaic', 'primordial', 'antediluvian'],
+    'new': ['fresh', 'recent', 'novel', 'contemporary'],
+    'dark': ['dim', 'shadowy', 'murky', 'obscure', 'tenebrous'],
+    'light': ['bright', 'illuminated', 'luminous', 'radiant'],
+    'happy': ['cheerful', 'joyful', 'content', 'elated', 'jubilant'],
+    'sad': ['unhappy', 'sorrowful', 'melancholy', 'dejected', 'despondent'],
+    'angry': ['mad', 'furious', 'irate', 'incensed', 'wrathful'],
+    'scared': ['afraid', 'frightened', 'terrified', 'apprehensive', 'trepidatious'],
+    'brave': ['courageous', 'valiant', 'bold', 'intrepid', 'dauntless'],
+    'smart': ['intelligent', 'clever', 'bright', 'astute', 'sagacious', 'perspicacious'],
+    'stupid': ['dumb', 'foolish', 'idiotic', 'asinine', 'moronic'],
+    'pretty': ['attractive', 'comely', 'fair', 'fetching'],
+    'handsome': ['attractive', 'good-looking', 'striking'],
     // Colors - shades ARE acceptable in descriptive prose
     'red': ['crimson', 'scarlet'],  // Shade variations OK for creative writing
     'blue': ['azure', 'cobalt'],
     'green': ['emerald', 'jade'],
     'white': ['pale', 'ivory'],
     'black': ['ebony', 'obsidian'],
-    'gray': ['grey', 'silver'],  // Spelling + shade variation
-    'soft': ['gentle', 'tender'],  // Similar meaning
-    'hard': ['solid', 'firm'],  // Removed: rigid, stiff (slightly different)
-    'hot': ['heated'],  // Removed intensity variations
-    'warm': ['heated'],  // Similar to hot but less intense
-    'burning': ['scorching'],  // Extreme heat
-    'cold': ['chilly'],  // Removed extremes
-    'cool': ['chilly'],  // Similar to cold
-    'frigid': ['icy', 'frozen'],  // Extreme cold
-    'wet': ['damp', 'moist'],  // Removed: soggy, drenched (too extreme)
-    'soaked': ['drenched', 'saturated'],  // Extreme wet
-    'dry': ['arid', 'parched'],  // Actually synonyms for very dry
-    'loud': ['noisy'],  // Removed extremes
-    'deafening': ['thunderous'],  // Extreme loud
-    'quiet': ['silent', 'hushed'],  // Removed: still (different meaning)
-    'fast': ['quick', 'rapid', 'swift', 'speedy'],  // All true synonyms
-    'slow': ['sluggish', 'leisurely'],  // Removed: gradual (different), unhurried (adds connotation)
-    'heavy': ['weighty'],  // Removed: massive, ponderous (too extreme)
-    'empty': ['vacant', 'hollow'],  // Removed: void, bare (different contexts)
-    'full': ['filled'],  // Removed: packed, loaded, brimming (too extreme)
-    'long': ['lengthy', 'extended'],  // True synonyms only
-    'short': ['brief'],  // Removed: compact, concise, abbreviated (different contexts)
-    'wide': ['broad'],  // Removed: expansive, extensive, spacious (different meanings)
-    'narrow': ['slim', 'slender'],  // For physical width only
-    'high': ['tall', 'elevated'],  // Removed: towering, lofty (too extreme/poetic)
-    'deep': ['profound'],  // Can mean both physical and abstract depth
-    'thick': ['dense'],  // Removed: chunky, hefty (different connotations)
-    'thin': ['slender', 'slim', 'lean'],  // True synonyms
-    'strong': ['powerful', 'robust', 'sturdy'],  // True synonyms
-    'weak': ['feeble', 'frail'],  // Removed: fragile, delicate (different contexts)
-    'rough': ['coarse', 'uneven'],  // Removed: jagged, rugged (more specific)
-    'smooth': ['sleek', 'even'],  // Removed: polished, silky (too specific)
-    'sharp': ['keen', 'pointed'],  // Removed: acute, piercing (different contexts)
-    'dull': ['blunt'],  // Removed: boring, lifeless (different meaning for "dull")
-    'clean': ['spotless'],  // Removed: pristine, pure, immaculate (too extreme)
-    'dirty': ['filthy', 'soiled'],  // Removed: grimy, unclean (slightly different)
-    'beautiful': ['lovely', 'attractive'],  // Removed: gorgeous, stunning (too strong)
-    'gorgeous': ['stunning'],  // Strong beauty
-    'ugly': ['unattractive', 'unsightly'],  // Removed: hideous, grotesque (too extreme)
+    'gray': ['grey', 'silver', 'ashen'],
+    'soft': ['gentle', 'tender', 'pliant', 'supple'],
+    'hard': ['solid', 'firm', 'rigid', 'unyielding'],
+    'hot': ['heated', 'sweltering', 'torrid'],
+    'warm': ['heated', 'tepid', 'lukewarm'],
+    'burning': ['scorching', 'searing', 'blazing'],
+    'cold': ['chilly', 'frigid', 'gelid'],
+    'cool': ['chilly', 'refreshing'],
+    'wet': ['damp', 'moist', 'sodden'],
+    'soaked': ['drenched', 'saturated', 'waterlogged'],
+    'dry': ['arid', 'parched', 'desiccated'],
+    'loud': ['noisy', 'clamorous', 'boisterous'],
+    'deafening': ['thunderous', 'earsplitting'],
+    'quiet': ['silent', 'hushed', 'tranquil', 'serene'],
+    'fast': ['quick', 'rapid', 'swift', 'speedy', 'expeditious'],
+    'slow': ['sluggish', 'leisurely', 'languid', 'torpid'],
+    'heavy': ['weighty', 'ponderous', 'burdensome'],
+    'empty': ['vacant', 'hollow', 'void', 'barren', 'desolate'],
+    'full': ['filled', 'replete', 'saturated', 'brimming'],
+    'long': ['lengthy', 'extended', 'prolonged', 'protracted'],
+    'short': ['brief', 'concise', 'abbreviated', 'truncated'],
+    'wide': ['broad', 'expansive', 'extensive'],
+    'narrow': ['slim', 'slender', 'constricted'],
+    'high': ['tall', 'elevated', 'lofty', 'towering'],
+    'deep': ['profound', 'abyssal', 'unfathomable'],
+    'thick': ['dense', 'viscous', 'substantial'],
+    'thin': ['slender', 'slim', 'lean', 'gaunt', 'emaciated'],
+    'strong': ['powerful', 'robust', 'sturdy', 'formidable', 'mighty'],
+    'weak': ['feeble', 'frail', 'infirm', 'enervated'],
+    'rough': ['coarse', 'uneven', 'jagged', 'rugged'],
+    'smooth': ['sleek', 'even', 'polished', 'silky'],
+    'sharp': ['keen', 'pointed', 'acute', 'piercing'],
+    'dull': ['blunt', 'obtuse'],
+    'clean': ['spotless', 'pristine', 'immaculate', 'unblemished'],
+    'dirty': ['filthy', 'soiled', 'grimy', 'squalid'],
+    'beautiful': ['lovely', 'attractive', 'exquisite', 'resplendent'],
+    'gorgeous': ['stunning', 'magnificent', 'splendid'],
+    'ugly': ['unattractive', 'unsightly', 'hideous', 'grotesque'],
+    'strange': ['odd', 'peculiar', 'bizarre', 'anomalous', 'aberrant'],
+    'normal': ['ordinary', 'typical', 'conventional', 'standard'],
+    'rare': ['uncommon', 'scarce', 'infrequent', 'anomalous'],
+    'common': ['usual', 'ordinary', 'prevalent', 'ubiquitous'],
+    'easy': ['simple', 'effortless', 'uncomplicated', 'facile'],
+    'hard': ['difficult', 'challenging', 'arduous', 'onerous'],
+    'important': ['significant', 'crucial', 'vital', 'paramount', 'pivotal'],
+    'dangerous': ['perilous', 'hazardous', 'treacherous', 'precarious'],
+    'safe': ['secure', 'protected', 'sheltered'],
+    'crazy': ['insane', 'mad', 'deranged', 'demented', 'lunatic'],
+    'calm': ['peaceful', 'tranquil', 'serene', 'placid', 'unperturbed'],
 
-    // Common nouns - CREATIVE WRITING CONTEXT
-    // Poetic/metaphorical usage is standard in narrative prose
-    'thing': ['object', 'item'],
-    'stuff': ['things', 'items'],
-    'place': ['location', 'spot'],
-    'way': ['manner', 'method'],
-    'room': ['chamber'],
-    'door': ['doorway', 'portal', 'threshold'],  // Threshold acceptable in creative writing
-    'wall': ['partition', 'barrier'],  // Metaphorical use is fine
-    'window': ['pane'],  // Part-for-whole acceptable
-    'light': ['illumination', 'glow', 'lamp'],  // Metonymy: "turn on the light" = "lamp"
-    'fire': ['flame', 'blaze'],  // Part-for-whole common in prose
-    'sound': ['noise'],
-    'smell': ['scent', 'odor'],
-    'aroma': ['fragrance'],
-    'street': ['road', 'avenue'],  // Common variations
-    'house': ['home', 'dwelling', 'residence'],  // True synonyms
-    'building': ['structure', 'edifice'],  // Removed: construction (the act, not the thing)
-    'city': ['town'],  // Removed: metropolis, municipality (different sizes/types)
-    'world': ['globe'],  // Removed: planet, earth, realm (different contexts)
-    'person': ['individual'],  // Removed: human, being, soul (different contexts)
-    'man': ['guy', 'fellow'],  // Informal synonyms (removed: gentleman, male - different register)
-    'woman': ['lady', 'gal'],  // Informal synonyms
-    'child': ['kid', 'youngster'],  // Removed: youth, minor (different contexts)
-    'friend': ['companion', 'pal', 'buddy'],  // Removed: associate (business context)
-    'enemy': ['foe', 'adversary'],  // Removed: opponent, rival (competition vs hostility)
-    'moment': ['instant'],  // Removed: second, beat, breath (different meanings)
-    'silence': ['quiet', 'stillness', 'hush'],  // True synonyms
-    'noise': ['sound', 'racket'],  // Removed: clamor, din (too specific)
-    'word': ['term'],  // Removed: expression, utterance (different)
-    'question': ['query', 'inquiry'],  // Removed: interrogation (hostile connotation)
-    'answer': ['response', 'reply'],  // Removed: solution (for problems, not questions)
-    'problem': ['issue', 'difficulty'],  // Removed: challenge, complication (different connotations)
-    'idea': ['thought', 'notion', 'concept'],  // True synonyms
-    'feeling': ['emotion', 'sentiment'],  // Removed: sensation (physical)
-    'pain': ['ache', 'hurt'],  // Removed: suffering, discomfort (different intensities)
-    'pleasure': ['delight', 'enjoyment'],  // Removed: satisfaction (different type)
+    // Common nouns - BASIC TO COLLEGE LEVEL
+    // Vocabulary range from common to sophisticated
+    'thing': ['object', 'item', 'article', 'entity'],
+    'stuff': ['things', 'items', 'possessions', 'belongings'],
+    'place': ['location', 'spot', 'locale', 'venue', 'locus'],
+    'way': ['manner', 'method', 'approach', 'mode'],
+    'room': ['chamber', 'quarters', 'compartment'],
+    'door': ['doorway', 'portal', 'threshold', 'entrance'],
+    'wall': ['partition', 'barrier', 'barricade'],
+    'window': ['pane', 'aperture'],
+    'light': ['illumination', 'glow', 'lamp', 'luminescence', 'radiance'],
+    'fire': ['flame', 'blaze', 'conflagration', 'inferno'],
+    'sound': ['noise', 'resonance', 'reverberation'],
+    'smell': ['scent', 'odor', 'aroma', 'fragrance', 'redolence'],
+    'street': ['road', 'avenue', 'thoroughfare', 'boulevard'],
+    'house': ['home', 'dwelling', 'residence', 'abode', 'domicile'],
+    'building': ['structure', 'edifice', 'construction'],
+    'city': ['town', 'metropolis', 'municipality', 'urban center'],
+    'world': ['globe', 'planet', 'earth', 'sphere'],
+    'person': ['individual', 'human', 'being', 'soul'],
+    'man': ['guy', 'fellow', 'gentleman', 'male'],
+    'woman': ['lady', 'gal', 'female'],
+    'child': ['kid', 'youngster', 'youth', 'juvenile'],
+    'friend': ['companion', 'pal', 'buddy', 'comrade', 'confidant'],
+    'enemy': ['foe', 'adversary', 'antagonist', 'nemesis'],
+    'moment': ['instant', 'second', 'juncture'],
+    'silence': ['quiet', 'stillness', 'hush', 'tranquility'],
+    'noise': ['sound', 'racket', 'clamor', 'din', 'cacophony'],
+    'word': ['term', 'expression', 'utterance', 'vocable'],
+    'question': ['query', 'inquiry', 'interrogation'],
+    'answer': ['response', 'reply', 'retort', 'rejoinder'],
+    'problem': ['issue', 'difficulty', 'dilemma', 'predicament', 'quandary'],
+    'idea': ['thought', 'notion', 'concept', 'conception'],
+    'feeling': ['emotion', 'sentiment', 'sensation', 'affect'],
+    'pain': ['ache', 'hurt', 'suffering', 'discomfort', 'agony', 'torment'],
+    'pleasure': ['delight', 'enjoyment', 'gratification', 'satisfaction'],
+    'fear': ['dread', 'terror', 'fright', 'trepidation', 'apprehension'],
+    'hope': ['optimism', 'expectation', 'aspiration'],
+    'anger': ['rage', 'fury', 'wrath', 'ire', 'indignation'],
+    'love': ['affection', 'adoration', 'devotion', 'fondness'],
+    'hate': ['loathing', 'abhorrence', 'detestation', 'animosity'],
+    'truth': ['fact', 'reality', 'veracity', 'verity'],
+    'lie': ['falsehood', 'untruth', 'fabrication', 'prevarication'],
+    'power': ['strength', 'force', 'might', 'potency'],
+    'weakness': ['frailty', 'feebleness', 'vulnerability', 'infirmity'],
+    'victory': ['triumph', 'conquest', 'success'],
+    'defeat': ['loss', 'failure', 'rout'],
+    'war': ['conflict', 'battle', 'combat', 'warfare', 'hostilities'],
+    'peace': ['tranquility', 'serenity', 'harmony', 'concord'],
+    'journey': ['trip', 'voyage', 'expedition', 'trek', 'sojourn'],
+    'end': ['conclusion', 'termination', 'finale', 'cessation', 'denouement'],
+    'beginning': ['start', 'commencement', 'inception', 'genesis', 'origin'],
 
     // Common 2-word phrases (will be matched as complete phrases)
     'combat boots': ['military footwear', 'tactical boots', 'heavy boots', 'steel-toed boots'],
