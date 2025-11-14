@@ -138,10 +138,13 @@ const modifier = (text) => {
 
     // Store analysis in history
     if (analysis) {
+        // Initialize history array
         state.bonepokeHistory = state.bonepokeHistory || [];
+
+        // Add current analysis
         state.bonepokeHistory.push(analysis);
 
-        // Keep only last 5 analyses for memory efficiency
+        // Trim to keep only last 5 analyses for memory efficiency
         if (state.bonepokeHistory.length > 5) {
             state.bonepokeHistory = state.bonepokeHistory.slice(-5);
         }
@@ -151,7 +154,9 @@ const modifier = (text) => {
     }
 
     // === CROSS-OUTPUT TRACKING ===
-    // Track last 5 outputs with n-grams to detect repeated phrases across turns
+    // Track last 3 outputs with n-grams to detect repeated phrases across turns
+
+    // Initialize arrays
     state.outputHistory = state.outputHistory || [];
     state.turnCount = (state.turnCount || 0) + 1;
 
@@ -173,15 +178,15 @@ const modifier = (text) => {
         }
     });
 
-    // Store current output in history (NO FULL TEXT - too large!)
+    // Add current output to history (NO FULL TEXT - too large!)
     state.outputHistory.push({
         turn: state.turnCount,
         ngrams: significantNGrams  // Only significant n-grams, compressed keys
     });
 
-    // Keep only last 3 outputs for memory efficiency (reduced from 5)
+    // Trim to keep only last 3 outputs for memory efficiency
     if (state.outputHistory.length > 3) {
-        state.outputHistory.shift();
+        state.outputHistory = state.outputHistory.slice(-3);
     }
 
     // Find phrases repeated across outputs

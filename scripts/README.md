@@ -93,7 +93,6 @@ const CONFIG = {
         enabled: true,          // Toggle analysis on/off
         fatigueThreshold: 3,    // Word repetition threshold (2-5)
         qualityThreshold: 2.5,  // Min avg score (1.0-5.0)
-        maxRegenAttempts: 2,    // Regeneration limit (0-3)
         enableDynamicCorrection: true,  // Auto-inject guidance
         debugLogging: false     // Console logging
     },
@@ -111,13 +110,13 @@ const CONFIG = {
 **Conservative (Balanced Quality/Diversity):**
 ```javascript
 vs: { enabled: true, k: 5, tau: 0.10, adaptive: false }
-bonepoke: { enabled: true, fatigueThreshold: 4, qualityThreshold: 2.5, maxRegenAttempts: 2 }
+bonepoke: { enabled: true, fatigueThreshold: 4, qualityThreshold: 2.5 }
 ```
 
 **Aggressive (Maximum Diversity):**
 ```javascript
 vs: { enabled: true, k: 7, tau: 0.08, adaptive: true }
-bonepoke: { enabled: true, fatigueThreshold: 3, qualityThreshold: 3.0, maxRegenAttempts: 3 }
+bonepoke: { enabled: true, fatigueThreshold: 3, qualityThreshold: 3.0 }
 ```
 
 **VS Only (Lightweight):**
@@ -270,15 +269,11 @@ These cards are **temporary** and cleaned up on the next turn.
 When output quality falls below threshold:
 
 1. Output script detects low score
-2. Returns `{ text: '', stop: true }`
-3. AI Dungeon automatically regenerates
-4. Process repeats up to `maxRegenAttempts` (default: 2)
-5. After limit, output is accepted regardless of quality
+2. Bonepoke analysis identifies specific issues
+3. Dynamic correction cards provide guidance
+4. Quality metrics logged for monitoring
 
-**Safety Features:**
-- Hard limit prevents infinite loops
-- Each regeneration logged in console
-- State tracks attempts per output
+**Note:** This system currently focuses on analysis and correction rather than automatic regeneration, ensuring the AI learns to improve rather than repeatedly retrying.
 
 ## 📊 Best Practices
 
@@ -319,11 +314,11 @@ If Memory Bank is OFF, dynamic correction will fail silently.
 
 **Solution:** Enable Memory Bank in scenario settings.
 
-### Excessive regenerations
+### Quality warnings in console
 
-**Solution:** Lower `qualityThreshold` or increase `maxRegenAttempts`:
+**Solution:** Adjust `qualityThreshold` to reduce sensitivity:
 ```javascript
-bonepoke: { qualityThreshold: 2.0, maxRegenAttempts: 1 }
+bonepoke: { qualityThreshold: 2.0 }
 ```
 
 ### VS not increasing diversity

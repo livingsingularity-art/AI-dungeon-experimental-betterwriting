@@ -41,23 +41,14 @@ const modifier = (text) => {
     if (CONFIG.vs.enabled && CONFIG.vs.adaptive) {
         const adaptedParams = VerbalizedSampling.analyzeContext(text);
 
-        // Temporarily adjust VS parameters
-        const originalK = CONFIG.vs.k;
-        const originalTau = CONFIG.vs.tau;
-
-        CONFIG.vs.k = adaptedParams.k;
-        CONFIG.vs.tau = adaptedParams.tau;
-
-        // Update VS card with new params
-        VerbalizedSampling.updateCard();
+        // Update VS card with adapted parameters (no CONFIG mutation)
+        VerbalizedSampling.updateCard(adaptedParams);
 
         // Log adaptation
-        if (CONFIG.vs.debugLogging) {
-            safeLog(`VS adapted: k=${adaptedParams.k}, tau=${adaptedParams.tau}`, 'info');
-        }
+        safeLog(`VS adapted: k=${adaptedParams.k}, tau=${adaptedParams.tau}`, 'info');
 
-        // Reset after this turn (will be re-evaluated next time)
-        state.vsAdaptedParams = { originalK, originalTau };
+        // Store adapted params for reference if needed
+        state.vsAdaptedParams = adaptedParams;
     }
 
     // Custom Continue handling

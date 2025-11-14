@@ -542,11 +542,16 @@ const VerbalizedSampling = (() => {
 
     /**
      * Generate VS instruction based on current config
+     * @param {Object} params - Optional parameters to override CONFIG
+     * @param {number} params.k - Number of candidates
+     * @param {number} params.tau - Probability threshold
      */
-    const generateInstruction = () => {
+    const generateInstruction = (params = {}) => {
         if (!CONFIG.vs.enabled) return '';
 
-        const { k, tau } = CONFIG.vs;
+        // Use provided params or fall back to CONFIG
+        const k = params.k !== undefined ? params.k : CONFIG.vs.k;
+        const tau = params.tau !== undefined ? params.tau : CONFIG.vs.tau;
 
         return `[Internal Sampling Protocol:
 - mentally generate ${k} distinct seamless candidate continuations
@@ -602,11 +607,14 @@ const VerbalizedSampling = (() => {
 
     /**
      * Update VS card with current instruction
+     * @param {Object} params - Optional parameters to override CONFIG
+     * @param {number} params.k - Number of candidates
+     * @param {number} params.tau - Probability threshold
      */
-    const updateCard = () => {
+    const updateCard = (params = {}) => {
         const card = ensureCard();
         if (card) {
-            card.entry = generateInstruction();
+            card.entry = generateInstruction(params);
         }
     };
 
@@ -615,9 +623,9 @@ const VerbalizedSampling = (() => {
         analyzeContext,
         ensureCard,
         updateCard,
-        getInstruction: () => {
+        getInstruction: (params = {}) => {
             ensureCard();
-            return generateInstruction();
+            return generateInstruction(params);
         }
     };
 })();
