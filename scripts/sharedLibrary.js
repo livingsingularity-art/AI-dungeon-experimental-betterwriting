@@ -333,132 +333,108 @@ const SYNONYM_MAP = {
     'lifted': ['raised', 'hoisted', 'elevated', 'picked up'],
     'dropped': ['released', 'let fall', 'let go of', 'discarded'],
 
-    // Body parts (common in repetitive prose)
-    'eyes': ['gaze', 'stare', 'glance', 'look', 'vision'],
-    'hands': ['fingers', 'palms', 'grip', 'fists'],
-    'face': ['visage', 'features', 'countenance', 'expression'],
-    'voice': ['tone', 'words', 'speech', 'vocals'],
-    'head': ['skull', 'crown', 'noggin'],
-    'hair': ['locks', 'tresses', 'mane', 'strands'],
-    'lips': ['mouth', 'maw'],
-    'teeth': ['fangs', 'incisors', 'chompers'],
-    'arms': ['limbs', 'appendages'],
-    'legs': ['limbs', 'shanks'],
-    'feet': ['tootsies', 'paws'],
-    'shoulders': ['blades'],
-    'chest': ['torso', 'breast'],
-    'back': ['spine', 'rear'],
-    'neck': ['throat', 'nape'],
-    'skin': ['flesh', 'hide', 'complexion'],
-    'heart': ['ticker', 'pulse'],
-    'breath': ['respiration', 'exhalation', 'inhalation'],
-    'body': ['form', 'figure', 'physique', 'frame'],
-    'fingers': ['digits', 'hands'],
-    'throat': ['neck', 'gullet', 'esophagus'],
+    // Body parts - REMOVED MOST
+    // Body parts are specific anatomical terms and shouldn't be "synonymized"
+    // Replacing "fingers" with "hands" or "eyes" with "gaze" changes meaning
+    // Only keeping a few true informal/slang variations
+    'noggin': ['head'],  // Slang → proper
+    'ticker': ['heart'], // Slang → proper
+    // Everything else: let body parts repeat naturally - they're specific references
 
-    // Common adjectives
-    'big': ['large', 'huge', 'enormous', 'massive', 'substantial', 'sizeable'],
-    'small': ['tiny', 'little', 'minuscule', 'compact', 'petite'],
-    'good': ['fine', 'excellent', 'pleasant', 'favorable', 'decent', 'quality'],
-    'bad': ['poor', 'unpleasant', 'unfavorable', 'awful', 'terrible', 'negative'],
-    'old': ['aged', 'ancient', 'elderly', 'weathered', 'vintage'],
-    'new': ['fresh', 'recent', 'modern', 'novel', 'contemporary'],
-    'dark': ['dim', 'shadowy', 'murky', 'gloomy', 'obscure'],
-    'light': ['bright', 'illuminated', 'radiant', 'luminous', 'pale'],
-    'red': ['crimson', 'scarlet', 'ruby', 'vermillion'],
-    'blue': ['azure', 'cobalt', 'navy', 'sapphire'],
-    'green': ['emerald', 'jade', 'verdant', 'olive'],
-    'white': ['ivory', 'pale', 'alabaster', 'cream'],
-    'black': ['ebony', 'obsidian', 'raven', 'coal'],
-    'gray': ['grey', 'silver', 'ashen', 'slate'],
-    'brown': ['tan', 'beige', 'chestnut', 'umber'],
-    'yellow': ['golden', 'amber', 'blonde', 'corn'],
-    'purple': ['violet', 'lavender', 'plum', 'mauve'],
-    'orange': ['amber', 'tangerine', 'rust', 'copper'],
-    'soft': ['gentle', 'tender', 'delicate', 'plush'],
-    'hard': ['solid', 'firm', 'rigid', 'stiff'],
-    'hot': ['warm', 'heated', 'burning', 'scorching'],
-    'cold': ['cool', 'chilly', 'frigid', 'icy'],
-    'wet': ['damp', 'moist', 'soggy', 'drenched'],
-    'dry': ['arid', 'parched', 'dehydrated'],
-    'loud': ['noisy', 'deafening', 'booming', 'thunderous'],
-    'quiet': ['silent', 'hushed', 'muted', 'still'],
-    'fast': ['quick', 'rapid', 'swift', 'speedy'],
-    'slow': ['sluggish', 'gradual', 'leisurely', 'unhurried'],
-    'heavy': ['weighty', 'massive', 'ponderous', 'hefty'],
-    'empty': ['vacant', 'hollow', 'void', 'bare'],
-    'full': ['filled', 'packed', 'loaded', 'brimming'],
-    'long': ['lengthy', 'extended', 'prolonged', 'elongated'],
-    'short': ['brief', 'compact', 'concise', 'abbreviated'],
-    'wide': ['broad', 'expansive', 'extensive', 'spacious'],
-    'narrow': ['slim', 'slender', 'thin', 'tight'],
-    'high': ['tall', 'elevated', 'towering', 'lofty'],
-    'deep': ['profound', 'bottomless', 'cavernous'],
-    'thick': ['dense', 'chunky', 'hefty', 'substantial'],
-    'thin': ['slender', 'slim', 'lean', 'gaunt'],
-    'strong': ['powerful', 'mighty', 'robust', 'sturdy'],
-    'weak': ['feeble', 'frail', 'fragile', 'delicate'],
-    'rough': ['coarse', 'jagged', 'uneven', 'rugged'],
-    'smooth': ['sleek', 'polished', 'even', 'silky'],
-    'sharp': ['keen', 'pointed', 'acute', 'piercing'],
-    'dull': ['blunt', 'boring', 'lifeless', 'muted'],
-    'clean': ['pristine', 'spotless', 'pure', 'immaculate'],
-    'dirty': ['filthy', 'grimy', 'soiled', 'unclean'],
-    'beautiful': ['lovely', 'gorgeous', 'stunning', 'attractive'],
-    'ugly': ['unattractive', 'unsightly', 'hideous', 'grotesque'],
+    // Common adjectives - SIMILAR INTENSITY ONLY
+    // Don't escalate/de-escalate: "small" should not become "minuscule"
+    'big': ['large', 'sizeable'],  // Similar intensity
+    'small': ['little', 'compact'],  // Removed: tiny, minuscule (too extreme)
+    'huge': ['enormous', 'massive'],  // Extreme size adjectives
+    'tiny': ['minuscule'],  // Extreme small adjectives
+    'good': ['fine', 'decent'],  // Removed: excellent (too strong)
+    'excellent': ['superb', 'outstanding'],  // Strong positives
+    'bad': ['poor', 'unfavorable'],  // Removed: awful, terrible (too strong)
+    'awful': ['terrible', 'dreadful'],  // Strong negatives
+    'old': ['aged', 'elderly'],  // Removed: ancient (too extreme)
+    'ancient': ['archaic', 'primeval'],  // Extreme age
+    'new': ['fresh', 'recent'],  // Removed: modern, novel (different connotations)
+    'dark': ['dim', 'shadowy'],  // Removed: murky, gloomy (different meanings)
+    'light': ['bright', 'illuminated'],  // Removed: radiant, luminous (too poetic/strong)
+    // Colors - REMOVED
+    // "Red", "crimson", "scarlet" are different SHADES, not synonyms
+    // Replacing "red eyes" with "crimson eyes" changes the specific shade
+    // Only keeping gray/grey spelling variation
+    'gray': ['grey'],  // Spelling variation only
+    'soft': ['gentle', 'tender'],  // Similar meaning
+    'hard': ['solid', 'firm'],  // Removed: rigid, stiff (slightly different)
+    'hot': ['heated'],  // Removed intensity variations
+    'warm': ['heated'],  // Similar to hot but less intense
+    'burning': ['scorching'],  // Extreme heat
+    'cold': ['chilly'],  // Removed extremes
+    'cool': ['chilly'],  // Similar to cold
+    'frigid': ['icy', 'frozen'],  // Extreme cold
+    'wet': ['damp', 'moist'],  // Removed: soggy, drenched (too extreme)
+    'soaked': ['drenched', 'saturated'],  // Extreme wet
+    'dry': ['arid', 'parched'],  // Actually synonyms for very dry
+    'loud': ['noisy'],  // Removed extremes
+    'deafening': ['thunderous'],  // Extreme loud
+    'quiet': ['silent', 'hushed'],  // Removed: still (different meaning)
+    'fast': ['quick', 'rapid', 'swift', 'speedy'],  // All true synonyms
+    'slow': ['sluggish', 'leisurely'],  // Removed: gradual (different), unhurried (adds connotation)
+    'heavy': ['weighty'],  // Removed: massive, ponderous (too extreme)
+    'empty': ['vacant', 'hollow'],  // Removed: void, bare (different contexts)
+    'full': ['filled'],  // Removed: packed, loaded, brimming (too extreme)
+    'long': ['lengthy', 'extended'],  // True synonyms only
+    'short': ['brief'],  // Removed: compact, concise, abbreviated (different contexts)
+    'wide': ['broad'],  // Removed: expansive, extensive, spacious (different meanings)
+    'narrow': ['slim', 'slender'],  // For physical width only
+    'high': ['tall', 'elevated'],  // Removed: towering, lofty (too extreme/poetic)
+    'deep': ['profound'],  // Can mean both physical and abstract depth
+    'thick': ['dense'],  // Removed: chunky, hefty (different connotations)
+    'thin': ['slender', 'slim', 'lean'],  // True synonyms
+    'strong': ['powerful', 'robust', 'sturdy'],  // True synonyms
+    'weak': ['feeble', 'frail'],  // Removed: fragile, delicate (different contexts)
+    'rough': ['coarse', 'uneven'],  // Removed: jagged, rugged (more specific)
+    'smooth': ['sleek', 'even'],  // Removed: polished, silky (too specific)
+    'sharp': ['keen', 'pointed'],  // Removed: acute, piercing (different contexts)
+    'dull': ['blunt'],  // Removed: boring, lifeless (different meaning for "dull")
+    'clean': ['spotless'],  // Removed: pristine, pure, immaculate (too extreme)
+    'dirty': ['filthy', 'soiled'],  // Removed: grimy, unclean (slightly different)
+    'beautiful': ['lovely', 'attractive'],  // Removed: gorgeous, stunning (too strong)
+    'gorgeous': ['stunning'],  // Strong beauty
+    'ugly': ['unattractive', 'unsightly'],  // Removed: hideous, grotesque (too extreme)
 
-    // Common nouns
-    'thing': ['object', 'item', 'element', 'matter'],
-    'stuff': ['items', 'objects', 'materials', 'belongings'],
-    'place': ['location', 'spot', 'site', 'area', 'venue'],
-    'time': ['moment', 'period', 'instant', 'duration', 'interval'],
-    'way': ['manner', 'method', 'approach', 'path', 'route'],
-    'room': ['chamber', 'space', 'quarters', 'compartment'],
-    'door': ['entrance', 'doorway', 'portal', 'threshold', 'entry'],
-    'wall': ['partition', 'barrier', 'surface', 'panel'],
-    'floor': ['ground', 'surface', 'flooring', '底'],
-    'window': ['pane', 'opening', 'aperture'],
-    'table': ['desk', 'surface', 'counter'],
-    'chair': ['seat', 'stool', 'bench'],
-    'light': ['illumination', 'glow', 'radiance', 'lamp'],
-    'sound': ['noise', 'audio', 'tone', 'resonance'],
-    'smell': ['scent', 'odor', 'aroma', 'fragrance'],
-    'taste': ['flavor', 'savor', 'tang'],
-    'touch': ['contact', 'feel', 'sensation'],
-    'air': ['atmosphere', 'breeze', 'wind'],
-    'water': ['liquid', 'fluid', 'moisture'],
-    'fire': ['flame', 'blaze', 'inferno'],
-    'earth': ['ground', 'soil', 'dirt', 'terrain'],
-    'sky': ['heavens', 'firmament', 'atmosphere'],
-    'ground': ['earth', 'floor', 'terrain', 'surface'],
-    'street': ['road', 'avenue', 'lane', 'pathway'],
-    'house': ['home', 'dwelling', 'residence', 'abode'],
-    'building': ['structure', 'edifice', 'construction'],
-    'city': ['town', 'metropolis', 'municipality', 'urban center'],
-    'world': ['globe', 'planet', 'earth', 'realm'],
-    'person': ['individual', 'human', 'being', 'soul'],
-    'man': ['gentleman', 'male', 'fellow', 'guy'],
-    'woman': ['lady', 'female', 'gal'],
-    'child': ['kid', 'youngster', 'youth', 'minor'],
-    'friend': ['companion', 'pal', 'buddy', 'associate'],
-    'enemy': ['foe', 'adversary', 'opponent', 'rival'],
-    'moment': ['instant', 'second', 'beat', 'breath'],
-    'minute': ['moment', 'instant', 'while'],
-    'hour': ['period', 'span', 'stretch'],
-    'night': ['evening', 'darkness', 'nighttime'],
-    'morning': ['dawn', 'daybreak', 'sunrise'],
-    'afternoon': ['midday', 'daytime'],
-    'shadow': ['shade', 'silhouette', 'darkness', 'outline'],
-    'silence': ['quiet', 'stillness', 'hush', 'calm'],
-    'noise': ['sound', 'racket', 'clamor', 'din'],
-    'word': ['term', 'expression', 'utterance'],
-    'question': ['query', 'inquiry', 'interrogation'],
-    'answer': ['response', 'reply', 'solution'],
-    'problem': ['issue', 'difficulty', 'challenge', 'complication'],
-    'idea': ['thought', 'notion', 'concept', 'plan'],
-    'feeling': ['emotion', 'sensation', 'sentiment'],
-    'pain': ['ache', 'hurt', 'suffering', 'discomfort'],
-    'pleasure': ['delight', 'enjoyment', 'satisfaction'],
+    // Common nouns - TRUE SYNONYMS ONLY
+    'thing': ['object', 'item'],  // General objects
+    'stuff': ['things', 'items'],  // Informal plural
+    'place': ['location', 'spot'],  // Removed: site, area, venue (different contexts)
+    'way': ['manner', 'method'],  // Removed: path, route (physical ways, not manner)
+    'room': ['chamber'],  // Removed: space, quarters, compartment (different meanings)
+    'door': ['doorway', 'portal'],  // Removed: entrance, threshold, entry (not the door itself)
+    'wall': ['partition'],  // Removed: barrier, surface, panel (different or too specific)
+    // floor, window, table, chair: REMOVED - too specific, no true synonyms
+    'sound': ['noise'],  // Removed: audio, tone, resonance (different contexts)
+    'smell': ['scent', 'odor'],  // Removed: aroma, fragrance (positive connotations)
+    'aroma': ['fragrance'],  // Pleasant smells
+    // touch, taste: REMOVED - too specific
+    'street': ['road'],  // Removed: avenue, lane, pathway (different types)
+    'house': ['home', 'dwelling', 'residence'],  // True synonyms
+    'building': ['structure', 'edifice'],  // Removed: construction (the act, not the thing)
+    'city': ['town'],  // Removed: metropolis, municipality (different sizes/types)
+    'world': ['globe'],  // Removed: planet, earth, realm (different contexts)
+    'person': ['individual'],  // Removed: human, being, soul (different contexts)
+    'man': ['guy', 'fellow'],  // Informal synonyms (removed: gentleman, male - different register)
+    'woman': ['lady', 'gal'],  // Informal synonyms
+    'child': ['kid', 'youngster'],  // Removed: youth, minor (different contexts)
+    'friend': ['companion', 'pal', 'buddy'],  // Removed: associate (business context)
+    'enemy': ['foe', 'adversary'],  // Removed: opponent, rival (competition vs hostility)
+    'moment': ['instant'],  // Removed: second, beat, breath (different meanings)
+    'silence': ['quiet', 'stillness', 'hush'],  // True synonyms
+    'noise': ['sound', 'racket'],  // Removed: clamor, din (too specific)
+    'word': ['term'],  // Removed: expression, utterance (different)
+    'question': ['query', 'inquiry'],  // Removed: interrogation (hostile connotation)
+    'answer': ['response', 'reply'],  // Removed: solution (for problems, not questions)
+    'problem': ['issue', 'difficulty'],  // Removed: challenge, complication (different connotations)
+    'idea': ['thought', 'notion', 'concept'],  // True synonyms
+    'feeling': ['emotion', 'sentiment'],  // Removed: sensation (physical)
+    'pain': ['ache', 'hurt'],  // Removed: suffering, discomfort (different intensities)
+    'pleasure': ['delight', 'enjoyment'],  // Removed: satisfaction (different type)
 
     // Common 2-word phrases (will be matched as complete phrases)
     'combat boots': ['military footwear', 'tactical boots', 'heavy boots', 'steel-toed boots'],
