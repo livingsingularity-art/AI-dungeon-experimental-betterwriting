@@ -37,15 +37,78 @@ const modifier = (text) => {
         }
     }
 
-    // Adaptive VS configuration based on context
+    // === NGO LAYERED AUTHOR'S NOTE SYSTEM ===
+    // Build author's note with priority layers:
+    // 1. Original user note (base)
+    // 2. NGO story phase guidance (narrative structure)
+    // 3. Parentheses memory (gradual goals)
+    // 4. @req immediate request (urgent player intent)
+    if (CONFIG.ngo && CONFIG.ngo.enabled && state.ngo) {
+        const buildLayeredAuthorsNote = () => {
+            const layers = [];
+
+            // LAYER 1: Original user note (base)
+            if (state.originalAuthorsNote) {
+                layers.push(state.originalAuthorsNote);
+            }
+
+            // LAYER 2: NGO Story Phase guidance
+            const phase = getCurrentNGOPhase();
+            layers.push(phase.authorNoteGuidance);
+
+            // LAYER 3 & 4: Command system layers
+            if (CONFIG.commands && CONFIG.commands.enabled && state.commands) {
+                const commandLayers = NGOCommands.buildAuthorsNoteLayer();
+
+                // Layer 3: Parentheses memory (gradual)
+                if (commandLayers.memoryGuidance) {
+                    layers.push(commandLayers.memoryGuidance);
+                }
+
+                // Layer 4: @req immediate request (highest narrative priority)
+                if (commandLayers.reqGuidance) {
+                    layers.push(commandLayers.reqGuidance);
+                }
+            }
+
+            return layers.filter(Boolean).join(' ');
+        };
+
+        state.memory.authorsNote = buildLayeredAuthorsNote();
+
+        if (CONFIG.ngo.debugLogging) {
+            const phase = getCurrentNGOPhase();
+            safeLog(`📝 Author's note built with phase: ${phase.name} (temp: ${state.ngo.temperature})`, 'info');
+        }
+    }
+
+    // === NGO FRONT MEMORY INJECTION (@req dual injection) ===
+    // Inject @req into front memory for immediate, high-priority narrative shaping
+    if (CONFIG.commands && CONFIG.commands.enabled && CONFIG.commands.reqDualInjection && state.commands) {
+        const frontMemoryInjection = NGOCommands.buildFrontMemoryInjection();
+        if (frontMemoryInjection) {
+            state.memory.frontMemory = (state.memory.frontMemory || '') + '\n\n' + frontMemoryInjection;
+
+            if (CONFIG.commands.debugLogging) {
+                safeLog(`💉 Front memory injected with @req: "${state.commands.narrativeRequest}"`, 'info');
+            }
+        }
+    }
+
+    // Adaptive VS configuration based on context (NOW NGO-AWARE)
     if (CONFIG.vs.enabled && CONFIG.vs.adaptive) {
         const adaptedParams = VerbalizedSampling.analyzeContext(text);
 
         // Update VS card with adapted parameters (no CONFIG mutation)
         VerbalizedSampling.updateCard(adaptedParams);
 
-        // Log adaptation
-        safeLog(`VS adapted: k=${adaptedParams.k}, tau=${adaptedParams.tau}`, 'info');
+        // Log adaptation with NGO phase info
+        if (CONFIG.ngo && CONFIG.ngo.enabled && state.ngo) {
+            const phase = getCurrentNGOPhase();
+            safeLog(`🎨 VS adapted: k=${adaptedParams.k}, tau=${adaptedParams.tau} (phase: ${phase.name})`, 'info');
+        } else {
+            safeLog(`VS adapted: k=${adaptedParams.k}, tau=${adaptedParams.tau}`, 'info');
+        }
 
         // Store adapted params for reference if needed
         state.vsAdaptedParams = adaptedParams;

@@ -26,7 +26,7 @@ const CONFIG = {
         k: 5,                   // Number of candidates
         tau: 0.10,              // Probability threshold (research-recommended)
         seamless: true,         // Hide process from output
-        adaptive: false,        // Auto-adjust based on context
+        adaptive: true,         // Auto-adjust based on context (NOW ENABLED for NGO)
         debugLogging: false     // Console logging
     },
 
@@ -39,10 +39,104 @@ const CONFIG = {
         debugLogging: false
     },
 
+    // NGO (Narrative Guidance Overhaul) - THE CENTRAL BRAIN
+    ngo: {
+        enabled: true,
+
+        // HEAT MECHANICS (short-term tension)
+        initialHeat: 0,
+        heatDecayRate: 1,               // Natural decay per turn
+        heatIncreasePerConflict: 1,     // Per conflict word detected
+        playerHeatMultiplier: 2,        // Player actions = stronger impact
+        aiHeatMultiplier: 1,            // AI output = normal impact
+        maxHeat: 50,                    // Soft cap
+
+        // TEMPERATURE MECHANICS (long-term arc)
+        initialTemperature: 1,
+        minTemperature: 1,
+        maxTemperature: 12,             // Standard climax cap
+        trueMaxTemperature: 15,         // Extreme climax (rare)
+
+        // Temperature increase triggers
+        heatThresholdForTempIncrease: 10,
+        tempIncreaseChance: 15,         // % chance when heat high
+        tempIncreaseOnConsecutiveConflicts: 3,
+
+        // Temperature decrease triggers
+        calmingTurnsForDecrease: 5,
+        tempDecreaseAmount: 1,
+
+        // OVERHEAT MECHANICS (sustained climax)
+        overheatTriggerTemp: 10,
+        overheatDuration: 4,            // Turns
+        overheatHeatReduction: 10,
+        overheatLocksTemperature: true,
+
+        // COOLDOWN MECHANICS (falling action)
+        cooldownDuration: 5,            // Turns
+        cooldownTempDecreaseRate: 2,    // Per turn
+        cooldownMinTemperature: 3,
+        cooldownBlocksHeatGain: true,
+
+        // RANDOM EXPLOSIONS
+        explosionEnabled: true,
+        explosionChanceBase: 3,         // %
+        explosionHeatBonus: 5,
+        explosionTempBonus: 2,
+
+        // BONEPOKE INTEGRATION
+        fatigueTriggersEarlyCooldown: true,
+        fatigueThresholdForCooldown: 5,
+        driftReducesHeat: true,
+        driftHeatReduction: 3,
+        qualityGatesTemperatureIncrease: true,
+        qualityThresholdForIncrease: 3.0,
+
+        // VS INTEGRATION
+        temperatureAffectsVS: true,
+
+        // COMMAND INTEGRATION
+        reqIncreasesHeat: true,
+        reqHeatBonus: 2,
+        parenthesesIncreasesHeat: true,
+        parenthesesHeatBonus: 1,
+
+        // DEBUG
+        debugLogging: false,
+        logStateChanges: true
+    },
+
+    // COMMAND SYSTEM (Player narrative pressure vectors)
+    commands: {
+        enabled: true,
+
+        // @req settings
+        reqPrefix: '@req',
+        reqFrontMemoryTTL: 1,
+        reqAuthorsNoteTTL: 2,
+        reqDualInjection: true,
+
+        // (...) parentheses memory
+        parenthesesEnabled: true,
+        parenthesesMaxSlots: 3,
+        parenthesesDefaultTTL: 4,
+        parenthesesPriority: true,
+
+        // Manual controls
+        tempCommand: '@temp',
+        arcCommand: '@arc',
+
+        // Fulfillment detection
+        detectFulfillment: true,
+        fulfillmentThreshold: 0.4,
+
+        debugLogging: false
+    },
+
     // System
     system: {
         persistState: true,     // Save state between sessions
-        enableAnalytics: false  // Track metrics over time
+        enableAnalytics: true   // Track metrics over time (NOW ENABLED for NGO)
     }
 };
 
@@ -80,8 +174,83 @@ const initState = () => {
             driftDetections: 0
         };
         state.dynamicCards = [];
+
+        // === NGO STATE INITIALIZATION ===
+        state.ngo = {
+            heat: CONFIG.ngo.initialHeat,
+            temperature: CONFIG.ngo.initialTemperature,
+            lastTemperature: 1,
+
+            // Mode flags
+            overheatMode: false,
+            overheatTurnsLeft: 0,
+            cooldownMode: false,
+            cooldownTurnsLeft: 0,
+
+            // Pressure tracking
+            temperatureWantsToIncrease: false,
+            lastConflictCount: 0,
+            lastCalmingCount: 0,
+            consecutiveConflicts: 0,
+
+            // Random events
+            explosionPending: false,
+
+            // Phase management
+            currentPhase: 'Introduction',
+            phaseEntryTurn: 0,
+            turnsInPhase: 0
+        };
+
+        // === COMMAND STATE INITIALIZATION ===
+        state.commands = {
+            // @req
+            narrativeRequest: null,
+            narrativeRequestTTL: 0,
+            narrativeRequestFulfilled: false,
+
+            // Parentheses memory
+            memory1: '',
+            memory2: '',
+            memory3: '',
+            expiration1: null,
+            expiration2: null,
+            expiration3: null,
+
+            // Manual overrides
+            manualTempAdjustment: 0,
+            manualArcOverride: null,
+
+            // Tracking
+            lastRequestTime: 0,
+            requestHistory: []
+        };
+
+        // === NGO ANALYTICS ===
+        state.ngoStats = {
+            totalTurns: 0,
+            maxTemperatureReached: 1,
+            totalOverheats: 0,
+            totalCooldowns: 0,
+            totalExplosions: 0,
+            fatigueTriggeredCooldowns: 0,
+            qualityBlockedIncreases: 0,
+            requestsFulfilled: 0,
+            requestsFailed: 0,
+            avgTemperature: 1,
+            temperatureSum: 0,
+            phaseHistory: []
+        };
+
+        // Store original author's note
+        if (state.memory && state.memory.authorsNote) {
+            state.originalAuthorsNote = state.memory.authorsNote;
+        } else {
+            state.originalAuthorsNote = '';
+        }
+
         state.initialized = true;
-        safeLog('State initialized', 'success');
+        safeLog('State initialized with NGO engine', 'success');
     }
 };
 
@@ -531,6 +700,198 @@ const getSynonym = (word) => {
 
 // #endregion
 
+// #region NGO Word Lists and Phases
+
+/**
+ * NGO Conflict/Calming Word Lists
+ * These drive the heat accumulation system
+ */
+const NGO_WORD_LISTS = {
+    // Words that INCREASE heat (conflict, tension, action)
+    conflict: [
+        // Violence
+        'attack', 'fight', 'battle', 'war', 'kill', 'murder', 'destroy',
+        'strike', 'punch', 'kick', 'stab', 'slash', 'shoot', 'blast',
+        'crush', 'smash', 'break', 'shatter', 'explode', 'detonate',
+        'wound', 'injure', 'hurt', 'harm', 'damage', 'wreck', 'ruin',
+        'slaughter', 'massacre', 'execute', 'assassinate', 'ambush',
+        // Danger
+        'danger', 'threat', 'enemy', 'foe', 'villain', 'monster',
+        'demon', 'beast', 'creature', 'predator', 'hunter', 'assassin',
+        'trap', 'poison', 'curse', 'plague', 'disease',
+        'death', 'dying', 'dead', 'corpse', 'grave', 'tomb',
+        // Urgency
+        'run', 'flee', 'escape', 'chase', 'pursue', 'hurry', 'rush',
+        'urgent', 'emergency', 'crisis', 'disaster', 'catastrophe',
+        'collapse', 'crash', 'fail', 'lose', 'lost',
+        // Negative emotion
+        'rage', 'fury', 'anger', 'hate', 'fear', 'terror', 'panic',
+        'scream', 'shout', 'yell', 'cry', 'sob', 'wail', 'shriek',
+        'despair', 'agony', 'torment', 'suffer', 'anguish',
+        'dread', 'horror', 'nightmare', 'trauma', 'shock',
+        // Confrontation
+        'confront', 'challenge', 'oppose', 'resist', 'defy', 'betray',
+        'deceive', 'steal', 'rob', 'threaten', 'demand',
+        'argue', 'conflict', 'dispute', 'clash',
+        'accuse', 'blame', 'condemn', 'judge', 'punish',
+        // High stakes
+        'blood', 'fire', 'explosion', 'destruction', 'chaos',
+        'invasion', 'siege', 'conquest', 'revolution',
+        'sacrifice', 'doom', 'fate', 'destiny', 'prophecy',
+        'ultimate', 'final', 'last', 'end', 'apocalypse'
+    ],
+
+    // Words that DECREASE heat (calm, resolution, rest)
+    calming: [
+        // Peace
+        'peace', 'calm', 'quiet', 'still', 'serene', 'tranquil',
+        'gentle', 'soft', 'warm', 'safe', 'secure', 'protected',
+        'harmony', 'balance', 'stable', 'steady', 'settled',
+        // Rest
+        'rest', 'sleep', 'relax', 'breathe', 'sigh', 'exhale',
+        'settle', 'sit', 'lie', 'lean', 'recline', 'pause',
+        'wait', 'linger', 'stay', 'remain', 'stop',
+        'dream', 'slumber', 'doze', 'nap',
+        // Positive emotion
+        'happy', 'joy', 'love', 'care', 'comfort', 'soothe',
+        'smile', 'laugh', 'giggle', 'chuckle', 'grin',
+        'hug', 'embrace', 'hold', 'cuddle', 'caress',
+        'content', 'satisfied', 'pleased', 'delighted',
+        // Resolution
+        'resolve', 'solve', 'fix', 'heal', 'recover', 'mend',
+        'forgive', 'apologize', 'reconcile', 'understand', 'agree',
+        'accept', 'approve', 'allow', 'permit', 'grant',
+        'complete', 'finish', 'accomplish', 'achieve', 'succeed',
+        // Connection
+        'friend', 'ally', 'companion', 'partner', 'family', 'home',
+        'trust', 'believe', 'hope', 'faith', 'together', 'united',
+        'bond', 'connection', 'relationship', 'friendship',
+        'support', 'help', 'aid', 'assist', 'guide',
+        // Mundane
+        'eat', 'drink', 'cook', 'clean', 'walk', 'talk', 'think',
+        'observe', 'notice', 'examine', 'study', 'learn', 'remember',
+        'write', 'read', 'listen', 'watch', 'see', 'look',
+        'ordinary', 'normal', 'usual', 'routine', 'daily'
+    ]
+};
+
+/**
+ * NGO Story Phase Definitions
+ * Each phase defines narrative tone and system behavior
+ */
+const NGO_PHASES = {
+    introduction: {
+        tempRange: [1, 3],
+        name: 'Introduction',
+        description: 'Establish characters, world, and hooks',
+        authorNoteGuidance:
+            'Story Phase: Introduction. Focus on character establishment, ' +
+            'world-building, and subtle foreshadowing. Keep conflicts minimal. ' +
+            'Let the story breathe and establish tone.',
+        vsAdjustment: { k: 4, tau: 0.15 },
+        bonepokeStrictness: 'relaxed'
+    },
+    risingEarly: {
+        tempRange: [4, 6],
+        name: 'Rising Action (Early)',
+        description: 'Introduce minor conflicts, build tension gradually',
+        authorNoteGuidance:
+            'Story Phase: Rising Action. Introduce obstacles and challenges. ' +
+            'Characters face minor setbacks. Hint at greater conflicts ahead. ' +
+            'Increase tension gradually but maintain hope.',
+        vsAdjustment: { k: 5, tau: 0.12 },
+        bonepokeStrictness: 'normal'
+    },
+    risingLate: {
+        tempRange: [7, 9],
+        name: 'Rising Action (Late)',
+        description: 'Major complications, stakes increase',
+        authorNoteGuidance:
+            'Story Phase: Late Rising Action. Stakes are high. Characters face ' +
+            'serious challenges. Introduce plot twists and revelations. ' +
+            'Push characters toward difficult choices. The climax approaches.',
+        vsAdjustment: { k: 6, tau: 0.10 },
+        bonepokeStrictness: 'strict'
+    },
+    climaxEntry: {
+        tempRange: [10, 10],
+        name: 'Climax Entry',
+        description: 'Major conflict begins, point of no return',
+        authorNoteGuidance:
+            'Story Phase: CLIMAX. Maximum tension. The main conflict erupts. ' +
+            'Characters face their greatest challenge. Shocking developments occur. ' +
+            'Everything changes. No turning back.',
+        vsAdjustment: { k: 7, tau: 0.08 },
+        bonepokeStrictness: 'strict'
+    },
+    peakClimax: {
+        tempRange: [11, 12],
+        name: 'Peak Climax',
+        description: 'Sustained maximum intensity',
+        authorNoteGuidance:
+            'Story Phase: PEAK CLIMAX. Consequences cascade. Every action matters. ' +
+            'Characters pushed to absolute limits. Life-changing decisions. ' +
+            'Outcome uncertain. Maximum emotional intensity.',
+        vsAdjustment: { k: 8, tau: 0.07 },
+        bonepokeStrictness: 'strict'
+    },
+    extremeClimax: {
+        tempRange: [13, 15],
+        name: 'Extreme Climax',
+        description: 'Catastrophic intensity (use sparingly)',
+        authorNoteGuidance:
+            'Story Phase: EXTREME CLIMAX. Reality bends. Cataclysmic events unfold. ' +
+            'Ultimate test. Death and destruction are real possibilities. ' +
+            'Nothing is safe. The world may never be the same.',
+        vsAdjustment: { k: 9, tau: 0.06 },
+        bonepokeStrictness: 'maximum'
+    },
+    overheat: {
+        tempRange: null,
+        name: 'Overheat (Sustained Climax)',
+        description: 'Maintain peak intensity, begin resolution hints',
+        authorNoteGuidance:
+            'Story Phase: SUSTAINED CLIMAX. Maintain intensity but introduce ' +
+            'hints of resolution. Characters find inner strength. The tide may ' +
+            'be turning. Keep tension high but show possible ways forward.',
+        vsAdjustment: { k: 7, tau: 0.09 },
+        bonepokeStrictness: 'strict'
+    },
+    cooldown: {
+        tempRange: null,
+        name: 'Cooldown (Falling Action)',
+        description: 'Resolve conflicts, process events',
+        authorNoteGuidance:
+            'Story Phase: Falling Action. The crisis passes. Characters process ' +
+            'what happened. Resolve plot threads. Allow emotional moments. ' +
+            'Rest and recovery are possible. Reflect on consequences.',
+        vsAdjustment: { k: 4, tau: 0.14 },
+        bonepokeStrictness: 'relaxed'
+    }
+};
+
+/**
+ * Get current NGO phase based on temperature and mode
+ * @returns {Object} Phase definition
+ */
+const getCurrentNGOPhase = () => {
+    if (!CONFIG.ngo.enabled || !state.ngo) return NGO_PHASES.introduction;
+
+    if (state.ngo.overheatMode) return NGO_PHASES.overheat;
+    if (state.ngo.cooldownMode) return NGO_PHASES.cooldown;
+
+    const temp = state.ngo.temperature || 1;
+
+    if (temp <= 3) return NGO_PHASES.introduction;
+    if (temp <= 6) return NGO_PHASES.risingEarly;
+    if (temp <= 9) return NGO_PHASES.risingLate;
+    if (temp === 10) return NGO_PHASES.climaxEntry;
+    if (temp <= 12) return NGO_PHASES.peakClimax;
+    return NGO_PHASES.extremeClimax;
+};
+
+// #endregion
+
 // #region Verbalized Sampling
 
 /**
@@ -564,24 +925,46 @@ const VerbalizedSampling = (() => {
 
     /**
      * Analyze context and suggest adaptive parameters
+     * NOW INTEGRATES WITH NGO TEMPERATURE SYSTEM
      */
     const analyzeContext = (context) => {
         if (!CONFIG.vs.adaptive) return { k: CONFIG.vs.k, tau: CONFIG.vs.tau };
 
-        const isDialogue = context.includes('"') || /\bsaid\b/i.test(context);
-        const isAction = /\b(run|fight|move|open|close|attack)\b/i.test(context);
-        const isDescriptive = context.length > 500;
+        let k = CONFIG.vs.k;
+        let tau = CONFIG.vs.tau;
 
-        // Adapt parameters based on context type
-        if (isDialogue) {
-            return { k: 7, tau: 0.12 };  // More variety in speech
-        } else if (isAction) {
-            return { k: 5, tau: 0.08 };  // Surprising but coherent actions
-        } else if (isDescriptive) {
-            return { k: 4, tau: 0.15 };  // Moderate for descriptions
+        // === NGO TEMPERATURE-DRIVEN ADAPTATION (PRIMARY) ===
+        if (CONFIG.ngo.enabled && CONFIG.ngo.temperatureAffectsVS && state.ngo) {
+            const phase = getCurrentNGOPhase();
+            k = phase.vsAdjustment.k;
+            tau = phase.vsAdjustment.tau;
+
+            if (CONFIG.ngo.debugLogging) {
+                safeLog(`🎨 VS base from NGO phase "${phase.name}": k=${k}, tau=${tau}`, 'info');
+            }
         }
 
-        return { k: CONFIG.vs.k, tau: CONFIG.vs.tau };
+        // === CONTENT TYPE MODIFIERS (SECONDARY) ===
+        const isDialogue = context.includes('"') || /\bsaid\b/i.test(context);
+        const isAction = /\b(run|fight|move|open|close|attack|strike|battle)\b/i.test(context);
+
+        if (isDialogue) {
+            // Dialogue needs more variety
+            k += 1;
+            tau -= 0.02;
+        }
+
+        if (isAction && state.ngo && state.ngo.temperature >= 10) {
+            // High-temperature action = maximum chaos
+            k += 1;
+            tau -= 0.02;
+        }
+
+        // Safety bounds
+        k = Math.max(3, Math.min(10, k));
+        tau = Math.max(0.05, Math.min(0.20, tau));
+
+        return { k, tau };
     };
 
     /**
@@ -1249,6 +1632,708 @@ const Analytics = (() => {
         recordOutput,
         recordRegeneration,
         getSummary
+    };
+})();
+
+// #endregion
+
+// #region NGO Core Engine
+
+/**
+ * NGO (Narrative Guidance Overhaul) Core Engine
+ * The central narrative intelligence processor
+ */
+const NGOEngine = (() => {
+
+    /**
+     * Count conflict/calming words in text
+     * @param {string} text - Text to analyze
+     * @returns {Object} { conflicts, calming, net }
+     */
+    const analyzeConflict = (text) => {
+        if (!text) return { conflicts: 0, calming: 0, net: 0 };
+
+        const textLower = text.toLowerCase();
+        let conflicts = 0;
+        let calming = 0;
+
+        NGO_WORD_LISTS.conflict.forEach(word => {
+            const regex = new RegExp(`\\b${word}\\b`, 'gi');
+            const matches = textLower.match(regex);
+            if (matches) conflicts += matches.length;
+        });
+
+        NGO_WORD_LISTS.calming.forEach(word => {
+            const regex = new RegExp(`\\b${word}\\b`, 'gi');
+            const matches = textLower.match(regex);
+            if (matches) calming += matches.length;
+        });
+
+        return { conflicts, calming, net: conflicts - calming };
+    };
+
+    /**
+     * Update heat based on conflict analysis
+     * @param {Object} conflictData - Result from analyzeConflict()
+     * @param {string} source - 'player' or 'ai'
+     * @returns {Object} { oldHeat, newHeat, delta }
+     */
+    const updateHeat = (conflictData, source) => {
+        if (!CONFIG.ngo.enabled || !state.ngo) {
+            return { oldHeat: 0, newHeat: 0, delta: 0 };
+        }
+
+        if (state.ngo.cooldownMode && CONFIG.ngo.cooldownBlocksHeatGain) {
+            return { oldHeat: state.ngo.heat, newHeat: state.ngo.heat, delta: 0 };
+        }
+
+        const multiplier = source === 'player'
+            ? CONFIG.ngo.playerHeatMultiplier
+            : CONFIG.ngo.aiHeatMultiplier;
+
+        const heatGain = conflictData.conflicts * CONFIG.ngo.heatIncreasePerConflict * multiplier;
+        const heatLoss = conflictData.calming * CONFIG.ngo.heatDecayRate;
+        const delta = heatGain - heatLoss;
+
+        const oldHeat = state.ngo.heat;
+        state.ngo.heat = Math.max(0, state.ngo.heat + delta);
+        state.ngo.heat = Math.min(state.ngo.heat, CONFIG.ngo.maxHeat);
+
+        // Track consecutive conflicts
+        if (conflictData.conflicts > 0 && conflictData.calming === 0) {
+            state.ngo.consecutiveConflicts++;
+        } else if (conflictData.calming > conflictData.conflicts) {
+            state.ngo.consecutiveConflicts = 0;
+        }
+
+        state.ngo.lastConflictCount = conflictData.conflicts;
+        state.ngo.lastCalmingCount = conflictData.calming;
+
+        return { oldHeat, newHeat: state.ngo.heat, delta };
+    };
+
+    /**
+     * Check if temperature should increase
+     * @returns {Object} { shouldIncrease, reason }
+     */
+    const checkTemperatureIncrease = () => {
+        if (!CONFIG.ngo.enabled || !state.ngo) {
+            return { shouldIncrease: false, reason: 'disabled' };
+        }
+
+        if (state.ngo.overheatMode && CONFIG.ngo.overheatLocksTemperature) {
+            return { shouldIncrease: false, reason: 'overheat_locked' };
+        }
+
+        if (state.ngo.cooldownMode) {
+            return { shouldIncrease: false, reason: 'cooldown_active' };
+        }
+
+        if (state.ngo.temperature >= CONFIG.ngo.trueMaxTemperature) {
+            return { shouldIncrease: false, reason: 'max_temperature' };
+        }
+
+        let shouldIncrease = false;
+        let reason = 'none';
+
+        // Method 1: Heat threshold + RNG
+        if (state.ngo.heat >= CONFIG.ngo.heatThresholdForTempIncrease) {
+            const roll = Math.random() * 100;
+            if (roll < CONFIG.ngo.tempIncreaseChance) {
+                shouldIncrease = true;
+                reason = 'heat_threshold';
+            }
+        }
+
+        // Method 2: Consecutive conflicts
+        if (!shouldIncrease && state.ngo.consecutiveConflicts >= CONFIG.ngo.tempIncreaseOnConsecutiveConflicts) {
+            shouldIncrease = true;
+            reason = 'consecutive_conflicts';
+        }
+
+        // Method 3: Random explosion
+        if (!shouldIncrease && CONFIG.ngo.explosionEnabled && !state.ngo.explosionPending) {
+            const explosionRoll = Math.random() * 100;
+            if (explosionRoll < CONFIG.ngo.explosionChanceBase) {
+                state.ngo.explosionPending = true;
+                shouldIncrease = true;
+                reason = 'random_explosion';
+            }
+        }
+
+        if (shouldIncrease) {
+            state.ngo.temperatureWantsToIncrease = true;
+        }
+
+        return { shouldIncrease, reason };
+    };
+
+    /**
+     * Apply temperature increase (after quality check)
+     * @param {boolean} qualityApproved - Whether Bonepoke approved
+     * @returns {Object} { applied, oldTemp, newTemp, reason }
+     */
+    const applyTemperatureIncrease = (qualityApproved = true) => {
+        if (!state.ngo.temperatureWantsToIncrease) {
+            return { applied: false, reason: 'no_pending_increase' };
+        }
+
+        if (!qualityApproved && CONFIG.ngo.qualityGatesTemperatureIncrease) {
+            state.ngoStats.qualityBlockedIncreases++;
+            state.ngo.temperatureWantsToIncrease = false;
+            return { applied: false, reason: 'quality_blocked' };
+        }
+
+        const oldTemp = state.ngo.temperature;
+        let increase = 1;
+
+        // Explosion bonus
+        if (state.ngo.explosionPending) {
+            increase += CONFIG.ngo.explosionTempBonus;
+            state.ngo.heat += CONFIG.ngo.explosionHeatBonus;
+            state.ngo.explosionPending = false;
+            state.ngoStats.totalExplosions++;
+            safeLog('💥 RANDOM EXPLOSION! Narrative pressure spike!', 'warn');
+        }
+
+        state.ngo.temperature = Math.min(
+            state.ngo.temperature + increase,
+            CONFIG.ngo.trueMaxTemperature
+        );
+
+        state.ngo.temperatureWantsToIncrease = false;
+        state.ngoStats.maxTemperatureReached = Math.max(
+            state.ngoStats.maxTemperatureReached,
+            state.ngo.temperature
+        );
+
+        return { applied: true, oldTemp, newTemp: state.ngo.temperature, reason: 'success' };
+    };
+
+    /**
+     * Enter overheat (sustained climax) mode
+     */
+    const enterOverheatMode = () => {
+        if (state.ngo.overheatMode) return { entered: false };
+
+        state.ngo.overheatMode = true;
+        state.ngo.overheatTurnsLeft = CONFIG.ngo.overheatDuration;
+        state.ngo.heat = Math.max(0, state.ngo.heat - CONFIG.ngo.overheatHeatReduction);
+        state.ngoStats.totalOverheats++;
+
+        safeLog(`🔥🔥🔥 OVERHEAT MODE! Sustained climax for ${CONFIG.ngo.overheatDuration} turns`, 'warn');
+        return { entered: true, duration: CONFIG.ngo.overheatDuration };
+    };
+
+    /**
+     * Process overheat timer
+     */
+    const processOverheat = () => {
+        if (!state.ngo.overheatMode) return { active: false, completed: false };
+
+        state.ngo.overheatTurnsLeft--;
+        const completed = state.ngo.overheatTurnsLeft <= 0;
+
+        if (completed) {
+            state.ngo.overheatMode = false;
+        }
+
+        return { active: !completed, turnsLeft: state.ngo.overheatTurnsLeft, completed };
+    };
+
+    /**
+     * Enter cooldown (falling action) mode
+     */
+    const enterCooldownMode = () => {
+        state.ngo.cooldownMode = true;
+        state.ngo.cooldownTurnsLeft = CONFIG.ngo.cooldownDuration;
+        state.ngo.heat = 0;
+        state.ngo.consecutiveConflicts = 0;
+        state.ngoStats.totalCooldowns++;
+
+        safeLog(`❄️ COOLDOWN MODE! Falling action for ${CONFIG.ngo.cooldownDuration} turns`, 'info');
+        return { entered: true, duration: CONFIG.ngo.cooldownDuration };
+    };
+
+    /**
+     * Process cooldown timer
+     */
+    const processCooldown = () => {
+        if (!state.ngo.cooldownMode) return { active: false, completed: false };
+
+        state.ngo.cooldownTurnsLeft--;
+
+        const oldTemp = state.ngo.temperature;
+        state.ngo.temperature = Math.max(
+            CONFIG.ngo.cooldownMinTemperature,
+            state.ngo.temperature - CONFIG.ngo.cooldownTempDecreaseRate
+        );
+
+        const completed = state.ngo.cooldownTurnsLeft <= 0;
+        if (completed) {
+            state.ngo.cooldownMode = false;
+            safeLog('✅ Cooldown complete. Normal narrative flow resumed.', 'success');
+        }
+
+        return {
+            active: !completed,
+            turnsLeft: state.ngo.cooldownTurnsLeft,
+            tempDecrease: oldTemp - state.ngo.temperature,
+            completed
+        };
+    };
+
+    /**
+     * Force early cooldown (triggered by Bonepoke fatigue)
+     * @param {string} reason - 'fatigue', 'manual', etc.
+     */
+    const forceEarlyCooldown = (reason = 'fatigue') => {
+        if (state.ngo.cooldownMode) return { forced: false };
+
+        state.ngo.overheatMode = false;
+        state.ngo.overheatTurnsLeft = 0;
+        enterCooldownMode();
+
+        if (reason === 'fatigue') {
+            state.ngoStats.fatigueTriggeredCooldowns++;
+        }
+
+        safeLog(`⚠️ EARLY COOLDOWN triggered by ${reason}`, 'warn');
+        return { forced: true, reason };
+    };
+
+    /**
+     * Reduce heat due to drift detection
+     */
+    const reduceHeatFromDrift = () => {
+        if (!CONFIG.ngo.driftReducesHeat) return { reduction: 0 };
+
+        const oldHeat = state.ngo.heat;
+        state.ngo.heat = Math.max(0, state.ngo.heat - CONFIG.ngo.driftHeatReduction);
+
+        return { oldHeat, newHeat: state.ngo.heat, reduction: oldHeat - state.ngo.heat };
+    };
+
+    /**
+     * Process one complete NGO turn
+     */
+    const processTurn = () => {
+        if (!CONFIG.ngo.enabled || !state.ngo) return { processed: false };
+
+        const results = { processed: true, overheat: null, cooldown: null, phaseChange: null };
+
+        state.ngoStats.totalTurns++;
+        state.ngoStats.temperatureSum += state.ngo.temperature;
+        state.ngoStats.avgTemperature = state.ngoStats.temperatureSum / state.ngoStats.totalTurns;
+
+        // Process timers
+        results.overheat = processOverheat();
+        if (results.overheat.completed) {
+            enterCooldownMode();
+        }
+
+        results.cooldown = processCooldown();
+
+        // Track phase changes
+        const currentPhase = getCurrentNGOPhase();
+        if (currentPhase.name !== state.ngo.currentPhase) {
+            results.phaseChange = {
+                from: state.ngo.currentPhase,
+                to: currentPhase.name,
+                temperature: state.ngo.temperature
+            };
+
+            state.ngo.currentPhase = currentPhase.name;
+            state.ngo.phaseEntryTurn = state.ngoStats.totalTurns;
+            state.ngo.turnsInPhase = 0;
+
+            state.ngoStats.phaseHistory.push({
+                phase: currentPhase.name,
+                turn: state.ngoStats.totalTurns,
+                temperature: state.ngo.temperature
+            });
+
+            if (CONFIG.ngo.logStateChanges) {
+                safeLog(`📖 Phase: ${results.phaseChange.from} → ${results.phaseChange.to}`, 'warn');
+            }
+        }
+        state.ngo.turnsInPhase++;
+
+        return results;
+    };
+
+    /**
+     * Check if overheat should trigger
+     */
+    const shouldTriggerOverheat = () => {
+        return state.ngo.temperature >= CONFIG.ngo.overheatTriggerTemp && !state.ngo.overheatMode;
+    };
+
+    return {
+        analyzeConflict,
+        updateHeat,
+        checkTemperatureIncrease,
+        applyTemperatureIncrease,
+        enterOverheatMode,
+        processOverheat,
+        enterCooldownMode,
+        processCooldown,
+        forceEarlyCooldown,
+        reduceHeatFromDrift,
+        processTurn,
+        shouldTriggerOverheat
+    };
+})();
+
+// #endregion
+
+// #region NGO Command Processor
+
+/**
+ * NGO Command System
+ * Processes player commands as narrative pressure vectors
+ */
+const NGOCommands = (() => {
+
+    /**
+     * Process @req command
+     * @param {string} text - Input text
+     * @returns {Object} { processed, found, request }
+     */
+    const processReq = (text) => {
+        if (!CONFIG.commands.enabled) return { processed: text, found: false };
+
+        const reqRegex = new RegExp(`${CONFIG.commands.reqPrefix}\\s+(.+?)(?=$|\\(|@)`, 'i');
+        const match = text.match(reqRegex);
+
+        if (!match) return { processed: text, found: false, request: null };
+
+        const request = match[1].trim();
+
+        state.commands.narrativeRequest = request;
+        state.commands.narrativeRequestTTL = CONFIG.commands.reqAuthorsNoteTTL;
+        state.commands.narrativeRequestFulfilled = false;
+        state.commands.lastRequestTime = Date.now();
+
+        state.commands.requestHistory.push({
+            request,
+            turn: state.ngoStats.totalTurns,
+            timestamp: Date.now()
+        });
+
+        if (state.commands.requestHistory.length > 20) {
+            state.commands.requestHistory = state.commands.requestHistory.slice(-20);
+        }
+
+        if (CONFIG.ngo.reqIncreasesHeat) {
+            state.ngo.heat += CONFIG.ngo.reqHeatBonus;
+        }
+
+        const processed = text.replace(reqRegex, '').trim();
+        safeLog(`🎯 @req: "${request}" (heat +${CONFIG.ngo.reqHeatBonus})`, 'info');
+
+        return { processed, found: true, request };
+    };
+
+    /**
+     * Process (...) parentheses memory
+     * @param {string} text - Input text
+     * @returns {Object} { processed, found, memories }
+     */
+    const processParentheses = (text) => {
+        if (!CONFIG.commands.parenthesesEnabled) return { processed: text, found: false };
+
+        const parenRegex = /\(([^)]+)\)/g;
+        let match;
+        const memories = [];
+
+        while ((match = parenRegex.exec(text)) !== null) {
+            memories.push(match[1].trim());
+        }
+
+        if (memories.length === 0) return { processed: text, found: false, memories: [] };
+
+        // Shift memories down (FIFO)
+        state.commands.memory3 = state.commands.memory2;
+        state.commands.expiration3 = state.commands.expiration2;
+        state.commands.memory2 = state.commands.memory1;
+        state.commands.expiration2 = state.commands.expiration1;
+
+        const newestMemory = memories[memories.length - 1];
+        state.commands.memory1 = newestMemory;
+        state.commands.expiration1 = state.ngoStats.totalTurns + CONFIG.commands.parenthesesDefaultTTL;
+
+        if (CONFIG.ngo.parenthesesIncreasesHeat) {
+            state.ngo.heat += CONFIG.ngo.parenthesesHeatBonus;
+        }
+
+        const processed = text.replace(parenRegex, '').trim();
+        safeLog(`📝 Memory stored: "${newestMemory}" (expires turn ${state.commands.expiration1})`, 'info');
+
+        return { processed, found: true, memories };
+    };
+
+    /**
+     * Process @temp command
+     * @param {string} text - Input text
+     * @returns {Object} { processed, found, action, value }
+     */
+    const processTemp = (text) => {
+        if (!CONFIG.commands.enabled) return { processed: text, found: false };
+
+        const tempRegex = new RegExp(`${CONFIG.commands.tempCommand}\\s+(reset|[+-]?\\d+)`, 'i');
+        const match = text.match(tempRegex);
+
+        if (!match) return { processed: text, found: false };
+
+        const value = match[1].toLowerCase();
+        let action = null;
+        let numValue = null;
+
+        if (value === 'reset') {
+            state.ngo.temperature = CONFIG.ngo.initialTemperature;
+            state.ngo.heat = CONFIG.ngo.initialHeat;
+            state.ngo.overheatMode = false;
+            state.ngo.cooldownMode = false;
+            state.ngo.consecutiveConflicts = 0;
+            action = 'reset';
+            numValue = CONFIG.ngo.initialTemperature;
+            safeLog('🔄 NGO state RESET', 'success');
+        } else if (value.startsWith('+') || value.startsWith('-')) {
+            const delta = parseInt(value);
+            state.ngo.temperature = Math.max(
+                CONFIG.ngo.minTemperature,
+                Math.min(CONFIG.ngo.trueMaxTemperature, state.ngo.temperature + delta)
+            );
+            action = delta > 0 ? 'increase' : 'decrease';
+            numValue = state.ngo.temperature;
+            safeLog(`🌡️ Temperature ${delta > 0 ? '+' : ''}${delta} → ${state.ngo.temperature}`, 'info');
+        } else {
+            const absolute = parseInt(value);
+            state.ngo.temperature = Math.max(
+                CONFIG.ngo.minTemperature,
+                Math.min(CONFIG.ngo.trueMaxTemperature, absolute)
+            );
+            action = 'set';
+            numValue = state.ngo.temperature;
+            safeLog(`🌡️ Temperature set to ${state.ngo.temperature}`, 'info');
+        }
+
+        return { processed: text.replace(tempRegex, '').trim(), found: true, action, value: numValue };
+    };
+
+    /**
+     * Process @arc command
+     * @param {string} text - Input text
+     * @returns {Object} { processed, found, phase }
+     */
+    const processArc = (text) => {
+        if (!CONFIG.commands.enabled) return { processed: text, found: false };
+
+        const arcRegex = new RegExp(`${CONFIG.commands.arcCommand}\\s+(intro|rising|climax|cooldown|overheat)`, 'i');
+        const match = text.match(arcRegex);
+
+        if (!match) return { processed: text, found: false };
+
+        const phase = match[1].toLowerCase();
+
+        switch (phase) {
+            case 'intro':
+                state.ngo.temperature = 1;
+                state.ngo.heat = 0;
+                state.ngo.overheatMode = false;
+                state.ngo.cooldownMode = false;
+                safeLog('📖 Arc → INTRODUCTION', 'info');
+                break;
+            case 'rising':
+                state.ngo.temperature = 6;
+                state.ngo.heat = 5;
+                state.ngo.overheatMode = false;
+                state.ngo.cooldownMode = false;
+                safeLog('📖 Arc → RISING ACTION', 'info');
+                break;
+            case 'climax':
+                state.ngo.temperature = 10;
+                state.ngo.heat = 10;
+                NGOEngine.enterOverheatMode();
+                state.ngo.cooldownMode = false;
+                safeLog('📖 Arc → CLIMAX', 'warn');
+                break;
+            case 'cooldown':
+                NGOEngine.forceEarlyCooldown('manual');
+                break;
+            case 'overheat':
+                NGOEngine.enterOverheatMode();
+                break;
+        }
+
+        return { processed: text.replace(arcRegex, '').trim(), found: true, phase };
+    };
+
+    /**
+     * Process all commands in input text
+     * @param {string} text - Input text
+     * @returns {Object} { processed, commands }
+     */
+    const processAllCommands = (text) => {
+        if (!CONFIG.commands.enabled) return { processed: text, commands: {} };
+
+        let processed = text;
+        const commands = {};
+
+        // Process in order: @req, (...), @temp, @arc
+        const reqResult = processReq(processed);
+        processed = reqResult.processed;
+        if (reqResult.found) commands.req = reqResult.request;
+
+        const parenResult = processParentheses(processed);
+        processed = parenResult.processed;
+        if (parenResult.found) commands.parentheses = parenResult.memories;
+
+        const tempResult = processTemp(processed);
+        processed = tempResult.processed;
+        if (tempResult.found) commands.temp = { action: tempResult.action, value: tempResult.value };
+
+        const arcResult = processArc(processed);
+        processed = arcResult.processed;
+        if (arcResult.found) commands.arc = arcResult.phase;
+
+        return { processed, commands };
+    };
+
+    /**
+     * Build front memory injection for @req
+     * @returns {string} Front memory text
+     */
+    const buildFrontMemoryInjection = () => {
+        if (!CONFIG.commands.reqDualInjection) return '';
+        if (!state.commands.narrativeRequest || state.commands.narrativeRequestTTL <= 0) return '';
+
+        return `<SYSTEM>
+# Narrative shaping:
+Weave the following concept into the next output in a subtle, immersive way:
+${state.commands.narrativeRequest}
+</SYSTEM>`;
+    };
+
+    /**
+     * Build author's note layers for commands
+     * @returns {Object} { reqGuidance, memoryGuidance }
+     */
+    const buildAuthorsNoteLayer = () => {
+        const result = { reqGuidance: '', memoryGuidance: '' };
+
+        if (state.commands.narrativeRequest && state.commands.narrativeRequestTTL > 0) {
+            result.reqGuidance = `PRIORITY: Immediately and naturally introduce: ${state.commands.narrativeRequest}`;
+        }
+
+        const memoryParts = [];
+        if (state.commands.memory1 && state.commands.expiration1 > state.ngoStats.totalTurns) {
+            memoryParts.push(`After the current phrase, flawlessly transition the story towards: ${state.commands.memory1}`);
+        }
+        if (state.commands.memory2 && state.commands.expiration2 > state.ngoStats.totalTurns) {
+            memoryParts.push(`Additionally consider: ${state.commands.memory2}`);
+        }
+        if (state.commands.memory3 && state.commands.expiration3 > state.ngoStats.totalTurns) {
+            memoryParts.push(`Background goal: ${state.commands.memory3}`);
+        }
+
+        if (memoryParts.length > 0) {
+            result.memoryGuidance = memoryParts.join(' ');
+        }
+
+        return result;
+    };
+
+    /**
+     * Detect if request was fulfilled in output
+     * @param {string} outputText - AI output text
+     * @returns {Object} { fulfilled, score, reason }
+     */
+    const detectFulfillment = (outputText) => {
+        if (!CONFIG.commands.detectFulfillment) return { fulfilled: false, reason: 'disabled' };
+        if (!state.commands.narrativeRequest) return { fulfilled: false, reason: 'no_request' };
+
+        const request = state.commands.narrativeRequest.toLowerCase();
+        const textLower = outputText.toLowerCase();
+
+        // Keyword matching
+        const keywords = request.split(/\s+/).filter(w => w.length > 3);
+        const matchedKeywords = keywords.filter(kw => textLower.includes(kw));
+        const keywordScore = keywords.length > 0 ? matchedKeywords.length / keywords.length : 0;
+
+        // N-gram overlap
+        const requestNGrams = Object.keys(BonepokeAnalysis.extractNGrams(request, 2, 3));
+        const textNGrams = Object.keys(BonepokeAnalysis.extractNGrams(outputText, 2, 3));
+        const ngramOverlap = requestNGrams.filter(ng => textNGrams.includes(ng)).length;
+        const ngramScore = requestNGrams.length > 0 ? ngramOverlap / requestNGrams.length : 0;
+
+        const fulfillmentScore = (keywordScore * 0.6) + (ngramScore * 0.4);
+        const fulfilled = fulfillmentScore >= CONFIG.commands.fulfillmentThreshold;
+
+        if (fulfilled) {
+            state.commands.narrativeRequestFulfilled = true;
+            state.commands.narrativeRequest = null;
+            state.commands.narrativeRequestTTL = 0;
+            state.ngoStats.requestsFulfilled++;
+            safeLog(`✅ Request FULFILLED! (score: ${fulfillmentScore.toFixed(2)})`, 'success');
+            return { fulfilled: true, score: fulfillmentScore, reason: 'threshold_met' };
+        } else {
+            state.commands.narrativeRequestTTL--;
+
+            if (state.commands.narrativeRequestTTL <= 0) {
+                state.commands.narrativeRequest = null;
+                state.ngoStats.requestsFailed++;
+                safeLog('❌ Request EXPIRED', 'warn');
+                return { fulfilled: false, score: fulfillmentScore, reason: 'ttl_expired' };
+            }
+
+            return { fulfilled: false, score: fulfillmentScore, reason: 'pending' };
+        }
+    };
+
+    /**
+     * Clean up expired memories
+     * @returns {number} Number of memories expired
+     */
+    const cleanupExpiredMemories = () => {
+        let expired = 0;
+
+        if (state.commands.expiration1 && state.commands.expiration1 <= state.ngoStats.totalTurns) {
+            state.commands.memory1 = '';
+            state.commands.expiration1 = null;
+            expired++;
+        }
+
+        if (state.commands.expiration2 && state.commands.expiration2 <= state.ngoStats.totalTurns) {
+            state.commands.memory2 = '';
+            state.commands.expiration2 = null;
+            expired++;
+        }
+
+        if (state.commands.expiration3 && state.commands.expiration3 <= state.ngoStats.totalTurns) {
+            state.commands.memory3 = '';
+            state.commands.expiration3 = null;
+            expired++;
+        }
+
+        if (expired > 0) {
+            safeLog(`🗑️ ${expired} memories expired`, 'info');
+        }
+
+        return expired;
+    };
+
+    return {
+        processReq,
+        processParentheses,
+        processTemp,
+        processArc,
+        processAllCommands,
+        buildFrontMemoryInjection,
+        buildAuthorsNoteLayer,
+        detectFulfillment,
+        cleanupExpiredMemories
     };
 })();
 

@@ -153,6 +153,76 @@ const modifier = (text) => {
         state.lastBonepokeScore = analysis.avgScore;
     }
 
+    // === NGO TURN PROCESSING ===
+    // Process NGO engine turn (timers, phase tracking, analytics)
+    if (CONFIG.ngo && CONFIG.ngo.enabled && state.ngo) {
+        const turnResult = NGOEngine.processTurn();
+
+        if (turnResult.processed && CONFIG.ngo.logStateChanges) {
+            if (turnResult.overheat.completed) {
+                safeLog('🔥 Overheat completed, entering cooldown', 'info');
+            }
+
+            if (turnResult.cooldown.completed) {
+                safeLog('✅ Cooldown complete', 'success');
+            }
+        }
+
+        // Log current NGO status
+        if (CONFIG.ngo.debugLogging) {
+            safeLog(`📊 NGO: Heat=${state.ngo.heat.toFixed(1)}, Temp=${state.ngo.temperature}, Phase=${state.ngo.currentPhase}`, 'info');
+        }
+    }
+
+    // === NGO AI CONFLICT ANALYSIS ===
+    // Analyze AI output for conflict/calming words
+    if (CONFIG.ngo && CONFIG.ngo.enabled && state.ngo) {
+        const aiConflictData = NGOEngine.analyzeConflict(text);
+        const aiHeatResult = NGOEngine.updateHeat(aiConflictData, 'ai');
+
+        if (CONFIG.ngo.logStateChanges && aiHeatResult.delta !== 0) {
+            safeLog(`🔥 AI heat: ${aiHeatResult.oldHeat.toFixed(1)} → ${aiHeatResult.newHeat.toFixed(1)} (conflicts: ${aiConflictData.conflicts}, calming: ${aiConflictData.calming})`, 'info');
+        }
+    }
+
+    // === BONEPOKE-NGO BIDIRECTIONAL INTEGRATION ===
+    // Quality regulates pacing: fatigue triggers cooldown, quality gates temp increases
+    if (CONFIG.bonepoke.enabled && analysis && CONFIG.ngo && CONFIG.ngo.enabled && state.ngo) {
+        // Fatigue triggers early cooldown
+        if (CONFIG.ngo.fatigueTriggersEarlyCooldown) {
+            const fatigueCount = Object.keys(analysis.composted.fatigue).length;
+            if (fatigueCount >= CONFIG.ngo.fatigueThresholdForCooldown && state.ngo.temperature >= 8) {
+                NGOEngine.forceEarlyCooldown('fatigue');
+                safeLog(`⚠️ High fatigue (${fatigueCount} words) at temp ${state.ngo.temperature} - forcing cooldown`, 'warn');
+            }
+        }
+
+        // Drift reduces heat
+        if (CONFIG.ngo.driftReducesHeat && analysis.composted.drift.length > 0) {
+            const driftResult = NGOEngine.reduceHeatFromDrift();
+            if (driftResult.reduction > 0) {
+                safeLog(`🌫️ Drift detected - heat reduced: ${driftResult.oldHeat.toFixed(1)} → ${driftResult.newHeat.toFixed(1)}`, 'info');
+            }
+        }
+
+        // Quality gates temperature increase
+        if (CONFIG.ngo.qualityGatesTemperatureIncrease && state.ngo.temperatureWantsToIncrease) {
+            const qualityApproved = analysis.avgScore >= CONFIG.ngo.qualityThresholdForIncrease;
+            const tempResult = NGOEngine.applyTemperatureIncrease(qualityApproved);
+
+            if (tempResult.applied) {
+                safeLog(`🌡️ Temperature: ${tempResult.oldTemp} → ${tempResult.newTemp} (quality: ${analysis.avgScore.toFixed(2)})`, 'warn');
+
+                // Check for overheat trigger
+                if (NGOEngine.shouldTriggerOverheat()) {
+                    NGOEngine.enterOverheatMode();
+                }
+            } else if (tempResult.reason === 'quality_blocked') {
+                safeLog(`⛔ Temperature increase BLOCKED (quality: ${analysis.avgScore.toFixed(2)} < ${CONFIG.ngo.qualityThresholdForIncrease})`, 'warn');
+            }
+        }
+    }
+
     // === CROSS-OUTPUT TRACKING ===
     // Track last 3 outputs with n-grams to detect repeated phrases across turns
 
@@ -469,6 +539,19 @@ const modifier = (text) => {
         if (analysis.composted.marm !== 'MARM: suppressed') {
             safeLog(`  ${analysis.composted.marm}`, 'warn');
         }
+    }
+
+    // === NGO @REQ FULFILLMENT DETECTION ===
+    // Check if narrative request was fulfilled in this output
+    if (CONFIG.commands && CONFIG.commands.enabled && state.commands) {
+        const fulfillmentResult = NGOCommands.detectFulfillment(text);
+
+        if (fulfillmentResult.reason === 'pending') {
+            safeLog(`⏳ Request pending (score: ${fulfillmentResult.score.toFixed(2)}, TTL: ${state.commands.narrativeRequestTTL})`, 'info');
+        }
+
+        // Cleanup expired parentheses memories
+        NGOCommands.cleanupExpiredMemories();
     }
 
     // Record analytics

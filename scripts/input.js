@@ -10,6 +10,18 @@ const modifier = (text) => {
     state.lastInputType = history[history.length - 1]?.type || 'action';
     state.lastInputTimestamp = Date.now();
 
+    // === NGO COMMAND PROCESSING ===
+    // Process @req, (...), @temp, @arc commands BEFORE anything else
+    if (CONFIG.commands && CONFIG.commands.enabled) {
+        const commandResult = NGOCommands.processAllCommands(text);
+        text = commandResult.processed;
+
+        // Log commands found
+        if (Object.keys(commandResult.commands).length > 0) {
+            safeLog(`🎮 Commands: ${JSON.stringify(commandResult.commands)}`, 'info');
+        }
+    }
+
     // Better Say Actions - Enhanced dialogue formatting
     // Credit: BinKompliziert (AI Dungeon Discord)
     const enhanceSayActions = (input) => {
@@ -59,6 +71,23 @@ const modifier = (text) => {
 
     // Normalize whitespace
     text = text.replace(/\s+/g, ' ').trim();
+
+    // === NGO CONFLICT ANALYSIS (PLAYER INPUT) ===
+    // Analyze player input for conflict/calming words to update heat
+    if (CONFIG.ngo && CONFIG.ngo.enabled && state.ngo) {
+        const conflictData = NGOEngine.analyzeConflict(text);
+        const heatResult = NGOEngine.updateHeat(conflictData, 'player');
+
+        if (CONFIG.ngo.logStateChanges && heatResult.delta !== 0) {
+            safeLog(`🔥 Player heat: ${heatResult.oldHeat.toFixed(1)} → ${heatResult.newHeat.toFixed(1)} (conflicts: ${conflictData.conflicts}, calming: ${conflictData.calming})`, 'info');
+        }
+
+        // Check if temperature should increase
+        const tempCheck = NGOEngine.checkTemperatureIncrease();
+        if (tempCheck.shouldIncrease) {
+            safeLog(`🌡️ Temperature increase pending (reason: ${tempCheck.reason})`, 'info');
+        }
+    }
 
     // Store processed input in state for context analysis
     state.lastProcessedInput = text;
