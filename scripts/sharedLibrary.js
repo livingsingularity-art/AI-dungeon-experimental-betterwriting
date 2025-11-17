@@ -2337,6 +2337,179 @@ ${state.commands.narrativeRequest}
     };
 })();
 
+// =============================================
+// NGO STORY CARD GENERATOR
+// Creates and updates dynamic story card every turn
+// =============================================
+const NGOStoryCard = (() => {
+    const CARD_TITLE = "NGO_NARRATIVE_GUIDANCE";
+    const CARD_TYPE = "Custom";
+    const CARD_KEYS = "story,narrative,plot,scene";
+
+    /**
+     * Generate narrative guidance based on current NGO state
+     * This is the "value" that gets added to PlayersAuthorsNote
+     * @returns {string} Dynamic narrative guidance text
+     */
+    const generateCardValue = () => {
+        if (!state.ngo) return '';
+
+        const phase = getCurrentNGOPhase();
+        const temp = state.ngo.temperature;
+        const heat = state.ngo.heat;
+
+        const parts = [];
+
+        // PART 1: Story Arc Position
+        parts.push(`[NARRATIVE PHASE: ${phase.name}]`);
+
+        // PART 2: Tension Level Guidance
+        if (temp >= 12) {
+            parts.push('EXTREME CLIMAX: Push boundaries. Maximum stakes. Life-changing consequences. No holding back.');
+        } else if (temp >= 10) {
+            parts.push('PEAK CLIMAX: Intense confrontation. Major revelations. Critical turning point. High emotional impact.');
+        } else if (temp >= 8) {
+            parts.push('CLIMAX ENTRY: Rising to peak. Escalate conflict. Build to decisive moment. Stakes are high.');
+        } else if (temp >= 6) {
+            parts.push('LATE RISING ACTION: Accelerate momentum. Deepen complications. Approach critical threshold.');
+        } else if (temp >= 4) {
+            parts.push('EARLY RISING ACTION: Build tension steadily. Introduce complications. Foreshadow conflict.');
+        } else {
+            parts.push('INTRODUCTION/ESTABLISHMENT: Set the scene. Establish characters. Plant seeds for future conflict.');
+        }
+
+        // PART 3: Mode-Specific Guidance
+        if (state.ngo.overheatMode) {
+            parts.push(`[OVERHEAT MODE: ${state.ngo.overheatTurnsLeft} turns] Sustain maximum intensity. Do not relent.`);
+        } else if (state.ngo.cooldownMode) {
+            parts.push(`[COOLDOWN MODE: ${state.ngo.cooldownTurnsLeft} turns] Falling action. Process aftermath. Reflect on consequences.`);
+        }
+
+        // PART 4: Heat-Based Immediate Tension
+        if (heat >= 30) {
+            parts.push('IMMEDIATE TENSION: Explosive. Conflict erupting now.');
+        } else if (heat >= 20) {
+            parts.push('IMMEDIATE TENSION: High. Conflict building rapidly.');
+        } else if (heat >= 10) {
+            parts.push('IMMEDIATE TENSION: Moderate. Tension present.');
+        } else {
+            parts.push('IMMEDIATE TENSION: Low. Calm before the storm.');
+        }
+
+        // PART 5: Expression Style (from VS integration)
+        const vsGuidance = [];
+        if (phase.vsAdjustment.k >= 8) {
+            vsGuidance.push('Use vivid, precise vocabulary');
+        } else if (phase.vsAdjustment.k >= 6) {
+            vsGuidance.push('Use strong, clear vocabulary');
+        } else {
+            vsGuidance.push('Use measured, grounded vocabulary');
+        }
+
+        if (phase.vsAdjustment.tau <= 0.07) {
+            vsGuidance.push('Bold creative choices');
+        } else if (phase.vsAdjustment.tau <= 0.1) {
+            vsGuidance.push('Confident creative choices');
+        } else {
+            vsGuidance.push('Careful creative choices');
+        }
+
+        parts.push(`EXPRESSION: ${vsGuidance.join('. ')}.`);
+
+        // PART 6: Quality Focus (from Bonepoke integration)
+        if (phase.bonepokeStrictness === 'maximum') {
+            parts.push('QUALITY: Maximum precision required. Avoid ALL repetition. Every word must earn its place.');
+        } else if (phase.bonepokeStrictness === 'strict') {
+            parts.push('QUALITY: High precision required. Minimize repetition. Strong word choices.');
+        } else {
+            parts.push('QUALITY: Standard precision. Natural flow. Avoid obvious repetition.');
+        }
+
+        return parts.join(' ');
+    };
+
+    /**
+     * Create or update the NGO story card
+     * @returns {Object|null} The story card reference or null if failed
+     */
+    const updateCard = () => {
+        if (!CONFIG.ngo.enabled || !state.ngo) return null;
+
+        const cardValue = generateCardValue();
+
+        // Find existing card
+        const existingIndex = storyCards.findIndex(card => card.title === CARD_TITLE);
+
+        if (existingIndex >= 0) {
+            // Update existing card
+            storyCards[existingIndex].entry = cardValue;
+            storyCards[existingIndex].keys = CARD_KEYS;
+
+            if (CONFIG.ngo.debugLogging) {
+                safeLog(`📋 NGO Story Card updated (temp: ${state.ngo.temperature}, heat: ${state.ngo.heat})`, 'info');
+            }
+
+            return storyCards[existingIndex];
+        } else {
+            // Create new card using buildCard
+            try {
+                const card = buildCard(
+                    CARD_TITLE,
+                    cardValue,
+                    CARD_TYPE,
+                    CARD_KEYS,
+                    "Dynamic NGO narrative guidance - updates every turn",
+                    0 // Insert at top
+                );
+
+                if (CONFIG.ngo.debugLogging) {
+                    safeLog(`📋 NGO Story Card created`, 'success');
+                }
+
+                return card;
+            } catch (err) {
+                safeLog(`Failed to create NGO Story Card: ${err.message}`, 'error');
+                return null;
+            }
+        }
+    };
+
+    /**
+     * Get the current card value (for injection into authorsNote)
+     * @returns {string} The current card value/entry
+     */
+    const getCardValue = () => {
+        const existingIndex = storyCards.findIndex(card => card.title === CARD_TITLE);
+
+        if (existingIndex >= 0) {
+            return storyCards[existingIndex].entry;
+        }
+
+        // Generate fresh if no card exists
+        return generateCardValue();
+    };
+
+    /**
+     * Remove the NGO story card (for cleanup)
+     */
+    const removeCard = () => {
+        const existingIndex = storyCards.findIndex(card => card.title === CARD_TITLE);
+
+        if (existingIndex >= 0) {
+            storyCards.splice(existingIndex, 1);
+            safeLog(`📋 NGO Story Card removed`, 'info');
+        }
+    };
+
+    return {
+        generateCardValue,
+        updateCard,
+        getCardValue,
+        removeCard,
+        CARD_TITLE
+    };
+})();
+
 // #endregion
 
 // #region Initialization
@@ -2353,6 +2526,12 @@ if (CONFIG.vs.enabled) {
 ensureBannedWordsCard();   // PRECISE removal
 ensureAggressiveCard();     // AGGRESSIVE sentence removal
 ensureReplacerCard();       // REPLACER synonyms
+
+// Ensure NGO Story Card exists (creates dynamic narrative guidance)
+if (CONFIG.ngo.enabled) {
+    NGOStoryCard.updateCard();
+    safeLog('📋 NGO Story Card initialized - value will be injected into PlayersAuthorsNote each turn', 'success');
+}
 
 // #endregion
 

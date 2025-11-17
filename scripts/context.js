@@ -40,21 +40,25 @@ const modifier = (text) => {
     // === NGO LAYERED AUTHOR'S NOTE SYSTEM ===
     // Build author's note with priority layers:
     // 1. Original user note (base)
-    // 2. NGO story phase guidance (narrative structure)
+    // 2. NGO Story Card VALUE (dynamic narrative guidance)
     // 3. Parentheses memory (gradual goals)
     // 4. @req immediate request (urgent player intent)
     if (CONFIG.ngo && CONFIG.ngo.enabled && state.ngo) {
         const buildLayeredAuthorsNote = () => {
             const layers = [];
 
-            // LAYER 1: Original user note (base)
+            // LAYER 1: Original user note (PlayersAuthorsNote base)
             if (state.originalAuthorsNote) {
                 layers.push(state.originalAuthorsNote);
             }
 
-            // LAYER 2: NGO Story Phase guidance
-            const phase = getCurrentNGOPhase();
-            layers.push(phase.authorNoteGuidance);
+            // LAYER 2: NGO Story Card VALUE (dynamic guidance)
+            // This is the critical injection - the story card's "value" contains
+            // comprehensive narrative guidance that adapts every turn
+            const storyCardValue = NGOStoryCard.getCardValue();
+            if (storyCardValue) {
+                layers.push(storyCardValue);
+            }
 
             // LAYER 3 & 4: Command system layers
             if (CONFIG.commands && CONFIG.commands.enabled && state.commands) {
