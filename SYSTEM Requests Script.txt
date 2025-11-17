@@ -1,0 +1,14 @@
+  if (text.toLowerCase().includes("@req")) {
+    let requestText = text.replace(/^[\s\S]*@req(?:uest)?\s*/i, "").trim();
+
+    const systemPrompt = `
+      <SYSTEM>
+      # Narrative shaping:
+      Weave the following concept into the next output in a subtle, immersive way:
+      ${requestText}
+      </SYSTEM>
+    `;
+
+    state.memory.frontMemory = systemPrompt;
+    state.message = `Request acknowledged.`;
+  }
