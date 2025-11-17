@@ -168,11 +168,6 @@ const modifier = (text) => {
             }
         }
 
-        // === UPDATE NGO STORY CARD ===
-        // Generate fresh narrative guidance based on current state
-        // This card's "value" gets injected into PlayersAuthorsNote every turn
-        NGOStoryCard.updateCard();
-
         // Log current NGO status
         if (CONFIG.ngo.debugLogging) {
             safeLog(`📊 NGO: Heat=${state.ngo.heat.toFixed(1)}, Temp=${state.ngo.temperature}, Phase=${state.ngo.currentPhase}`, 'info');
