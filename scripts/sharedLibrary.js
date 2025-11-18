@@ -153,9 +153,23 @@ const CONFIG = {
         // Fallback behavior
         fallbackToRandom: true,     // Use random selection if smart fails
 
+        // Phase 4: Advanced Features
+        enableContextMatching: true,    // Analyze surrounding text for better synonym selection
+        enableAdaptiveLearning: true,   // Track which replacements improve quality
+        enablePhraseIntelligence: true, // Enhanced multi-word phrase matching
+
+        // Context matching settings
+        contextRadius: 50,              // Characters before/after to analyze
+        tagMatchBonus: 2,               // Weight bonus for synonyms matching context tags
+
+        // Adaptive learning settings
+        learningRate: 0.1,              // How fast to adjust preferences (0-1)
+        minSamplesForLearning: 3,       // Minimum replacements before learning kicks in
+
         // Debug
         debugLogging: false,
-        logReplacementReasons: true  // Show WHY each replacement was chosen
+        logReplacementReasons: true,  // Show WHY each replacement was chosen
+        logContextAnalysis: false      // Show context matching details
     },
 
     // System
@@ -267,6 +281,16 @@ const initState = () => {
             avgTemperature: 1,
             temperatureSum: 0,
             phaseHistory: []
+        };
+
+        // === ADAPTIVE LEARNING (Phase 4) ===
+        state.replacementLearning = {
+            // Track: word -> { synonym: { uses, totalScoreImprovement, avgImprovement } }
+            history: {},
+            totalReplacements: 0,
+            successfulReplacements: 0,  // Replacements that improved quality
+            neutralReplacements: 0,      // Replacements that didn't change quality
+            failedReplacements: 0        // Replacements that decreased quality
         };
 
         // Store original author's note
@@ -2100,9 +2124,62 @@ const getSmartSynonym = (word, bonepokeScores, context = '') => {
         candidates = wordData.synonyms.slice();
     }
 
-    // STEP 4: Weight selection by emotion/precision scores
-    // Higher-scored synonyms more likely to be selected
-    const weights = candidates.map(s => s.emotion + s.precision);
+    // PHASE 4: CONTEXT MATCHING - Analyze surrounding text for better synonym selection
+    let contextKeywords = [];
+    if (CONFIG.smartReplacement.enableContextMatching && context) {
+        const contextLower = context.toLowerCase();
+
+        // Extract context keywords from surrounding text
+        const fastWords = ['quick', 'sudden', 'rapid', 'swift', 'abrupt', 'instant', 'hurried'];
+        const slowWords = ['slow', 'gradual', 'steady', 'leisurely', 'deliberate'];
+        const gentleWords = ['gentle', 'soft', 'tender', 'calm', 'peaceful', 'quiet'];
+        const forcefulWords = ['violent', 'forceful', 'aggressive', 'powerful', 'intense', 'strong'];
+
+        if (fastWords.some(w => contextLower.includes(w))) contextKeywords.push('fast');
+        if (slowWords.some(w => contextLower.includes(w))) contextKeywords.push('slow');
+        if (gentleWords.some(w => contextLower.includes(w))) contextKeywords.push('gentle');
+        if (forcefulWords.some(w => contextLower.includes(w))) contextKeywords.push('forceful');
+
+        if (CONFIG.smartReplacement.logContextAnalysis && contextKeywords.length > 0) {
+            safeLog(`📝 Context keywords: ${contextKeywords.join(', ')}`, 'info');
+        }
+    }
+
+    // PHASE 4: ADAPTIVE LEARNING - Use historical performance to guide selection
+    const learningData = state.replacementLearning && state.replacementLearning.history
+        ? state.replacementLearning.history[lower]
+        : null;
+
+    // STEP 4: Weight selection by emotion/precision scores + context matching + learning
+    const weights = candidates.map((s, idx) => {
+        let weight = s.emotion + s.precision;
+
+        // Context matching bonus (Phase 4)
+        if (CONFIG.smartReplacement.enableContextMatching && contextKeywords.length > 0 && s.tags) {
+            const tagMatches = s.tags.filter(tag => contextKeywords.some(kw => tag.includes(kw)));
+            if (tagMatches.length > 0) {
+                weight += CONFIG.smartReplacement.tagMatchBonus * tagMatches.length;
+                if (CONFIG.smartReplacement.logContextAnalysis) {
+                    safeLog(`✨ ${s.word}: context bonus +${CONFIG.smartReplacement.tagMatchBonus * tagMatches.length} (tags: ${tagMatches.join(',')})`, 'info');
+                }
+            }
+        }
+
+        // Adaptive learning bonus (Phase 4)
+        if (CONFIG.smartReplacement.enableAdaptiveLearning && learningData && learningData[s.word]) {
+            const synData = learningData[s.word];
+            if (synData.uses >= CONFIG.smartReplacement.minSamplesForLearning) {
+                const learningBonus = synData.avgImprovement * CONFIG.smartReplacement.learningRate * 10;
+                weight += learningBonus;
+                if (CONFIG.smartReplacement.debugLogging) {
+                    safeLog(`🧠 ${s.word}: learning bonus +${learningBonus.toFixed(2)} (avg improvement: ${synData.avgImprovement.toFixed(2)})`, 'info');
+                }
+            }
+        }
+
+        return weight;
+    });
+
     const totalWeight = weights.reduce((a, b) => a + b, 0);
     let random = Math.random() * totalWeight;
 
@@ -2115,6 +2192,53 @@ const getSmartSynonym = (word, bonepokeScores, context = '') => {
 
     // Fallback (shouldn't reach here)
     return candidates[candidates.length - 1].word;
+};
+
+/**
+ * Track synonym replacement result for adaptive learning (Phase 4)
+ * @param {string} originalWord - Word that was replaced
+ * @param {string} synonym - Synonym that was used
+ * @param {number} scoreImprovement - Change in Bonepoke score (positive = improvement)
+ */
+const trackReplacementResult = (originalWord, synonym, scoreImprovement) => {
+    if (!CONFIG.smartReplacement.enableAdaptiveLearning || !state.replacementLearning) {
+        return;
+    }
+
+    const lower = originalWord.toLowerCase();
+
+    // Initialize tracking structure if needed
+    if (!state.replacementLearning.history[lower]) {
+        state.replacementLearning.history[lower] = {};
+    }
+
+    if (!state.replacementLearning.history[lower][synonym]) {
+        state.replacementLearning.history[lower][synonym] = {
+            uses: 0,
+            totalScoreImprovement: 0,
+            avgImprovement: 0
+        };
+    }
+
+    // Update tracking data
+    const synData = state.replacementLearning.history[lower][synonym];
+    synData.uses++;
+    synData.totalScoreImprovement += scoreImprovement;
+    synData.avgImprovement = synData.totalScoreImprovement / synData.uses;
+
+    // Update global stats
+    state.replacementLearning.totalReplacements++;
+    if (scoreImprovement > 0.1) {
+        state.replacementLearning.successfulReplacements++;
+    } else if (scoreImprovement < -0.1) {
+        state.replacementLearning.failedReplacements++;
+    } else {
+        state.replacementLearning.neutralReplacements++;
+    }
+
+    if (CONFIG.smartReplacement.debugLogging) {
+        safeLog(`📊 Tracked: ${originalWord} → ${synonym} (${scoreImprovement >= 0 ? '+' : ''}${scoreImprovement.toFixed(2)})`, 'info');
+    }
 };
 
 // #endregion
