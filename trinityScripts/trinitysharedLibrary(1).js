@@ -797,8 +797,9 @@ const initState = () => {
             state.originalAuthorsNote = '';
         }
 
-        // PHASE 7: Load user configuration from story card
-        SmartReplacementConfig.loadAndApply();
+        // Load user configuration from story cards
+        loadTrinityFeatureToggles();           // Feature toggles (must load FIRST)
+        SmartReplacementConfig.loadAndApply(); // Smart replacement settings
 
         state.initialized = true;
         safeLog('State initialized with NGO engine', 'success');
@@ -984,6 +985,258 @@ commence => begin
 
     safeLog('📝 Created REPLACER word bank card', 'success');
     return true;
+};
+
+/**
+ * Create Trinity feature toggle card
+ * Allows users to enable/disable major systems
+ * @returns {boolean} True if card was created
+ */
+const ensureTrinityFeaturesCard = () => {
+    const existing = storyCards.find(c => c.keys && c.keys.includes('trinity_features'));
+    if (existing) {
+        return false;
+    }
+
+    const templateText =
+`# TRINITY FEATURE TOGGLES
+# Set to 'true' to enable, 'false' to disable
+# Save and refresh story to apply changes
+
+## CORE SYSTEMS
+
+Verbalized Sampling (VS): true
+Bonepoke Analysis: true
+NGO Narrative Engine: true
+Smart Replacement: true
+Command System: true
+
+## VERBALIZED SAMPLING OPTIONS
+
+VS Adaptive Mode: true
+VS Seamless (hide from output): true
+VS Debug Logging: false
+
+## BONEPOKE OPTIONS
+
+Dynamic Correction (auto-bans): true
+Fatigue Detection: true
+Quality Analysis: true
+Bonepoke Debug Logging: false
+
+## NGO (NARRATIVE GUIDANCE) OPTIONS
+
+Heat Mechanics: true
+Temperature Progression: true
+Overheat System: true
+Cooldown System: true
+Random Explosions: true
+NGO Debug Logging: false
+NGO State Change Logging: true
+
+## SMART REPLACEMENT OPTIONS
+
+Context Matching: true
+Adaptive Learning: true
+Phrase Intelligence: true
+Replacement Validation: true
+Prevent Quality Degradation: true
+Prevent New Contradictions: true
+Prevent Fatigue Increase: true
+Smart Replacement Debug: false
+Log Replacement Reasons: true
+Log Context Analysis: false
+Log Validation: false
+
+## COMMAND SYSTEM OPTIONS
+
+@req Commands: true
+Parentheses Memory: true
+Parentheses Priority: true
+Fulfillment Detection: true
+Command Debug Logging: false
+
+## SYSTEM OPTIONS
+
+Persist State (save between sessions): true
+Enable Analytics: true
+
+# USAGE NOTES:
+# - Most features work best when enabled together
+# - Disabling core systems may reduce writing quality
+# - Debug logging is OFF by default (enable for troubleshooting)
+# - Changes take effect on next turn after save`;
+
+    const templateCard = buildCard(
+        'Trinity Feature Toggles',
+        templateText,
+        'Custom',
+        'trinity_features config_toggles',
+        'Enable/disable Trinity systems and debug options',
+        10  // High priority - near top of cards
+    );
+
+    safeLog('📝 Created Trinity Feature Toggles card', 'success');
+    return true;
+};
+
+/**
+ * Load feature toggles from story card and apply to CONFIG
+ * Called during initialization
+ */
+const loadTrinityFeatureToggles = () => {
+    const card = storyCards.find(c => c.keys && c.keys.includes('trinity_features'));
+    if (!card || !card.entry) return;
+
+    const lines = card.entry.split('\n');
+    const parseBoolean = (line) => {
+        const match = line.match(/:\s*(true|false)\s*$/i);
+        return match ? match[1].toLowerCase() === 'true' : null;
+    };
+
+    lines.forEach(line => {
+        const trimmed = line.trim();
+        let value;
+
+        // Core Systems
+        if (trimmed.startsWith('Verbalized Sampling (VS):')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.vs.enabled = value;
+        } else if (trimmed.startsWith('Bonepoke Analysis:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.bonepoke.enabled = value;
+        } else if (trimmed.startsWith('NGO Narrative Engine:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.ngo.enabled = value;
+        } else if (trimmed.startsWith('Smart Replacement:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.smartReplacement.enabled = value;
+        } else if (trimmed.startsWith('Command System:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.commands.enabled = value;
+        }
+
+        // VS Options
+        else if (trimmed.startsWith('VS Adaptive Mode:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.vs.adaptive = value;
+        } else if (trimmed.startsWith('VS Seamless')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.vs.seamless = value;
+        } else if (trimmed.startsWith('VS Debug Logging:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.vs.debugLogging = value;
+        }
+
+        // Bonepoke Options
+        else if (trimmed.startsWith('Dynamic Correction')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.bonepoke.enableDynamicCorrection = value;
+        } else if (trimmed.startsWith('Bonepoke Debug Logging:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.bonepoke.debugLogging = value;
+        }
+
+        // NGO Options
+        else if (trimmed.startsWith('Heat Mechanics:')) {
+            value = parseBoolean(trimmed);
+            // Heat is core to NGO, but we can disable increase mechanics
+            if (value === false) {
+                CONFIG.ngo.heatIncreasePerConflict = 0;
+                CONFIG.ngo.playerHeatMultiplier = 0;
+                CONFIG.ngo.aiHeatMultiplier = 0;
+            }
+        } else if (trimmed.startsWith('Temperature Progression:')) {
+            value = parseBoolean(trimmed);
+            if (value === false) {
+                CONFIG.ngo.tempIncreaseChance = 0;
+            }
+        } else if (trimmed.startsWith('Overheat System:')) {
+            value = parseBoolean(trimmed);
+            if (value === false) {
+                CONFIG.ngo.overheatTriggerTemp = 999; // Effectively disabled
+            }
+        } else if (trimmed.startsWith('Cooldown System:')) {
+            value = parseBoolean(trimmed);
+            if (value === false) {
+                CONFIG.ngo.cooldownDuration = 0;
+            }
+        } else if (trimmed.startsWith('Random Explosions:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.ngo.explosionEnabled = value;
+        } else if (trimmed.startsWith('NGO Debug Logging:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.ngo.debugLogging = value;
+        } else if (trimmed.startsWith('NGO State Change Logging:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.ngo.logStateChanges = value;
+        }
+
+        // Smart Replacement Options
+        else if (trimmed.startsWith('Context Matching:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.smartReplacement.enableContextMatching = value;
+        } else if (trimmed.startsWith('Adaptive Learning:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.smartReplacement.enableAdaptiveLearning = value;
+        } else if (trimmed.startsWith('Phrase Intelligence:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.smartReplacement.enablePhraseIntelligence = value;
+        } else if (trimmed.startsWith('Replacement Validation:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.smartReplacement.enableValidation = value;
+        } else if (trimmed.startsWith('Prevent Quality Degradation:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.smartReplacement.preventQualityDegradation = value;
+        } else if (trimmed.startsWith('Prevent New Contradictions:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.smartReplacement.preventNewContradictions = value;
+        } else if (trimmed.startsWith('Prevent Fatigue Increase:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.smartReplacement.preventFatigueIncrease = value;
+        } else if (trimmed.startsWith('Smart Replacement Debug:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.smartReplacement.debugLogging = value;
+        } else if (trimmed.startsWith('Log Replacement Reasons:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.smartReplacement.logReplacementReasons = value;
+        } else if (trimmed.startsWith('Log Context Analysis:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.smartReplacement.logContextAnalysis = value;
+        } else if (trimmed.startsWith('Log Validation:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.smartReplacement.logValidation = value;
+        }
+
+        // Command System Options
+        else if (trimmed.startsWith('@req Commands:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.commands.reqDualInjection = value;
+        } else if (trimmed.startsWith('Parentheses Memory:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.commands.parenthesesEnabled = value;
+        } else if (trimmed.startsWith('Parentheses Priority:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.commands.parenthesesPriority = value;
+        } else if (trimmed.startsWith('Fulfillment Detection:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.commands.detectFulfillment = value;
+        } else if (trimmed.startsWith('Command Debug Logging:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.commands.debugLogging = value;
+        }
+
+        // System Options
+        else if (trimmed.startsWith('Persist State')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.system.persistState = value;
+        } else if (trimmed.startsWith('Enable Analytics:')) {
+            value = parseBoolean(trimmed);
+            if (value !== null) CONFIG.system.enableAnalytics = value;
+        }
+    });
+
+    safeLog('✅ Loaded Trinity feature toggles from story card', 'info');
 };
 
 /**
@@ -5215,6 +5468,9 @@ initState();
 if (CONFIG.vs.enabled) {
     VerbalizedSampling.ensureCard();
 }
+
+// Ensure Trinity feature toggle card exists
+ensureTrinityFeaturesCard();
 
 // Ensure all word bank template cards exist
 ensureBannedWordsCard();   // PRECISE removal
