@@ -137,9 +137,19 @@ const CONFIG = {
     smartReplacement: {
         enabled: true,          // Use Bonepoke scores to guide synonym selection
 
-        // Dimension thresholds (trigger smart selection when score is low)
-        emotionThreshold: 2,    // Boost emotion if Emotional Strength < 2
-        precisionThreshold: 2,  // Boost precision if Character Clarity < 2
+        // Phase 6 (MEDIUM #7): Per-Dimension Threshold Configuration
+        // Configure threshold for each Bonepoke dimension
+        thresholds: {
+            'Emotional Strength': 2,    // Boost emotion words when dimension < 2
+            'Character Clarity': 2,      // Boost precision words when dimension < 2
+            'Story Flow': 2,             // Boost flow/transition words when dimension < 2
+            'Dialogue Weight': 2,        // Boost dialogue verbs when dimension < 2
+            'Word Variety': 1            // More lenient for variety (boost when < 1)
+        },
+
+        // Legacy thresholds (deprecated, kept for backward compatibility)
+        emotionThreshold: 2,    // Use thresholds['Emotional Strength'] instead
+        precisionThreshold: 2,  // Use thresholds['Character Clarity'] instead
 
         // Validation settings
         requireImprovement: false,  // Set true to only apply if quality improves
@@ -188,6 +198,102 @@ const CONFIG = {
     }
 };
 
+// #region Phase 6 (MEDIUM #8): Strictness Level Presets
+
+/**
+ * Preset configurations for different replacement aggressiveness levels
+ * Users can easily switch between conservative, balanced, or aggressive modes
+ */
+const STRICTNESS_PRESETS = {
+    conservative: {
+        // Most cautious - only replace when absolutely needed
+        thresholds: {
+            'Emotional Strength': 1,
+            'Character Clarity': 1,
+            'Story Flow': 1,
+            'Dialogue Weight': 1,
+            'Word Variety': 0.5
+        },
+        enableValidation: true,
+        validationStrict: true,      // Require improvement
+        minScoreImprovement: 0.1,
+        preventQualityDegradation: true,
+        preventNewContradictions: true,
+        preventFatigueIncrease: true,
+        enableContextMatching: true,
+        enableAdaptiveLearning: true,
+        tagMatchBonus: 1,            // Lower bonus
+        description: 'Conservative: Only replaces when strongly needed, requires improvement'
+    },
+
+    balanced: {
+        // Default - balanced replacement approach
+        thresholds: {
+            'Emotional Strength': 2,
+            'Character Clarity': 2,
+            'Story Flow': 2,
+            'Dialogue Weight': 2,
+            'Word Variety': 1
+        },
+        enableValidation: true,
+        validationStrict: false,     // Allow neutral
+        minScoreImprovement: 0.0,
+        preventQualityDegradation: true,
+        preventNewContradictions: true,
+        preventFatigueIncrease: true,
+        enableContextMatching: true,
+        enableAdaptiveLearning: true,
+        tagMatchBonus: 2,
+        description: 'Balanced: Normal replacement rate, allows neutral changes (recommended)'
+    },
+
+    aggressive: {
+        // Most proactive - replace even moderately weak dimensions
+        thresholds: {
+            'Emotional Strength': 3,
+            'Character Clarity': 3,
+            'Story Flow': 3,
+            'Dialogue Weight': 3,
+            'Word Variety': 2
+        },
+        enableValidation: true,
+        validationStrict: false,
+        minScoreImprovement: 0.0,
+        preventQualityDegradation: true,  // Still prevent degradation
+        preventNewContradictions: false,  // More lenient
+        preventFatigueIncrease: false,    // More lenient
+        enableContextMatching: true,
+        enableAdaptiveLearning: true,
+        tagMatchBonus: 3,            // Higher bonus
+        description: 'Aggressive: Replaces more often, more lenient validation'
+    }
+};
+
+/**
+ * Apply a strictness preset to CONFIG.smartReplacement
+ * @param {string} level - 'conservative', 'balanced', or 'aggressive'
+ * @returns {boolean} True if preset was applied, false if invalid level
+ */
+const applyStrictnessPreset = (level) => {
+    const preset = STRICTNESS_PRESETS[level];
+    if (!preset) {
+        safeLog(`⚠️ Invalid strictness level: ${level}. Use 'conservative', 'balanced', or 'aggressive'`, 'warn');
+        return false;
+    }
+
+    // Apply preset settings to CONFIG (excluding description)
+    Object.keys(preset).forEach(key => {
+        if (key !== 'description') {
+            CONFIG.smartReplacement[key] = preset[key];
+        }
+    });
+
+    safeLog(`✅ Applied ${level} strictness preset: ${preset.description}`, 'info');
+    return true;
+};
+
+// #endregion
+
 // #endregion
 
 // #region Utilities
@@ -207,6 +313,116 @@ const safeLog = (message, level = 'info') => {
         log(`${prefix} ${message}`);
     }
 };
+
+/**
+ * Select item from array using weighted random selection (Phase 6 - MEDIUM #6)
+ * @param {Array} items - Items to select from
+ * @param {Function} weightFn - Function that returns weight for each item
+ * @returns {*} Selected item or null if array is empty
+ */
+const weightedRandomSelection = (items, weightFn) => {
+    if (!items || items.length === 0) return null;
+    if (items.length === 1) return items[0];
+
+    const weights = items.map(weightFn);
+    const totalWeight = weights.reduce((a, b) => a + b, 0);
+
+    // All weights are 0, use uniform random
+    if (totalWeight === 0) {
+        return items[Math.floor(Math.random() * items.length)];
+    }
+
+    let random = Math.random() * totalWeight;
+
+    for (let i = 0; i < items.length; i++) {
+        random -= weights[i];
+        if (random <= 0) {
+            return items[i];
+        }
+    }
+
+    // Fallback (shouldn't reach here due to floating point)
+    return items[items.length - 1];
+};
+
+// #region Phase 6 (MEDIUM #9): Performance Benchmarking
+
+/**
+ * Performance benchmarking module for tracking replacement system performance
+ */
+const PerformanceBenchmark = (() => {
+    const timings = {
+        totalReplacements: 0,
+        totalTime: 0,
+        avgTime: 0,
+        maxTime: 0,
+        minTime: Infinity,
+        lastTime: 0
+    };
+
+    /**
+     * Start timing a replacement operation
+     * @returns {number} Start timestamp
+     */
+    const start = () => {
+        return Date.now();  // Use Date.now() for AI Dungeon compatibility
+    };
+
+    /**
+     * End timing and record results
+     * @param {number} startTime - Timestamp from start()
+     * @returns {number} Elapsed time in milliseconds
+     */
+    const end = (startTime) => {
+        const elapsed = Date.now() - startTime;
+
+        timings.totalReplacements++;
+        timings.totalTime += elapsed;
+        timings.avgTime = timings.totalTime / timings.totalReplacements;
+        timings.maxTime = Math.max(timings.maxTime, elapsed);
+        timings.minTime = Math.min(timings.minTime, elapsed);
+        timings.lastTime = elapsed;
+
+        if (CONFIG.smartReplacement && CONFIG.smartReplacement.debugLogging) {
+            safeLog(`⏱️ Replacement took ${elapsed.toFixed(2)}ms`, 'info');
+        }
+
+        return elapsed;
+    };
+
+    /**
+     * Get performance report
+     * @returns {string} Formatted performance statistics
+     */
+    const getReport = () => {
+        if (timings.totalReplacements === 0) {
+            return '⏱️ No replacement timing data available yet.';
+        }
+
+        return `⏱️ PERFORMANCE STATS:\n` +
+               `   Total Replacements: ${timings.totalReplacements}\n` +
+               `   Avg Time: ${timings.avgTime.toFixed(2)}ms\n` +
+               `   Max Time: ${timings.maxTime.toFixed(2)}ms\n` +
+               `   Min Time: ${timings.minTime === Infinity ? 'N/A' : timings.minTime.toFixed(2) + 'ms'}\n` +
+               `   Last Time: ${timings.lastTime.toFixed(2)}ms`;
+    };
+
+    /**
+     * Reset all timing data
+     */
+    const reset = () => {
+        timings.totalReplacements = 0;
+        timings.totalTime = 0;
+        timings.avgTime = 0;
+        timings.maxTime = 0;
+        timings.minTime = Infinity;
+        timings.lastTime = 0;
+    };
+
+    return { start, end, getReport, reset, timings };
+})();
+
+// #endregion
 
 /**
  * Initialize state with default values
@@ -2089,7 +2305,11 @@ const ENHANCED_SYNONYM_MAP = {
  * @returns {string} Best replacement synonym or original if no good match
  */
 const getSmartSynonym = (word, bonepokeScores, context = '') => {
+    // PHASE 6 (MEDIUM #9): Performance benchmarking
+    const perfStart = PerformanceBenchmark.start();
+
     if (!CONFIG.smartReplacement || !CONFIG.smartReplacement.enabled) {
+        PerformanceBenchmark.end(perfStart);
         return getSynonym(word); // Fallback to random selection
     }
 
@@ -2098,12 +2318,14 @@ const getSmartSynonym = (word, bonepokeScores, context = '') => {
 
     // No enhanced data available - use basic synonym
     if (!wordData || !wordData.synonyms || wordData.synonyms.length === 0) {
+        PerformanceBenchmark.end(perfStart);
         return getSynonym(word);
     }
 
     // No Bonepoke scores available - use random from enhanced list
     if (!bonepokeScores || Object.keys(bonepokeScores).length === 0) {
         const randomIndex = Math.floor(Math.random() * wordData.synonyms.length);
+        PerformanceBenchmark.end(perfStart);
         return wordData.synonyms[randomIndex].word;
     }
 
@@ -2116,28 +2338,34 @@ const getSmartSynonym = (word, bonepokeScores, context = '') => {
     // STEP 2: Filter candidates based on dimension needs
     let candidates = wordData.synonyms.slice(); // Copy array
 
-    // Apply dimension-specific filtering
-    if (weakestScore <= CONFIG.smartReplacement.emotionThreshold &&
-        weakestDimension === 'Emotional Strength') {
-        // Need HIGH emotion words
-        candidates = candidates.filter(s => s.emotion >= 3);
-        if (CONFIG.smartReplacement.debugLogging) {
-            safeLog(`🎯 Filtering for high emotion (${weakestDimension} = ${weakestScore})`, 'info');
-        }
-    } else if (weakestScore <= CONFIG.smartReplacement.precisionThreshold &&
-               weakestDimension === 'Character Clarity') {
-        // Need HIGH precision words
-        candidates = candidates.filter(s => s.precision >= 3);
-        if (CONFIG.smartReplacement.debugLogging) {
-            safeLog(`🎯 Filtering for high precision (${weakestDimension} = ${weakestScore})`, 'info');
-        }
-    } else if (weakestScore <= CONFIG.smartReplacement.emotionThreshold &&
-               weakestDimension === 'Dialogue Weight' &&
-               wordData.dialogueVerb) {
-        // Need dialogue-specific verbs
-        candidates = candidates.filter(s => s.dialogue === true);
-        if (CONFIG.smartReplacement.debugLogging) {
-            safeLog(`🎯 Filtering for dialogue verbs (${weakestDimension} = ${weakestScore})`, 'info');
+    // PHASE 6 (MEDIUM #7): Use per-dimension threshold configuration
+    // Get threshold for weakest dimension (with backward compatibility)
+    const dimensionThreshold = CONFIG.smartReplacement.thresholds && CONFIG.smartReplacement.thresholds[weakestDimension]
+        ? CONFIG.smartReplacement.thresholds[weakestDimension]
+        : (weakestDimension === 'Emotional Strength' ? CONFIG.smartReplacement.emotionThreshold :
+           weakestDimension === 'Character Clarity' ? CONFIG.smartReplacement.precisionThreshold :
+           2);  // Default fallback
+
+    // Apply dimension-specific filtering using configured threshold
+    if (weakestScore <= dimensionThreshold) {
+        if (weakestDimension === 'Emotional Strength') {
+            // Need HIGH emotion words
+            candidates = candidates.filter(s => s.emotion >= 3);
+            if (CONFIG.smartReplacement.debugLogging) {
+                safeLog(`🎯 Filtering for high emotion (${weakestDimension} = ${weakestScore}, threshold = ${dimensionThreshold})`, 'info');
+            }
+        } else if (weakestDimension === 'Character Clarity') {
+            // Need HIGH precision words
+            candidates = candidates.filter(s => s.precision >= 3);
+            if (CONFIG.smartReplacement.debugLogging) {
+                safeLog(`🎯 Filtering for high precision (${weakestDimension} = ${weakestScore}, threshold = ${dimensionThreshold})`, 'info');
+            }
+        } else if (weakestDimension === 'Dialogue Weight' && wordData.dialogueVerb) {
+            // Need dialogue-specific verbs
+            candidates = candidates.filter(s => s.dialogue === true);
+            if (CONFIG.smartReplacement.debugLogging) {
+                safeLog(`🎯 Filtering for dialogue verbs (${weakestDimension} = ${weakestScore}, threshold = ${dimensionThreshold})`, 'info');
+            }
         }
     }
 
@@ -2202,18 +2430,39 @@ const getSmartSynonym = (word, bonepokeScores, context = '') => {
         return weight;
     });
 
-    const totalWeight = weights.reduce((a, b) => a + b, 0);
-    let random = Math.random() * totalWeight;
+    // PHASE 6: Use weighted random selection helper (MEDIUM #6)
+    const selected = weightedRandomSelection(candidates, (s, idx) => weights[idx]);
 
-    for (let i = 0; i < candidates.length; i++) {
-        random -= weights[i];
-        if (random <= 0) {
-            return candidates[i].word;
-        }
+    if (!selected) {
+        PerformanceBenchmark.end(perfStart);
+        return word;  // No selection, fallback to original
     }
 
-    // Fallback (shouldn't reach here)
-    return candidates[candidates.length - 1].word;
+    // PHASE 6 (MEDIUM #10): Check for contradictions before returning
+    const contradictionCheck = detectContradictoryReplacement(context, word, selected.word);
+    if (contradictionCheck.contradictory) {
+        // Try fallback: select from remaining candidates (if any)
+        const remainingCandidates = candidates.filter(c => c.word !== selected.word);
+        if (remainingCandidates.length > 0) {
+            const fallbackSelected = weightedRandomSelection(
+                remainingCandidates,
+                (s, idx) => weights[candidates.indexOf(s)]
+            );
+            if (fallbackSelected) {
+                const fallbackCheck = detectContradictoryReplacement(context, word, fallbackSelected.word);
+                if (!fallbackCheck.contradictory) {
+                    PerformanceBenchmark.end(perfStart);
+                    return fallbackSelected.word;
+                }
+            }
+        }
+        // All candidates contradictory or no fallback - return original
+        PerformanceBenchmark.end(perfStart);
+        return word;
+    }
+
+    PerformanceBenchmark.end(perfStart);
+    return selected.word;
 };
 
 /**
@@ -2261,6 +2510,184 @@ const trackReplacementResult = (originalWord, synonym, scoreImprovement) => {
     if (CONFIG.smartReplacement.debugLogging) {
         safeLog(`📊 Tracked: ${originalWord} → ${synonym} (${scoreImprovement >= 0 ? '+' : ''}${scoreImprovement.toFixed(2)})`, 'info');
     }
+};
+
+/**
+ * Detect multi-word phrases in text (Phase 6)
+ * Scans for phrases from ENHANCED_SYNONYM_MAP that exist in text
+ * @param {string} text - Text to scan for phrases
+ * @returns {Array} Array of detected phrases with metadata
+ */
+const detectPhraseReplacements = (text) => {
+    if (!CONFIG.smartReplacement || !CONFIG.smartReplacement.enablePhraseIntelligence) {
+        return [];
+    }
+
+    const phrases = [];
+    const textLower = text.toLowerCase();
+
+    // Scan for multi-word phrases from ENHANCED_SYNONYM_MAP
+    Object.keys(ENHANCED_SYNONYM_MAP).forEach(key => {
+        if (key.includes(' ')) {  // Multi-word phrase
+            const regex = new RegExp(`\\b${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+            const matches = text.match(regex);
+            if (matches) {
+                phrases.push({
+                    phrase: key,
+                    count: matches.length,
+                    priority: 1,  // Higher priority than single words
+                    originalMatches: matches  // Preserve original casing
+                });
+
+                if (CONFIG.smartReplacement.logReplacementReasons) {
+                    safeLog(`🔍 Detected phrase: "${key}" (${matches.length}x)`, 'info');
+                }
+            }
+        }
+    });
+
+    // Sort by length (longest first) to handle overlapping phrases
+    phrases.sort((a, b) => b.phrase.length - a.phrase.length);
+
+    return phrases;
+};
+
+/**
+ * Apply phrase replacements to text (Phase 6)
+ * Replaces multi-word phrases as semantic units
+ * @param {string} text - Text to process
+ * @param {Array} phrases - Detected phrases from detectPhraseReplacements()
+ * @param {Object} analysis - Bonepoke analysis of text
+ * @returns {Object} { text: string, replacements: Array }
+ */
+const applyPhraseReplacements = (text, phrases, analysis) => {
+    if (!CONFIG.smartReplacement || !CONFIG.smartReplacement.enablePhraseIntelligence) {
+        return { text, replacements: [] };
+    }
+
+    let improved = text;
+    const replacements = [];
+
+    phrases.forEach(({ phrase, originalMatches }) => {
+        const phraseData = ENHANCED_SYNONYM_MAP[phrase];
+        if (!phraseData || !phraseData.synonyms || phraseData.synonyms.length === 0) {
+            return;  // No synonyms available
+        }
+
+        // Get smart synonym for this phrase
+        const replacement = getSmartSynonym(phrase, analysis.scores, improved);
+
+        if (replacement !== phrase) {
+            // Build regex to match phrase (case-insensitive, whole phrase)
+            const regex = new RegExp(`\\b${phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+
+            // Test before applying
+            const originalText = improved;
+            const replacedText = improved.replace(regex, replacement);
+
+            // Validate replacement (if enabled)
+            let validationResult = { valid: true, reason: 'validation disabled', scoreChange: 0 };
+            if (CONFIG.smartReplacement.enableValidation) {
+                state.replacementValidation.totalAttempts++;
+                validationResult = validateReplacement(originalText, replacedText, phrase, replacement);
+
+                if (!validationResult.valid) {
+                    // Blocked by validation
+                    state.replacementValidation.validationsFailed++;
+
+                    // Categorize block reason
+                    if (validationResult.reason.includes('degraded')) {
+                        state.replacementValidation.blockedReasons.qualityDegradation++;
+                    } else if (validationResult.reason.includes('contradiction')) {
+                        state.replacementValidation.blockedReasons.newContradictions++;
+                    } else if (validationResult.reason.includes('fatigue')) {
+                        state.replacementValidation.blockedReasons.fatigueIncrease++;
+                    } else if (validationResult.reason.includes('improvement')) {
+                        state.replacementValidation.blockedReasons.insufficientImprovement++;
+                    }
+
+                    return;  // Skip this replacement
+                } else {
+                    state.replacementValidation.validationsPassed++;
+                }
+            }
+
+            // Apply replacement
+            improved = replacedText;
+
+            // Track result for adaptive learning
+            if (CONFIG.smartReplacement.enableAdaptiveLearning) {
+                trackReplacementResult(phrase, replacement, validationResult.scoreChange);
+            }
+
+            // Log replacement
+            const scoreInfo = validationResult.scoreChange !== 0
+                ? ` [${validationResult.scoreChange >= 0 ? '+' : ''}${validationResult.scoreChange.toFixed(2)}]`
+                : '';
+            replacements.push(`"${phrase}" → "${replacement}"${scoreInfo}`);
+
+            if (CONFIG.smartReplacement.logReplacementReasons) {
+                safeLog(`🔄 Phrase replaced: ${phrase} → ${replacement}${scoreInfo}`, 'info');
+            }
+        }
+    });
+
+    return { text: improved, replacements };
+};
+
+/**
+ * Detect if a replacement creates a contradiction (Phase 6 - MEDIUM #10)
+ * Checks if the replacement word conflicts with surrounding context
+ * @param {string} context - Surrounding text (sentence or nearby words)
+ * @param {string} originalWord - Word being replaced
+ * @param {string} replacement - Proposed replacement word
+ * @returns {Object} { contradictory: boolean, reason: string }
+ */
+const detectContradictoryReplacement = (context, originalWord, replacement) => {
+    if (!CONFIG.smartReplacement || !CONFIG.smartReplacement.preventNewContradictions) {
+        return { contradictory: false, reason: 'Contradiction detection disabled' };
+    }
+
+    // Build contradiction map: word -> array of conflicting context words
+    const contradictions = {
+        'trudged': ['quickly', 'swiftly', 'rapidly', 'rapid', 'swift', 'abrupt', 'instant', 'hurried', 'hasty'],
+        'sauntered': ['urgently', 'hastily', 'quickly', 'rushed', 'rapid'],
+        'whispered': ['loudly', 'shouted', 'yelled', 'screamed', 'bellowed', 'roared'],
+        'shouted': ['quietly', 'softly', 'whispered', 'murmured', 'gentle', 'calm'],
+        'murmured': ['loudly', 'shouted', 'yelled', 'screamed'],
+        'screamed': ['quietly', 'softly', 'whispered', 'calm', 'peaceful'],
+        'giggled': ['seriously', 'solemnly', 'gravely'],
+        'frowned': ['happily', 'joyfully', 'cheerfully', 'smiled'],
+        'smiled': ['angrily', 'furiously', 'hatefully', 'frowned'],
+        'sprinted': ['slowly', 'leisurely', 'gradually', 'plodding'],
+        'crawled': ['quickly', 'swiftly', 'rapidly', 'rushed'],
+        'rushed': ['slowly', 'leisurely', 'gradually', 'calm', 'peaceful'],
+        'relaxed': ['tensely', 'anxiously', 'nervously', 'urgently'],
+        'tense': ['relaxed', 'calm', 'peaceful', 'serene']
+    };
+
+    // Check if replacement contradicts surrounding context
+    const contextLower = context.toLowerCase();
+    const replacementLower = replacement.toLowerCase();
+
+    if (contradictions[replacementLower]) {
+        const conflicts = contradictions[replacementLower];
+        for (const conflict of conflicts) {
+            // Check for conflict word in context (word boundary aware)
+            const regex = new RegExp(`\\b${conflict}\\b`, 'i');
+            if (regex.test(contextLower)) {
+                if (CONFIG.smartReplacement.logReplacementReasons) {
+                    safeLog(`⚠️ Contradiction detected: "${originalWord} → ${replacement}" conflicts with "${conflict}" in context`, 'warn');
+                }
+                return {
+                    contradictory: true,
+                    reason: `Replacement "${replacement}" conflicts with "${conflict}" in context`
+                };
+            }
+        }
+    }
+
+    return { contradictory: false, reason: 'No contradiction detected' };
 };
 
 /**
@@ -3966,10 +4393,14 @@ const NGOCommands = (() => {
         let processed = text;
         const commands = {};
 
-        // Process in order: @report, @req, (...), @temp, @arc
+        // Process in order: @report, @strictness, @req, (...), @temp, @arc
         const reportResult = processReport(processed);
         processed = reportResult.processed;
         if (reportResult.found) commands.report = true;
+
+        const strictnessResult = processStrictness(processed);
+        processed = strictnessResult.processed;
+        if (strictnessResult.found) commands.strictness = strictnessResult.level;
 
         const reqResult = processReq(processed);
         processed = reqResult.processed;
@@ -4103,6 +4534,26 @@ ${state.commands.narrativeRequest}
     };
 
     /**
+     * Process @strictness command (Phase 6 - MEDIUM #8) - Set replacement strictness level
+     * @param {string} text - Input text
+     * @returns {Object} { processed, found, level }
+     */
+    const processStrictness = (text) => {
+        const strictnessRegex = /@strictness\s+(conservative|balanced|aggressive)/i;
+        const match = text.match(strictnessRegex);
+
+        if (!match) return { processed: text, found: false };
+
+        const level = match[1].toLowerCase();
+        const success = applyStrictnessPreset(level);
+
+        // Remove the command from text
+        const processed = text.replace(strictnessRegex, '').trim();
+
+        return { processed, found: true, level, success };
+    };
+
+    /**
      * Clean up expired memories
      * @returns {number} Number of memories expired
      */
@@ -4140,6 +4591,7 @@ ${state.commands.narrativeRequest}
         processTemp,
         processArc,
         processReport,
+        processStrictness,
         processAllCommands,
         buildFrontMemoryInjection,
         buildAuthorsNoteLayer,

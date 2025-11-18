@@ -374,6 +374,21 @@ const modifier = (text) => {
         }
     }
 
+    // === PHASE 6: Multi-Word Phrase Intelligence ===
+    // Process multi-word phrases BEFORE single-word fatigue replacement
+    // This ensures phrases like "deep breath" are replaced as semantic units
+    if (CONFIG.smartReplacement && CONFIG.smartReplacement.enablePhraseIntelligence && analysis) {
+        const detectedPhrases = detectPhraseReplacements(text);
+        if (detectedPhrases.length > 0) {
+            const phraseResult = applyPhraseReplacements(text, detectedPhrases, analysis);
+            text = phraseResult.text;
+
+            if (phraseResult.replacements.length > 0) {
+                safeLog(`🔄 Phrases replaced: ${phraseResult.replacements.join(', ')}`, 'info');
+            }
+        }
+    }
+
     // === MODE 3: Auto-replace ALL fatigue types ===
     // REPLACEMENT FIRST strategy:
     // - Try to replace everything (words, phrases, sounds)
