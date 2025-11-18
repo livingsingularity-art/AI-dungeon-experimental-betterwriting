@@ -387,7 +387,12 @@ const modifier = (text) => {
         const needsSynonym = [];  // Track words missing synonyms
 
         Object.keys(analysis.composted.fatigue).forEach(fatigued => {
-            const synonym = getSynonym(fatigued);
+            // === SMART REPLACEMENT: Use Bonepoke scores to guide selection ===
+            // Passes quality dimensions to getSmartSynonym for intelligent choice
+            const synonym = CONFIG.smartReplacement && CONFIG.smartReplacement.enabled
+                ? getSmartSynonym(fatigued, analysis.scores, text)
+                : getSynonym(fatigued);
+
             const isPhrase = fatigued.includes(' ');
             const isSound = fatigued.includes('*');
             const isSingleWord = !isPhrase && !isSound;
@@ -402,7 +407,18 @@ const modifier = (text) => {
                 const regex = new RegExp(pattern, 'gi');
                 if (regex.test(text)) {
                     text = text.replace(regex, synonym);
-                    replaced.push(`${fatigued} → ${synonym}`);
+
+                    // Enhanced logging with reason (if smart replacement)
+                    if (CONFIG.smartReplacement && CONFIG.smartReplacement.enabled &&
+                        CONFIG.smartReplacement.logReplacementReasons) {
+                        // Get weakest dimension to explain WHY
+                        const weakest = Object.entries(analysis.scores)
+                            .sort((a, b) => a[1] - b[1])[0];
+                        const reason = weakest[1] <= 2 ? `for ${weakest[0]}` : '';
+                        replaced.push(`${fatigued} → ${synonym}${reason ? ' (' + reason + ')' : ''}`);
+                    } else {
+                        replaced.push(`${fatigued} → ${synonym}`);
+                    }
                 }
             }
             // No synonym available - decide based on type

@@ -133,6 +133,31 @@ const CONFIG = {
         debugLogging: false
     },
 
+    // Smart Replacement (Bonepoke-Enhanced Synonym Selection)
+    smartReplacement: {
+        enabled: true,          // Use Bonepoke scores to guide synonym selection
+
+        // Dimension thresholds (trigger smart selection when score is low)
+        emotionThreshold: 2,    // Boost emotion if Emotional Strength < 2
+        precisionThreshold: 2,  // Boost precision if Character Clarity < 2
+
+        // Validation settings
+        requireImprovement: false,  // Set true to only apply if quality improves
+        allowSameScore: true,       // Allow replacement if score stays same
+
+        // Strategy weights (future use)
+        emotionWeight: 1.5,
+        precisionWeight: 1.0,
+        varietyWeight: 0.8,
+
+        // Fallback behavior
+        fallbackToRandom: true,     // Use random selection if smart fails
+
+        // Debug
+        debugLogging: false,
+        logReplacementReasons: true  // Show WHY each replacement was chosen
+    },
+
     // System
     system: {
         persistState: true,     // Save state between sessions
@@ -150,7 +175,9 @@ const CONFIG = {
  * @param {string} [level='info'] - Log level
  */
 const safeLog = (message, level = 'info') => {
-    if (CONFIG.vs.debugLogging || CONFIG.bonepoke.debugLogging) {
+    if (CONFIG.vs.debugLogging ||
+        CONFIG.bonepoke.debugLogging ||
+        (CONFIG.smartReplacement && CONFIG.smartReplacement.debugLogging)) {
         const prefix = level === 'error' ? '❌' :
                       level === 'warn' ? '⚠️' :
                       level === 'success' ? '✅' : 'ℹ️';
@@ -696,6 +723,310 @@ const getSynonym = (word) => {
     }
     const randomIndex = Math.floor(Math.random() * synonyms.length);
     return synonyms[randomIndex];
+};
+
+/**
+ * Enhanced Synonym Map with Quality Metadata
+ * Each synonym has emotion (1-5) and precision (1-5) ratings
+ * Used by getSmartSynonym() for Bonepoke-aware replacement
+ */
+const ENHANCED_SYNONYM_MAP = {
+    // High-frequency verbs
+    'walked': {
+        synonyms: [
+            { word: 'strolled', emotion: 2, precision: 3, tags: ['casual', 'slow'] },
+            { word: 'marched', emotion: 4, precision: 4, tags: ['purposeful', 'strong'] },
+            { word: 'trudged', emotion: 4, precision: 4, tags: ['weary', 'slow'] },
+            { word: 'strode', emotion: 3, precision: 4, tags: ['confident', 'fast'] },
+            { word: 'shuffled', emotion: 3, precision: 4, tags: ['tired', 'slow'] },
+            { word: 'sauntered', emotion: 3, precision: 4, tags: ['casual', 'relaxed'] },
+            { word: 'paced', emotion: 3, precision: 3, tags: ['nervous', 'repetitive'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'said': {
+        synonyms: [
+            { word: 'murmured', emotion: 3, precision: 4, tags: ['quiet', 'intimate'], dialogue: true },
+            { word: 'whispered', emotion: 4, precision: 4, tags: ['quiet', 'secretive'], dialogue: true },
+            { word: 'shouted', emotion: 5, precision: 4, tags: ['loud', 'intense'], dialogue: true },
+            { word: 'declared', emotion: 3, precision: 4, tags: ['formal', 'firm'], dialogue: true },
+            { word: 'muttered', emotion: 3, precision: 4, tags: ['quiet', 'annoyed'], dialogue: true },
+            { word: 'replied', emotion: 2, precision: 3, tags: ['neutral', 'responsive'], dialogue: true },
+            { word: 'began', emotion: 2, precision: 3, tags: ['start', 'neutral'], dialogue: true }
+        ],
+        baseEmotion: 1, basePrecision: 2, dialogueVerb: true
+    },
+
+    'looked': {
+        synonyms: [
+            { word: 'glanced', emotion: 2, precision: 4, tags: ['quick', 'brief'] },
+            { word: 'stared', emotion: 3, precision: 4, tags: ['intense', 'prolonged'] },
+            { word: 'gazed', emotion: 3, precision: 4, tags: ['soft', 'prolonged'] },
+            { word: 'peered', emotion: 3, precision: 4, tags: ['careful', 'scrutinizing'] },
+            { word: 'glared', emotion: 4, precision: 4, tags: ['angry', 'intense'] },
+            { word: 'observed', emotion: 2, precision: 3, tags: ['neutral', 'watchful'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'went': {
+        synonyms: [
+            { word: 'traveled', emotion: 2, precision: 3, tags: ['journey', 'distance'] },
+            { word: 'proceeded', emotion: 2, precision: 3, tags: ['formal', 'continued'] },
+            { word: 'moved', emotion: 1, precision: 2, tags: ['neutral', 'basic'] },
+            { word: 'ventured', emotion: 3, precision: 4, tags: ['brave', 'risky'] },
+            { word: 'headed', emotion: 2, precision: 3, tags: ['directional', 'purposeful'] }
+        ],
+        baseEmotion: 1, basePrecision: 1
+    },
+
+    'turned': {
+        synonyms: [
+            { word: 'spun', emotion: 3, precision: 4, tags: ['fast', 'complete'] },
+            { word: 'pivoted', emotion: 3, precision: 4, tags: ['quick', 'precise'] },
+            { word: 'rotated', emotion: 2, precision: 3, tags: ['mechanical', 'slow'] },
+            { word: 'wheeled', emotion: 3, precision: 4, tags: ['sudden', 'complete'] },
+            { word: 'twisted', emotion: 3, precision: 4, tags: ['forceful', 'strained'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'smiled': {
+        synonyms: [
+            { word: 'grinned', emotion: 4, precision: 4, tags: ['wide', 'happy'] },
+            { word: 'beamed', emotion: 4, precision: 4, tags: ['bright', 'joyful'] },
+            { word: 'smirked', emotion: 4, precision: 4, tags: ['smug', 'knowing'] }
+        ],
+        baseEmotion: 2, basePrecision: 3
+    },
+
+    'laughed': {
+        synonyms: [
+            { word: 'chuckled', emotion: 3, precision: 4, tags: ['soft', 'amused'] },
+            { word: 'giggled', emotion: 4, precision: 4, tags: ['light', 'playful'] },
+            { word: 'guffawed', emotion: 5, precision: 4, tags: ['loud', 'hearty'] },
+            { word: 'cackled', emotion: 5, precision: 4, tags: ['wild', 'manic'] },
+            { word: 'snickered', emotion: 3, precision: 4, tags: ['quiet', 'sly'] }
+        ],
+        baseEmotion: 3, basePrecision: 3
+    },
+
+    'moved': {
+        synonyms: [
+            { word: 'shifted', emotion: 2, precision: 3, tags: ['slight', 'adjustment'] },
+            { word: 'stirred', emotion: 2, precision: 3, tags: ['awakening', 'slow'] },
+            { word: 'relocated', emotion: 2, precision: 4, tags: ['complete', 'distant'] },
+            { word: 'transitioned', emotion: 2, precision: 4, tags: ['smooth', 'gradual'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'felt': {
+        synonyms: [
+            { word: 'sensed', emotion: 3, precision: 4, tags: ['intuitive', 'aware'] },
+            { word: 'experienced', emotion: 2, precision: 3, tags: ['neutral', 'direct'] },
+            { word: 'perceived', emotion: 3, precision: 4, tags: ['intellectual', 'aware'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'nodded': {
+        synonyms: [
+            { word: 'bobbed her head', emotion: 2, precision: 4, tags: ['feminine', 'quick'] },
+            { word: 'bobbed his head', emotion: 2, precision: 4, tags: ['masculine', 'quick'] },
+            { word: 'dipped her chin', emotion: 3, precision: 4, tags: ['feminine', 'subtle'] },
+            { word: 'dipped his chin', emotion: 3, precision: 4, tags: ['masculine', 'subtle'] },
+            { word: 'acquiesced', emotion: 3, precision: 5, tags: ['formal', 'agreement'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'shook': {
+        synonyms: [
+            { word: 'trembled', emotion: 4, precision: 4, tags: ['fear', 'cold'] },
+            { word: 'quivered', emotion: 4, precision: 4, tags: ['slight', 'fear'] },
+            { word: 'shuddered', emotion: 5, precision: 4, tags: ['intense', 'disgust'] },
+            { word: 'vibrated', emotion: 2, precision: 3, tags: ['mechanical', 'rapid'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'big': {
+        synonyms: [
+            { word: 'large', emotion: 1, precision: 2, tags: ['neutral', 'size'] },
+            { word: 'sizeable', emotion: 2, precision: 3, tags: ['notable', 'measured'] },
+            { word: 'substantial', emotion: 2, precision: 4, tags: ['important', 'considerable'] },
+            { word: 'considerable', emotion: 2, precision: 4, tags: ['significant', 'notable'] }
+        ],
+        baseEmotion: 1, basePrecision: 1
+    },
+
+    'small': {
+        synonyms: [
+            { word: 'little', emotion: 1, precision: 2, tags: ['neutral', 'diminutive'] },
+            { word: 'compact', emotion: 2, precision: 3, tags: ['efficient', 'dense'] },
+            { word: 'diminutive', emotion: 3, precision: 4, tags: ['tiny', 'delicate'] }
+        ],
+        baseEmotion: 1, basePrecision: 1
+    },
+
+    'good': {
+        synonyms: [
+            { word: 'fine', emotion: 1, precision: 2, tags: ['adequate', 'acceptable'] },
+            { word: 'decent', emotion: 2, precision: 3, tags: ['respectable', 'satisfactory'] },
+            { word: 'admirable', emotion: 3, precision: 4, tags: ['praiseworthy', 'impressive'] },
+            { word: 'commendable', emotion: 3, precision: 4, tags: ['praiseworthy', 'excellent'] }
+        ],
+        baseEmotion: 1, basePrecision: 1
+    },
+
+    'bad': {
+        synonyms: [
+            { word: 'poor', emotion: 2, precision: 2, tags: ['substandard', 'weak'] },
+            { word: 'unfavorable', emotion: 3, precision: 3, tags: ['negative', 'unfortunate'] },
+            { word: 'inferior', emotion: 3, precision: 4, tags: ['lesser', 'deficient'] },
+            { word: 'substandard', emotion: 3, precision: 4, tags: ['below-average', 'inadequate'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'happy': {
+        synonyms: [
+            { word: 'cheerful', emotion: 4, precision: 4, tags: ['bright', 'positive'] },
+            { word: 'joyful', emotion: 5, precision: 4, tags: ['intense', 'celebratory'] },
+            { word: 'content', emotion: 3, precision: 3, tags: ['peaceful', 'satisfied'] },
+            { word: 'elated', emotion: 5, precision: 4, tags: ['euphoric', 'ecstatic'] }
+        ],
+        baseEmotion: 3, basePrecision: 2
+    },
+
+    'sad': {
+        synonyms: [
+            { word: 'unhappy', emotion: 3, precision: 2, tags: ['basic', 'negative'] },
+            { word: 'sorrowful', emotion: 4, precision: 4, tags: ['grief', 'deep'] },
+            { word: 'melancholy', emotion: 4, precision: 5, tags: ['pensive', 'wistful'] },
+            { word: 'dejected', emotion: 4, precision: 4, tags: ['downcast', 'defeated'] },
+            { word: 'despondent', emotion: 5, precision: 4, tags: ['hopeless', 'despair'] }
+        ],
+        baseEmotion: 3, basePrecision: 2
+    },
+
+    'angry': {
+        synonyms: [
+            { word: 'mad', emotion: 3, precision: 2, tags: ['informal', 'upset'] },
+            { word: 'furious', emotion: 5, precision: 4, tags: ['intense', 'rage'] },
+            { word: 'irate', emotion: 4, precision: 4, tags: ['formal', 'indignant'] },
+            { word: 'incensed', emotion: 5, precision: 4, tags: ['outraged', 'inflamed'] },
+            { word: 'wrathful', emotion: 5, precision: 5, tags: ['righteous', 'vengeful'] }
+        ],
+        baseEmotion: 3, basePrecision: 2
+    },
+
+    'scared': {
+        synonyms: [
+            { word: 'afraid', emotion: 3, precision: 2, tags: ['basic', 'fearful'] },
+            { word: 'frightened', emotion: 4, precision: 3, tags: ['alarmed', 'startled'] },
+            { word: 'terrified', emotion: 5, precision: 4, tags: ['extreme', 'panicked'] },
+            { word: 'apprehensive', emotion: 3, precision: 4, tags: ['worried', 'uneasy'] },
+            { word: 'trepidatious', emotion: 4, precision: 5, tags: ['formal', 'fearful'] }
+        ],
+        baseEmotion: 3, basePrecision: 2
+    },
+
+    'dark': {
+        synonyms: [
+            { word: 'dim', emotion: 2, precision: 3, tags: ['slight', 'low-light'] },
+            { word: 'shadowy', emotion: 3, precision: 4, tags: ['mysterious', 'concealing'] },
+            { word: 'murky', emotion: 3, precision: 4, tags: ['cloudy', 'obscure'] },
+            { word: 'obscure', emotion: 3, precision: 3, tags: ['hidden', 'unclear'] },
+            { word: 'tenebrous', emotion: 4, precision: 5, tags: ['literary', 'ominous'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    }
+};
+
+/**
+ * Get smart synonym based on Bonepoke analysis
+ * Selects replacement that addresses the weakest quality dimension
+ * @param {string} word - Word to replace
+ * @param {Object} bonepokeScores - Bonepoke quality scores
+ * @param {string} [context=''] - Surrounding text for context awareness
+ * @returns {string} Best replacement synonym or original if no good match
+ */
+const getSmartSynonym = (word, bonepokeScores, context = '') => {
+    if (!CONFIG.smartReplacement || !CONFIG.smartReplacement.enabled) {
+        return getSynonym(word); // Fallback to random selection
+    }
+
+    const lower = word.toLowerCase();
+    const wordData = ENHANCED_SYNONYM_MAP[lower];
+
+    // No enhanced data available - use basic synonym
+    if (!wordData || !wordData.synonyms || wordData.synonyms.length === 0) {
+        return getSynonym(word);
+    }
+
+    // No Bonepoke scores available - use random from enhanced list
+    if (!bonepokeScores || Object.keys(bonepokeScores).length === 0) {
+        const randomIndex = Math.floor(Math.random() * wordData.synonyms.length);
+        return wordData.synonyms[randomIndex].word;
+    }
+
+    // STEP 1: Identify weakest dimension
+    const sortedDimensions = Object.entries(bonepokeScores)
+        .sort((a, b) => a[1] - b[1]); // Lowest score first
+
+    const [weakestDimension, weakestScore] = sortedDimensions[0];
+
+    // STEP 2: Filter candidates based on dimension needs
+    let candidates = wordData.synonyms.slice(); // Copy array
+
+    // Apply dimension-specific filtering
+    if (weakestScore <= CONFIG.smartReplacement.emotionThreshold &&
+        weakestDimension === 'Emotional Strength') {
+        // Need HIGH emotion words
+        candidates = candidates.filter(s => s.emotion >= 3);
+        if (CONFIG.smartReplacement.debugLogging) {
+            safeLog(`🎯 Filtering for high emotion (${weakestDimension} = ${weakestScore})`, 'info');
+        }
+    } else if (weakestScore <= CONFIG.smartReplacement.precisionThreshold &&
+               weakestDimension === 'Character Clarity') {
+        // Need HIGH precision words
+        candidates = candidates.filter(s => s.precision >= 3);
+        if (CONFIG.smartReplacement.debugLogging) {
+            safeLog(`🎯 Filtering for high precision (${weakestDimension} = ${weakestScore})`, 'info');
+        }
+    } else if (weakestScore <= CONFIG.smartReplacement.emotionThreshold &&
+               weakestDimension === 'Dialogue Weight' &&
+               wordData.dialogueVerb) {
+        // Need dialogue-specific verbs
+        candidates = candidates.filter(s => s.dialogue === true);
+        if (CONFIG.smartReplacement.debugLogging) {
+            safeLog(`🎯 Filtering for dialogue verbs (${weakestDimension} = ${weakestScore})`, 'info');
+        }
+    }
+
+    // STEP 3: If no candidates after filtering, use all
+    if (candidates.length === 0) {
+        candidates = wordData.synonyms.slice();
+    }
+
+    // STEP 4: Weight selection by emotion/precision scores
+    // Higher-scored synonyms more likely to be selected
+    const weights = candidates.map(s => s.emotion + s.precision);
+    const totalWeight = weights.reduce((a, b) => a + b, 0);
+    let random = Math.random() * totalWeight;
+
+    for (let i = 0; i < candidates.length; i++) {
+        random -= weights[i];
+        if (random <= 0) {
+            return candidates[i].word;
+        }
+    }
+
+    // Fallback (shouldn't reach here)
+    return candidates[candidates.length - 1].word;
 };
 
 // #endregion
