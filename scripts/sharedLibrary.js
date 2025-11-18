@@ -3496,6 +3496,11 @@ const NGOEngine = (() => {
                 temperature: state.ngo.temperature
             });
 
+            // Limit to last 50 phase changes to prevent memory issues
+            if (state.ngoStats.phaseHistory.length > 50) {
+                state.ngoStats.phaseHistory = state.ngoStats.phaseHistory.slice(-50);
+            }
+
             if (CONFIG.ngo.logStateChanges) {
                 safeLog(`📖 Phase: ${results.phaseChange.from} → ${results.phaseChange.to}`, 'warn');
             }
