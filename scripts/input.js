@@ -1,6 +1,10 @@
+/// <reference no-default-lib="true"/>
+/// <reference lib="es2022"/>
+//@ts-check
+
 /**
  * ============================================================================
- * AI DUNGEON INPUT SCRIPT (FIXED v2.1)
+ * AI DUNGEON INPUT SCRIPT (Optimized v2.2)
  * Pre-processes user input before it reaches the AI
  * ============================================================================
  */

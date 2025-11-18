@@ -1,6 +1,10 @@
+/// <reference no-default-lib="true"/>
+/// <reference lib="es2022"/>
+//@ts-check
+
 /**
  * ============================================================================
- * AI DUNGEON CONTEXT SCRIPT (FIXED v2.1)
+ * AI DUNGEON CONTEXT SCRIPT (Optimized v2.2)
  * Modifies the context sent to the AI model
  * ============================================================================
  */
