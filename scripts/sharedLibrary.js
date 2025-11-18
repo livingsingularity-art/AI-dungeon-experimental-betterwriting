@@ -26,8 +26,8 @@ const CONFIG = {
         k: 5,                   // Number of candidates
         tau: 0.10,              // Probability threshold (research-recommended)
         seamless: true,         // Hide process from output
-        adaptive: false,        // Auto-adjust based on context
-        debugLogging: false     // Console logging
+        adaptive: true,         // Auto-adjust based on context
+        debugLogging: true      // Console logging
     },
 
     // Bonepoke Analysis
@@ -36,13 +36,13 @@ const CONFIG = {
         fatigueThreshold: 3,    // Word repetition threshold (lowered for better detection)
         qualityThreshold: 2.5,  // Minimum average score (for logging)
         enableDynamicCorrection: true,  // Create guidance cards to prevent future issues
-        debugLogging: false
+        debugLogging: true
     },
 
     // System
     system: {
         persistState: true,     // Save state between sessions
-        enableAnalytics: false  // Track metrics over time
+        enableAnalytics: true   // Track metrics over time
     }
 };
 
