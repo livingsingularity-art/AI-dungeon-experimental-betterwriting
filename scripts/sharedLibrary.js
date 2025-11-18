@@ -424,6 +424,143 @@ const PerformanceBenchmark = (() => {
 
 // #endregion
 
+// #region Phase 7 (MEDIUM #4): Story Card Configuration UI
+
+/**
+ * Story Card Configuration UI - Simple on/off toggles for major features
+ * Limited to ~2000 characters to fit story card constraints
+ */
+const SmartReplacementConfig = (() => {
+    const CARD_KEY = 'smart_replacement_config';
+
+    /**
+     * Create default configuration card
+     * @returns {Object} Story card object
+     */
+    const createDefaultCard = () => {
+        const defaultConfig = `SMART REPLACEMENT CONFIGURATION
+Toggle features on/off (true/false):
+
+enabled: true
+enableValidation: true
+enableContextMatching: true
+enableAdaptiveLearning: true
+enablePhraseIntelligence: true
+preventNewContradictions: true
+validationStrict: false
+debugLogging: false
+logReplacementReasons: true
+logValidation: false
+
+Strictness preset (conservative/balanced/aggressive):
+preset: balanced
+
+Instructions:
+- Change 'true' to 'false' to disable features
+- Change 'false' to 'true' to enable features
+- Change preset to: conservative, balanced, or aggressive
+- Save card and refresh story to apply changes`;
+
+        addStoryCard(CARD_KEY, defaultConfig, ['smart_replacement', 'config']);
+        return storyCards.find(c => c.keys && c.keys.includes(CARD_KEY));
+    };
+
+    /**
+     * Ensure configuration card exists
+     * @returns {Object} Story card object
+     */
+    const ensureCard = () => {
+        let card = storyCards.find(c => c.keys && c.keys.includes(CARD_KEY));
+        if (!card) {
+            card = createDefaultCard();
+        }
+        return card;
+    };
+
+    /**
+     * Parse configuration from card entry
+     * @param {string} entry - Card entry text
+     * @returns {Object} Parsed configuration object
+     */
+    const parseConfig = (entry) => {
+        if (!entry) return null;
+
+        const config = {};
+        const lines = entry.split('\n');
+
+        lines.forEach(line => {
+            // Match "key: value" pattern
+            const match = line.match(/^(\w+):\s*(.+)$/);
+            if (match) {
+                const [, key, value] = match;
+                const trimmedValue = value.trim().toLowerCase();
+
+                // Parse boolean values
+                if (trimmedValue === 'true' || trimmedValue === 'false') {
+                    config[key] = trimmedValue === 'true';
+                }
+                // Parse preset value
+                else if (key === 'preset' && ['conservative', 'balanced', 'aggressive'].includes(trimmedValue)) {
+                    config.preset = trimmedValue;
+                }
+                // Parse numeric values
+                else if (!isNaN(trimmedValue)) {
+                    config[key] = parseFloat(trimmedValue);
+                }
+            }
+        });
+
+        return config;
+    };
+
+    /**
+     * Apply user configuration to CONFIG.smartReplacement
+     * @param {Object} userConfig - Parsed user configuration
+     */
+    const applyConfig = (userConfig) => {
+        if (!userConfig) return;
+
+        // Apply boolean toggles
+        const booleanKeys = [
+            'enabled', 'enableValidation', 'enableContextMatching',
+            'enableAdaptiveLearning', 'enablePhraseIntelligence',
+            'preventNewContradictions', 'validationStrict',
+            'debugLogging', 'logReplacementReasons', 'logValidation'
+        ];
+
+        booleanKeys.forEach(key => {
+            if (userConfig.hasOwnProperty(key)) {
+                CONFIG.smartReplacement[key] = userConfig[key];
+            }
+        });
+
+        // Apply preset if specified
+        if (userConfig.preset) {
+            applyStrictnessPreset(userConfig.preset);
+        }
+    };
+
+    /**
+     * Load configuration from story card and apply to CONFIG
+     * Called during initialization
+     */
+    const loadAndApply = () => {
+        const card = ensureCard();
+        if (!card) return;
+
+        const userConfig = parseConfig(card.entry);
+        applyConfig(userConfig);
+
+        if (CONFIG.smartReplacement.debugLogging) {
+            safeLog('✅ Loaded Smart Replacement config from story card', 'info');
+        }
+    };
+
+    return { ensureCard, parseConfig, applyConfig, loadAndApply };
+})();
+
+// #endregion
+
 /**
  * Initialize state with default values
  */
@@ -537,6 +674,9 @@ const initState = () => {
         } else {
             state.originalAuthorsNote = '';
         }
+
+        // PHASE 7: Load user configuration from story card
+        SmartReplacementConfig.loadAndApply();
 
         state.initialized = true;
         safeLog('State initialized with NGO engine', 'success');
@@ -2296,6 +2436,151 @@ const ENHANCED_SYNONYM_MAP = {
     }
 };
 
+// #region Phase 7 (MEDIUM #5): Enhanced Context Matching
+
+/**
+ * Detect mood/tone from text (Phase 7)
+ * @param {string} text - Text to analyze
+ * @returns {string} Detected mood: 'positive', 'negative', 'tense', or 'neutral'
+ */
+const detectMood = (text) => {
+    if (!text) return 'neutral';
+
+    const textLower = text.toLowerCase();
+
+    // Mood word lists
+    const positiveWords = ['smiled', 'laughed', 'bright', 'warm', 'happy', 'joy', 'cheerful', 'grin', 'pleased', 'delighted'];
+    const negativeWords = ['frowned', 'dark', 'cold', 'harsh', 'angry', 'fear', 'sad', 'pain', 'worried', 'grim'];
+    const tenseWords = ['suddenly', 'sharp', 'quick', 'urgent', 'rushed', 'tense', 'anxious', 'nervous', 'alert'];
+
+    // Count mood markers
+    let positiveCount = 0;
+    let negativeCount = 0;
+    let tenseCount = 0;
+
+    positiveWords.forEach(w => { if (textLower.includes(w)) positiveCount++; });
+    negativeWords.forEach(w => { if (textLower.includes(w)) negativeCount++; });
+    tenseWords.forEach(w => { if (textLower.includes(w)) tenseCount++; });
+
+    // Return dominant mood
+    const max = Math.max(positiveCount, negativeCount, tenseCount);
+    if (max === 0) return 'neutral';
+    if (positiveCount === max) return 'positive';
+    if (negativeCount === max) return 'negative';
+    if (tenseCount === max) return 'tense';
+    return 'neutral';
+};
+
+/**
+ * Detect pacing from sentence structure (Phase 7)
+ * @param {string} sentence - Sentence to analyze
+ * @returns {string} Detected pacing: 'fast', 'slow', or 'medium'
+ */
+const detectPacing = (sentence) => {
+    if (!sentence) return 'medium';
+
+    const wordCount = sentence.split(/\s+/).length;
+    const sentenceLower = sentence.toLowerCase();
+
+    // Fast pacing indicators
+    const fastVerbs = ['rushed', 'ran', 'dashed', 'grabbed', 'threw', 'sprinted', 'lunged', 'burst'];
+    const hasFastVerbs = fastVerbs.some(v => sentenceLower.includes(v));
+
+    // Slow pacing indicators
+    const slowVerbs = ['lingered', 'savored', 'pondered', 'gazed', 'strolled', 'meandered'];
+    const hasSlowVerbs = slowVerbs.some(v => sentenceLower.includes(v));
+
+    // Fast: short sentences (< 8 words) with action verbs
+    if (wordCount < 8 && hasFastVerbs) return 'fast';
+
+    // Fast: very short sentences
+    if (wordCount < 5) return 'fast';
+
+    // Slow: long sentences (> 20 words) or slow verbs
+    if (wordCount > 20 || hasSlowVerbs) return 'slow';
+
+    return 'medium';
+};
+
+/**
+ * Detect formality level (Phase 7)
+ * @param {string} text - Text to analyze
+ * @returns {string} Detected formality: 'formal', 'casual', or 'neutral'
+ */
+const detectFormality = (text) => {
+    if (!text) return 'neutral';
+
+    const textLower = text.toLowerCase();
+
+    // Formal indicators
+    const formalWords = ['indeed', 'however', 'nevertheless', 'furthermore', 'therefore', 'thus', 'hence'];
+    const formalCount = formalWords.filter(w => textLower.includes(w)).length;
+
+    // Casual indicators
+    const casualWords = ['yeah', 'ok', 'hey', 'got', 'gonna', 'wanna', 'kinda', 'sorta'];
+    const casualCount = casualWords.filter(w => textLower.includes(w)).length;
+
+    // Contractions suggest casual
+    const contractionCount = (text.match(/'(s|t|d|ll|ve|re|m)\b/gi) || []).length;
+
+    const totalCasual = casualCount + (contractionCount > 2 ? 1 : 0);
+
+    if (formalCount > totalCasual) return 'formal';
+    if (totalCasual > formalCount) return 'casual';
+    return 'neutral';
+};
+
+/**
+ * Perform enhanced semantic context analysis (Phase 7)
+ * @param {string} context - Surrounding text
+ * @param {string} targetWord - Word being replaced
+ * @returns {Object} Context analysis results
+ */
+const analyzeContextSemantics = (context, targetWord) => {
+    if (!context) {
+        return {
+            mood: 'neutral',
+            pacing: 'medium',
+            formality: 'neutral',
+            dialogue: false,
+            action: false,
+            keywords: []
+        };
+    }
+
+    // Detect basic attributes
+    const mood = detectMood(context);
+    const pacing = detectPacing(context);
+    const formality = detectFormality(context);
+
+    // Detect dialogue (contains quotes)
+    const dialogue = context.includes('"') || context.includes("'");
+
+    // Detect action scene (multiple action verbs)
+    const actionVerbs = ['attacked', 'fought', 'ran', 'jumped', 'threw', 'caught', 'struck', 'dodged', 'lunged'];
+    const actionCount = actionVerbs.filter(v => context.toLowerCase().includes(v)).length;
+    const action = actionCount >= 2;
+
+    // Build keyword array from detected attributes
+    const keywords = [];
+    if (mood !== 'neutral') keywords.push(mood);
+    if (pacing !== 'medium') keywords.push(pacing);
+    if (formality !== 'neutral') keywords.push(formality);
+    if (dialogue) keywords.push('dialogue');
+    if (action) keywords.push('action');
+
+    return {
+        mood,
+        pacing,
+        formality,
+        dialogue,
+        action,
+        keywords
+    };
+};
+
+// #endregion
+
 /**
  * Get smart synonym based on Bonepoke analysis
  * Selects replacement that addresses the weakest quality dimension
@@ -2374,12 +2659,16 @@ const getSmartSynonym = (word, bonepokeScores, context = '') => {
         candidates = wordData.synonyms.slice();
     }
 
-    // PHASE 4: CONTEXT MATCHING - Analyze surrounding text for better synonym selection
+    // PHASE 4 + 7: CONTEXT MATCHING - Analyze surrounding text for better synonym selection
     let contextKeywords = [];
     if (CONFIG.smartReplacement.enableContextMatching && context) {
         const contextLower = context.toLowerCase();
 
-        // Extract context keywords from surrounding text
+        // PHASE 7: Enhanced semantic analysis (mood, pacing, formality)
+        const semantics = analyzeContextSemantics(context, word);
+        contextKeywords.push(...semantics.keywords);
+
+        // PHASE 4: Basic keyword matching (fast/slow, gentle/forceful)
         const fastWords = ['quick', 'sudden', 'rapid', 'swift', 'abrupt', 'instant', 'hurried'];
         const slowWords = ['slow', 'gradual', 'steady', 'leisurely', 'deliberate'];
         const gentleWords = ['gentle', 'soft', 'tender', 'calm', 'peaceful', 'quiet'];
@@ -2391,7 +2680,8 @@ const getSmartSynonym = (word, bonepokeScores, context = '') => {
         if (forcefulWords.some(w => contextLower.includes(w))) contextKeywords.push('forceful');
 
         if (CONFIG.smartReplacement.logContextAnalysis && contextKeywords.length > 0) {
-            safeLog(`📝 Context keywords: ${contextKeywords.join(', ')}`, 'info');
+            safeLog(`📝 Context: ${semantics.mood} mood, ${semantics.pacing} pacing${semantics.dialogue ? ', dialogue' : ''}${semantics.action ? ', action' : ''}`, 'info');
+            safeLog(`📝 Keywords: ${contextKeywords.join(', ')}`, 'info');
         }
     }
 
