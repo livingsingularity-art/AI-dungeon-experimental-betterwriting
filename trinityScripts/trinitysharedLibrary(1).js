@@ -31,7 +31,7 @@ const CONFIG = {
         tau: 0.10,              // Probability threshold (research-recommended)
         seamless: true,         // Hide process from output
         adaptive: true,         // Auto-adjust based on context (NOW ENABLED for NGO)
-        debugLogging: false     // Console logging
+        debugLogging: true      // Console logging
     },
 
     // Bonepoke Analysis
@@ -40,7 +40,7 @@ const CONFIG = {
         fatigueThreshold: 3,    // Word repetition threshold (lowered for better detection)
         qualityThreshold: 2.5,  // Minimum average score (for logging)
         enableDynamicCorrection: true,  // Create guidance cards to prevent future issues
-        debugLogging: false
+        debugLogging: true
     },
 
     // NGO (Narrative Guidance Overhaul) - THE CENTRAL BRAIN
@@ -106,7 +106,7 @@ const CONFIG = {
         parenthesesHeatBonus: 1,
 
         // DEBUG
-        debugLogging: false,
+        debugLogging: true,
         logStateChanges: true
     },
 
@@ -134,7 +134,7 @@ const CONFIG = {
         detectFulfillment: true,
         fulfillmentThreshold: 0.4,
 
-        debugLogging: false
+        debugLogging: true
     },
 
     // Smart Replacement (Bonepoke-Enhanced Synonym Selection)
@@ -189,10 +189,10 @@ const CONFIG = {
         minScoreImprovement: 0.0,           // Minimum score delta to accept (0.0 = any improvement)
 
         // Debug
-        debugLogging: false,
+        debugLogging: true,
         logReplacementReasons: true,  // Show WHY each replacement was chosen
-        logContextAnalysis: false,     // Show context matching details
-        logValidation: false           // Show validation decisions
+        logContextAnalysis: true,     // Show context matching details
+        logValidation: true           // Show validation decisions
     },
 
     // System
