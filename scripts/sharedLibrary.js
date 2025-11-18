@@ -166,10 +166,19 @@ const CONFIG = {
         learningRate: 0.1,              // How fast to adjust preferences (0-1)
         minSamplesForLearning: 3,       // Minimum replacements before learning kicks in
 
+        // Phase 5: Replacement Validation & Tracking
+        enableValidation: true,             // Validate replacements improve quality
+        validationStrict: false,            // Strict: require improvement. False: allow neutral
+        preventQualityDegradation: true,    // Block replacements that lower scores
+        preventNewContradictions: true,     // Block if creates new contradictions
+        preventFatigueIncrease: true,       // Block if increases word fatigue
+        minScoreImprovement: 0.0,           // Minimum score delta to accept (0.0 = any improvement)
+
         // Debug
         debugLogging: false,
         logReplacementReasons: true,  // Show WHY each replacement was chosen
-        logContextAnalysis: false      // Show context matching details
+        logContextAnalysis: false,     // Show context matching details
+        logValidation: false           // Show validation decisions
     },
 
     // System
@@ -291,6 +300,19 @@ const initState = () => {
             successfulReplacements: 0,  // Replacements that improved quality
             neutralReplacements: 0,      // Replacements that didn't change quality
             failedReplacements: 0        // Replacements that decreased quality
+        };
+
+        // === REPLACEMENT VALIDATION (Phase 5) ===
+        state.replacementValidation = {
+            totalAttempts: 0,           // Total replacement attempts
+            validationsPassed: 0,        // Replacements that passed validation
+            validationsFailed: 0,        // Replacements blocked by validation
+            blockedReasons: {            // Count by block reason
+                qualityDegradation: 0,
+                newContradictions: 0,
+                fatigueIncrease: 0,
+                insufficientImprovement: 0
+            }
         };
 
         // Store original author's note
@@ -2241,6 +2263,221 @@ const trackReplacementResult = (originalWord, synonym, scoreImprovement) => {
     }
 };
 
+/**
+ * Validate that a replacement improves or maintains quality (Phase 5)
+ * @param {string} originalText - Text before replacement
+ * @param {string} replacedText - Text after replacement
+ * @param {string} originalWord - Word that was replaced
+ * @param {string} synonym - Synonym that was used
+ * @returns {Object} { valid: boolean, reason: string, scoreChange: number }
+ */
+const validateReplacement = (originalText, replacedText, originalWord, synonym) => {
+    if (!CONFIG.smartReplacement.enableValidation) {
+        return { valid: true, reason: 'Validation disabled', scoreChange: 0 };
+    }
+
+    // Analyze both versions
+    const originalAnalysis = BonepokeAnalysis.analyze(originalText);
+    const replacedAnalysis = BonepokeAnalysis.analyze(replacedText);
+
+    // Calculate score changes
+    const originalAvg = originalAnalysis.avgScore;
+    const replacedAvg = replacedAnalysis.avgScore;
+    const scoreChange = replacedAvg - originalAvg;
+
+    // Check for quality degradation
+    if (CONFIG.smartReplacement.preventQualityDegradation) {
+        if (scoreChange < -0.01) {  // Small threshold for floating point
+            if (CONFIG.smartReplacement.logValidation) {
+                safeLog(`❌ BLOCKED: ${originalWord} → ${synonym} (score decreased ${scoreChange.toFixed(2)})`, 'warn');
+            }
+            return {
+                valid: false,
+                reason: `Quality degraded (${scoreChange.toFixed(2)})`,
+                scoreChange
+            };
+        }
+    }
+
+    // Check minimum improvement threshold
+    if (CONFIG.smartReplacement.validationStrict) {
+        if (scoreChange < CONFIG.smartReplacement.minScoreImprovement) {
+            if (CONFIG.smartReplacement.logValidation) {
+                safeLog(`❌ BLOCKED: ${originalWord} → ${synonym} (improvement too small: ${scoreChange.toFixed(2)})`, 'warn');
+            }
+            return {
+                valid: false,
+                reason: `Insufficient improvement (${scoreChange.toFixed(2)} < ${CONFIG.smartReplacement.minScoreImprovement})`,
+                scoreChange
+            };
+        }
+    }
+
+    // Check for new contradictions
+    if (CONFIG.smartReplacement.preventNewContradictions) {
+        const originalContradictions = originalAnalysis.composted?.contradictions?.length || 0;
+        const replacedContradictions = replacedAnalysis.composted?.contradictions?.length || 0;
+
+        if (replacedContradictions > originalContradictions) {
+            if (CONFIG.smartReplacement.logValidation) {
+                safeLog(`❌ BLOCKED: ${originalWord} → ${synonym} (new contradictions: ${replacedContradictions - originalContradictions})`, 'warn');
+            }
+            return {
+                valid: false,
+                reason: `Created ${replacedContradictions - originalContradictions} new contradiction(s)`,
+                scoreChange
+            };
+        }
+    }
+
+    // Check for fatigue increase
+    if (CONFIG.smartReplacement.preventFatigueIncrease) {
+        const originalFatigue = Object.keys(originalAnalysis.composted?.fatigue || {}).length;
+        const replacedFatigue = Object.keys(replacedAnalysis.composted?.fatigue || {}).length;
+
+        if (replacedFatigue > originalFatigue) {
+            if (CONFIG.smartReplacement.logValidation) {
+                safeLog(`❌ BLOCKED: ${originalWord} → ${synonym} (fatigue increased: +${replacedFatigue - originalFatigue} words)`, 'warn');
+            }
+            return {
+                valid: false,
+                reason: `Increased word fatigue (+${replacedFatigue - originalFatigue} fatigued words)`,
+                scoreChange
+            };
+        }
+    }
+
+    // Passed all checks
+    if (CONFIG.smartReplacement.logValidation) {
+        const emoji = scoreChange > 0.1 ? '✅' : scoreChange > 0 ? '✓' : '→';
+        safeLog(`${emoji} APPROVED: ${originalWord} → ${synonym} (${scoreChange >= 0 ? '+' : ''}${scoreChange.toFixed(2)})`, 'info');
+    }
+
+    return {
+        valid: true,
+        reason: scoreChange > 0 ? 'Quality improved' : 'Quality maintained',
+        scoreChange
+    };
+};
+
+/**
+ * Generate comprehensive replacement performance report (Phase 5)
+ * @returns {string} Formatted report text
+ */
+const generateReplacementReport = () => {
+    if (!state.replacementLearning) {
+        return 'No replacement data available. Adaptive learning may be disabled.';
+    }
+
+    const learning = state.replacementLearning;
+    const totalReplacements = learning.totalReplacements || 0;
+
+    if (totalReplacements === 0) {
+        return 'No replacements have been made yet.';
+    }
+
+    // Calculate success rate
+    const successful = learning.successfulReplacements || 0;
+    const neutral = learning.neutralReplacements || 0;
+    const failed = learning.failedReplacements || 0;
+    const successRate = (successful / totalReplacements * 100).toFixed(1);
+    const neutralRate = (neutral / totalReplacements * 100).toFixed(1);
+    const failRate = (failed / totalReplacements * 100).toFixed(1);
+
+    // Find top performers (minimum 3 uses)
+    const allPairs = [];
+    Object.entries(learning.history || {}).forEach(([word, synonyms]) => {
+        Object.entries(synonyms).forEach(([syn, data]) => {
+            if (data.uses >= 3) {
+                allPairs.push({
+                    pair: `${word} → ${syn}`,
+                    avgImprovement: data.avgImprovement,
+                    uses: data.uses,
+                    totalImprovement: data.totalScoreImprovement
+                });
+            }
+        });
+    });
+
+    const topPerformers = allPairs
+        .sort((a, b) => b.avgImprovement - a.avgImprovement)
+        .slice(0, 10);
+
+    const worstPerformers = allPairs
+        .sort((a, b) => a.avgImprovement - b.avgImprovement)
+        .slice(0, 5);
+
+    // Get validation stats
+    const validation = state.replacementValidation || {};
+    const validationAttempts = validation.totalAttempts || 0;
+    const validationPassed = validation.validationsPassed || 0;
+    const validationFailed = validation.validationsFailed || 0;
+    const validationRate = validationAttempts > 0
+        ? (validationPassed / validationAttempts * 100).toFixed(1)
+        : '0.0';
+
+    // Build report
+    let report = '═══════════════════════════════════════════════\n';
+    report += '   SMART REPLACEMENT PERFORMANCE REPORT\n';
+    report += '═══════════════════════════════════════════════\n\n';
+
+    report += `📊 OVERALL STATISTICS\n`;
+    report += `   Total Replacements: ${totalReplacements}\n`;
+    report += `   ✅ Successful (improved): ${successful} (${successRate}%)\n`;
+    report += `   → Neutral (maintained): ${neutral} (${neutralRate}%)\n`;
+    report += `   ❌ Failed (degraded): ${failed} (${failRate}%)\n\n`;
+
+    if (CONFIG.smartReplacement.enableValidation && validationAttempts > 0) {
+        report += `🛡️  VALIDATION STATISTICS\n`;
+        report += `   Total Attempts: ${validationAttempts}\n`;
+        report += `   ✅ Passed: ${validationPassed} (${validationRate}%)\n`;
+        report += `   ❌ Blocked: ${validationFailed}\n`;
+        if (validation.blockedReasons) {
+            const reasons = validation.blockedReasons;
+            if (reasons.qualityDegradation > 0) {
+                report += `      - Quality degradation: ${reasons.qualityDegradation}\n`;
+            }
+            if (reasons.newContradictions > 0) {
+                report += `      - New contradictions: ${reasons.newContradictions}\n`;
+            }
+            if (reasons.fatigueIncrease > 0) {
+                report += `      - Fatigue increase: ${reasons.fatigueIncrease}\n`;
+            }
+            if (reasons.insufficientImprovement > 0) {
+                report += `      - Insufficient improvement: ${reasons.insufficientImprovement}\n`;
+            }
+        }
+        report += '\n';
+    }
+
+    if (topPerformers.length > 0) {
+        report += `🏆 TOP PERFORMING REPLACEMENTS (min 3 uses)\n`;
+        topPerformers.forEach((p, idx) => {
+            const emoji = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '  ';
+            report += `   ${emoji} ${p.pair}\n`;
+            report += `      Avg: ${p.avgImprovement >= 0 ? '+' : ''}${p.avgImprovement.toFixed(3)} | Uses: ${p.uses} | Total: ${p.totalImprovement >= 0 ? '+' : ''}${p.totalImprovement.toFixed(2)}\n`;
+        });
+        report += '\n';
+    }
+
+    if (worstPerformers.length > 0 && worstPerformers[0].avgImprovement < 0) {
+        report += `⚠️  WORST PERFORMING REPLACEMENTS\n`;
+        worstPerformers.forEach(p => {
+            if (p.avgImprovement < 0) {
+                report += `   ⚠️  ${p.pair}\n`;
+                report += `      Avg: ${p.avgImprovement.toFixed(3)} | Uses: ${p.uses} | Total: ${p.totalImprovement.toFixed(2)}\n`;
+            }
+        });
+        report += '\n';
+    }
+
+    report += '═══════════════════════════════════════════════\n';
+    report += 'Use /ngo report to see this data\n';
+    report += '═══════════════════════════════════════════════\n';
+
+    return report;
+};
+
 // #endregion
 
 // #region NGO Word Lists and Phases
@@ -3729,7 +3966,11 @@ const NGOCommands = (() => {
         let processed = text;
         const commands = {};
 
-        // Process in order: @req, (...), @temp, @arc
+        // Process in order: @report, @req, (...), @temp, @arc
+        const reportResult = processReport(processed);
+        processed = reportResult.processed;
+        if (reportResult.found) commands.report = true;
+
         const reqResult = processReq(processed);
         processed = reqResult.processed;
         if (reqResult.found) commands.req = reqResult.request;
@@ -3841,6 +4082,27 @@ ${state.commands.narrativeRequest}
     };
 
     /**
+     * Process @report command (Phase 5) - Shows replacement performance stats
+     * @param {string} text - Input text
+     * @returns {Object} { processed, found, shouldDisplay }
+     */
+    const processReport = (text) => {
+        const reportRegex = /@report|\/report/i;
+        const match = text.match(reportRegex);
+
+        if (!match) return { processed: text, found: false, shouldDisplay: false };
+
+        // Generate and log the report
+        const report = generateReplacementReport();
+        log(report);
+
+        // Remove the command from text
+        const processed = text.replace(reportRegex, '').trim();
+
+        return { processed, found: true, shouldDisplay: true };
+    };
+
+    /**
      * Clean up expired memories
      * @returns {number} Number of memories expired
      */
@@ -3877,6 +4139,7 @@ ${state.commands.narrativeRequest}
         processParentheses,
         processTemp,
         processArc,
+        processReport,
         processAllCommands,
         buildFrontMemoryInjection,
         buildAuthorsNoteLayer,

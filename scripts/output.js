@@ -406,7 +406,44 @@ const modifier = (text) => {
 
                 const regex = new RegExp(pattern, 'gi');
                 if (regex.test(text)) {
-                    text = text.replace(regex, synonym);
+                    // === PHASE 5: VALIDATION - Test replacement before applying ===
+                    const originalText = text;
+                    const replacedText = text.replace(regex, synonym);
+
+                    // Validate replacement (if enabled)
+                    let validationResult = { valid: true, reason: 'validation disabled', scoreChange: 0 };
+                    if (CONFIG.smartReplacement && CONFIG.smartReplacement.enableValidation) {
+                        state.replacementValidation.totalAttempts++;
+                        validationResult = validateReplacement(originalText, replacedText, fatigued, synonym);
+
+                        if (!validationResult.valid) {
+                            // Blocked by validation - track reason and skip replacement
+                            state.replacementValidation.validationsFailed++;
+
+                            // Categorize block reason
+                            if (validationResult.reason.includes('degraded')) {
+                                state.replacementValidation.blockedReasons.qualityDegradation++;
+                            } else if (validationResult.reason.includes('contradiction')) {
+                                state.replacementValidation.blockedReasons.newContradictions++;
+                            } else if (validationResult.reason.includes('fatigue')) {
+                                state.replacementValidation.blockedReasons.fatigueIncrease++;
+                            } else if (validationResult.reason.includes('improvement')) {
+                                state.replacementValidation.blockedReasons.insufficientImprovement++;
+                            }
+
+                            return; // Skip this replacement
+                        } else {
+                            state.replacementValidation.validationsPassed++;
+                        }
+                    }
+
+                    // Apply replacement (validation passed or disabled)
+                    text = replacedText;
+
+                    // Track result for adaptive learning
+                    if (CONFIG.smartReplacement && CONFIG.smartReplacement.enableAdaptiveLearning) {
+                        trackReplacementResult(fatigued, synonym, validationResult.scoreChange);
+                    }
 
                     // Enhanced logging with reason (if smart replacement)
                     if (CONFIG.smartReplacement && CONFIG.smartReplacement.enabled &&
@@ -415,7 +452,10 @@ const modifier = (text) => {
                         const weakest = Object.entries(analysis.scores)
                             .sort((a, b) => a[1] - b[1])[0];
                         const reason = weakest[1] <= 2 ? `for ${weakest[0]}` : '';
-                        replaced.push(`${fatigued} → ${synonym}${reason ? ' (' + reason + ')' : ''}`);
+                        const scoreInfo = validationResult.scoreChange !== 0
+                            ? ` [${validationResult.scoreChange >= 0 ? '+' : ''}${validationResult.scoreChange.toFixed(2)}]`
+                            : '';
+                        replaced.push(`${fatigued} → ${synonym}${reason ? ' (' + reason + ')' : ''}${scoreInfo}`);
                     } else {
                         replaced.push(`${fatigued} → ${synonym}`);
                     }
