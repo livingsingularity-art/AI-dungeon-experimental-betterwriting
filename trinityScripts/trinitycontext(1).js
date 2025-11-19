@@ -99,22 +99,21 @@ const modifier = (text) => {
         try {
             const builtNote = buildLayeredAuthorsNote();
 
-            // CRITICAL FIX: AI Dungeon IGNORES state.memory.authorsNote in scripts!
-            // We must inject the author's note DIRECTLY into the text instead
-            // Format: text positioned 3 newlines before the end (AI Dungeon author's note position)
+            // CORRECT APPROACH: Set state.memory.authorsNote directly
+            // AI Dungeon reads this property and injects it into context automatically
+            // Pattern from original NGO scripts (ngoInput Script lines 163-229)
+            if (builtNote && state.memory) {
+                state.memory.authorsNote = builtNote;
 
-            // Remove any existing [Author's note: ...] from text (scenario's default)
-            text = text.replace(/\[Author's note:.*?\]/gs, '');
+                // Store backup for output script restoration (original NGO pattern line 296)
+                state.authorsNoteStorage = builtNote;
 
-            // Inject our layered author's note in proper AI Dungeon format
-            if (builtNote) {
-                // Author's note goes 3 lines back from the end
-                text = text + `\n\n\n[Author's note: ${builtNote}]`;
+                const phase = getCurrentNGOPhase();
+                safeLog(`📝 Author's note set with phase: ${phase.name} (temp: ${state.ngo.temperature})`, 'info');
+                safeLog(`📝 Content (${builtNote.length} chars): "${builtNote.substring(0, 80)}..."`, 'info');
+            } else if (!state.memory) {
+                safeLog(`⚠️ WARNING: state.memory not available, cannot set author's note`, 'warn');
             }
-
-            const phase = getCurrentNGOPhase();
-            safeLog(`📝 Author's note built with phase: ${phase.name} (temp: ${state.ngo.temperature})`, 'info');
-            safeLog(`📝 INJECTED into text (${builtNote.length} chars)`, 'info');
         } catch (err) {
             safeLog(`❌ Critical error in NGO author's note system: ${err.message}`, 'error');
             safeLog(`❌ Error stack: ${err.stack}`, 'error');
@@ -123,12 +122,14 @@ const modifier = (text) => {
 
     // === NGO FRONT MEMORY INJECTION (@req dual injection) ===
     // Inject @req into front of context for immediate, high-priority narrative shaping
+    // Pattern from Narrative-Steering-Wheel script (uses state.memory.frontMemory)
     if (CONFIG.commands && CONFIG.commands.enabled && CONFIG.commands.reqDualInjection && state.commands) {
         const frontMemoryInjection = NGOCommands.buildFrontMemoryInjection();
-        if (frontMemoryInjection) {
-            // Prepend to text (front memory goes at the start)
-            text = frontMemoryInjection + '\n\n' + text;
-            safeLog(`💉 Front memory injected with @req: "${state.commands.narrativeRequest}"`, 'info');
+        if (frontMemoryInjection && state.memory) {
+            // CORRECT APPROACH: Set state.memory.frontMemory directly
+            // AI Dungeon reads this property and prepends it to context automatically
+            state.memory.frontMemory = frontMemoryInjection;
+            safeLog(`💉 Front memory set with @req: "${state.commands.narrativeRequest}"`, 'info');
         }
     }
 
@@ -180,18 +181,6 @@ const modifier = (text) => {
     if (CONFIG.system.enableAnalytics) {
         state.lastContextSize = text.length;
         state.lastContextWords = text.split(/\s+/).length;
-    }
-
-    // VERIFICATION: Check if author's note was injected into text
-    if (CONFIG.ngo && CONFIG.ngo.enabled && state.ngo) {
-        if (text.includes('[Author\'s note:')) {
-            const noteMatch = text.match(/\[Author's note: (.+?)\]/s);
-            if (noteMatch) {
-                safeLog(`✅ VERIFIED: Author's note INJECTED into context (${noteMatch[1].length} chars)`, 'success');
-            }
-        } else {
-            safeLog(`⚠️ WARNING: No author's note found in final context!`, 'warn');
-        }
     }
 
     return { text };
