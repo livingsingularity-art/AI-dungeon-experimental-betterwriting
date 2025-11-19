@@ -63,7 +63,7 @@ const CONFIG = {
 
         // Temperature increase triggers
         heatThresholdForTempIncrease: 10,
-        tempIncreaseChance: 15,         // % chance when heat high
+        tempIncreaseChance: 30,         // % chance when heat high (was 15, increased for better pacing)
         tempIncreaseOnConsecutiveConflicts: 3,
 
         // Temperature decrease triggers
@@ -94,7 +94,7 @@ const CONFIG = {
         driftReducesHeat: true,
         driftHeatReduction: 3,
         qualityGatesTemperatureIncrease: true,
-        qualityThresholdForIncrease: 3.0,
+        qualityThresholdForIncrease: 2.0,        // Was 3.0, lowered for metaphor-heavy styles (Bradbury)
 
         // VS INTEGRATION
         temperatureAffectsVS: true,
@@ -1203,6 +1203,7 @@ const SYNONYM_MAP = {
     'journey': ['trip', 'voyage', 'expedition', 'trek', 'sojourn'],
     'end': ['conclusion', 'termination', 'finale', 'cessation', 'denouement'],
     'beginning': ['start', 'commencement', 'inception', 'genesis', 'origin'],
+    'ship': ['vessel', 'craft', 'spacecraft', 'rocket', 'hull'],
 
     // Common 2-word phrases (will be matched as complete phrases)
     'combat boots': ['military footwear', 'tactical boots', 'heavy boots', 'steel-toed boots'],
@@ -2545,6 +2546,17 @@ const ENHANCED_SYNONYM_MAP = {
             { word: 'swift glance', emotion: 2, precision: 4, tags: ['quick', 'fast'] }
         ],
         baseEmotion: 1, basePrecision: 2
+    },
+
+    'ship': {
+        synonyms: [
+            { word: 'vessel', emotion: 2, precision: 4, tags: ['formal', 'nautical'] },
+            { word: 'craft', emotion: 2, precision: 4, tags: ['technical', 'neutral'] },
+            { word: 'spacecraft', emotion: 2, precision: 5, tags: ['scifi', 'technical'] },
+            { word: 'rocket', emotion: 3, precision: 4, tags: ['action', 'scifi'] },
+            { word: 'hull', emotion: 2, precision: 5, tags: ['technical', 'part-for-whole'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
     }
 };
 
@@ -3670,6 +3682,9 @@ const BonepokeAnalysis = (() => {
 
         // Conjunctions
         'and', 'but', 'or', 'nor', 'for', 'yet', 'so', 'if', 'when', 'while',
+
+        // Simile/comparison indicators (literary devices - not lazy repetition)
+        'like', 'as',
 
         // Common verbs & auxiliaries
         'have', 'has', 'had', 'having',
