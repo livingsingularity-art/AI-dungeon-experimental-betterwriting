@@ -787,10 +787,8 @@ const initState = () => {
             }
         };
 
-        // Don't capture original author's note here - state.memory isn't populated yet!
-        // It will be captured in the context modifier on first run
-        state.originalAuthorsNote = state.originalAuthorsNote || null;
-        state.originalAuthorsNoteCaptured = state.originalAuthorsNoteCaptured || false;
+        // Note: Original author's note is NOT preserved - it gets overwritten constantly
+        // PlayersAuthorsNote story card serves as the user's stable author's note instead
 
         // PHASE 7: Load user configuration from story card
         SmartReplacementConfig.loadAndApply();

@@ -43,43 +43,34 @@ const modifier = (text) => {
 
     // === NGO LAYERED AUTHOR'S NOTE SYSTEM ===
     // Build author's note with priority layers:
-    // 1. Original user note (base)
-    // 2. PlayersAuthorsNote card content (player's custom guidance)
+    // 1. PlayersAuthorsNote card (user's stable author's note)
+    // 2. NGO Phase Guidance (dynamic narrative direction)
     // 3. Parentheses memory (gradual goals)
     // 4. @req immediate request (urgent player intent)
     if (CONFIG.ngo && CONFIG.ngo.enabled && state.ngo) {
-        // CRITICAL: Capture original author's note on first run
-        // state.memory is only populated when the context modifier runs
-        if (!state.originalAuthorsNoteCaptured) {
-            if (state.memory && state.memory.authorsNote) {
-                state.originalAuthorsNote = state.memory.authorsNote;
-            } else {
-                state.originalAuthorsNote = '';
-            }
-            state.originalAuthorsNoteCaptured = true;
-        }
-
         const buildLayeredAuthorsNote = () => {
             const layers = [];
 
-            // LAYER 1: Original user note (base)
-            if (state.originalAuthorsNote) {
-                layers.push(state.originalAuthorsNote);
-            }
-
-            // LAYER 2: PlayersAuthorsNote story card content
-            // Player edits this card to add custom narrative guidance
-            // Content is automatically injected into authorsNote every turn
+            // LAYER 1: PlayersAuthorsNote story card content (replaces original)
+            // Player edits this card to provide stable custom narrative guidance
+            // This is the user's "author's note" since the original gets overwritten
             const playerContent = PlayersAuthorsNoteCard.getPlayerContent();
             if (playerContent) {
                 layers.push(playerContent);
+            }
+
+            // LAYER 2: NGO Phase Guidance
+            // Dynamic guidance based on current story phase (Introduction, Rising Action, etc.)
+            const currentPhase = getCurrentNGOPhase();
+            if (currentPhase && currentPhase.authorNoteGuidance) {
+                layers.push(currentPhase.authorNoteGuidance);
             }
 
             // LAYER 3 & 4: Command system layers
             if (CONFIG.commands && CONFIG.commands.enabled && state.commands) {
                 const commandLayers = NGOCommands.buildAuthorsNoteLayer();
 
-                // Layer 3: Parentheses memory (gradual)
+                // Layer 3: Parentheses memory (gradual goals)
                 if (commandLayers.memoryGuidance) {
                     layers.push(commandLayers.memoryGuidance);
                 }
