@@ -787,12 +787,10 @@ const initState = () => {
             }
         };
 
-        // Store original author's note
-        if (state.memory && state.memory.authorsNote) {
-            state.originalAuthorsNote = state.memory.authorsNote;
-        } else {
-            state.originalAuthorsNote = '';
-        }
+        // Don't capture original author's note here - state.memory isn't populated yet!
+        // It will be captured in the context modifier on first run
+        state.originalAuthorsNote = state.originalAuthorsNote || null;
+        state.originalAuthorsNoteCaptured = state.originalAuthorsNoteCaptured || false;
 
         // PHASE 7: Load user configuration from story card
         SmartReplacementConfig.loadAndApply();
@@ -4700,7 +4698,7 @@ const NGOCommands = (() => {
 
         state.commands.requestHistory.push({
             request,
-            turn: state.ngoStats.totalTurns,
+            turn: (state.ngoStats && state.ngoStats.totalTurns) || 0,
             timestamp: Date.now()
         });
 

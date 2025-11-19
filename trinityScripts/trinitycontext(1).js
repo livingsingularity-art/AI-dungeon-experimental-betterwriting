@@ -48,6 +48,17 @@ const modifier = (text) => {
     // 3. Parentheses memory (gradual goals)
     // 4. @req immediate request (urgent player intent)
     if (CONFIG.ngo && CONFIG.ngo.enabled && state.ngo) {
+        // CRITICAL: Capture original author's note on first run
+        // state.memory is only populated when the context modifier runs
+        if (!state.originalAuthorsNoteCaptured) {
+            if (state.memory && state.memory.authorsNote) {
+                state.originalAuthorsNote = state.memory.authorsNote;
+            } else {
+                state.originalAuthorsNote = '';
+            }
+            state.originalAuthorsNoteCaptured = true;
+        }
+
         const buildLayeredAuthorsNote = () => {
             const layers = [];
 
