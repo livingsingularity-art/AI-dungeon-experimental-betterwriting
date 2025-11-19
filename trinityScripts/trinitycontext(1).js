@@ -99,17 +99,22 @@ const modifier = (text) => {
         try {
             const builtNote = buildLayeredAuthorsNote();
 
-            // CRITICAL: Ensure state.memory exists before setting authorsNote
-            if (!state.memory) {
-                safeLog(`⚠️ state.memory was undefined - initializing it`, 'warn');
-                state.memory = {};
-            }
+            // CRITICAL FIX: AI Dungeon IGNORES state.memory.authorsNote in scripts!
+            // We must inject the author's note DIRECTLY into the text instead
+            // Format: text positioned 3 newlines before the end (AI Dungeon author's note position)
 
-            state.memory.authorsNote = builtNote;
+            // Remove any existing [Author's note: ...] from text (scenario's default)
+            text = text.replace(/\[Author's note:.*?\]/gs, '');
+
+            // Inject our layered author's note in proper AI Dungeon format
+            if (builtNote) {
+                // Author's note goes 3 lines back from the end
+                text = text + `\n\n\n[Author's note: ${builtNote}]`;
+            }
 
             const phase = getCurrentNGOPhase();
             safeLog(`📝 Author's note built with phase: ${phase.name} (temp: ${state.ngo.temperature})`, 'info');
-            safeLog(`📝 FINAL NOTE (${builtNote.length} chars): "${builtNote}"`, 'info');
+            safeLog(`📝 INJECTED into text (${builtNote.length} chars)`, 'info');
         } catch (err) {
             safeLog(`❌ Critical error in NGO author's note system: ${err.message}`, 'error');
             safeLog(`❌ Error stack: ${err.stack}`, 'error');
@@ -117,18 +122,12 @@ const modifier = (text) => {
     }
 
     // === NGO FRONT MEMORY INJECTION (@req dual injection) ===
-    // Inject @req into front memory for immediate, high-priority narrative shaping
+    // Inject @req into front of context for immediate, high-priority narrative shaping
     if (CONFIG.commands && CONFIG.commands.enabled && CONFIG.commands.reqDualInjection && state.commands) {
         const frontMemoryInjection = NGOCommands.buildFrontMemoryInjection();
         if (frontMemoryInjection) {
-            // Ensure state.memory exists
-            if (!state.memory) {
-                safeLog(`⚠️ state.memory was undefined for frontMemory - initializing`, 'warn');
-                state.memory = {};
-            }
-
-            state.memory.frontMemory = (state.memory.frontMemory || '') + '\n\n' + frontMemoryInjection;
-
+            // Prepend to text (front memory goes at the start)
+            text = frontMemoryInjection + '\n\n' + text;
             safeLog(`💉 Front memory injected with @req: "${state.commands.narrativeRequest}"`, 'info');
         }
     }
@@ -183,18 +182,15 @@ const modifier = (text) => {
         state.lastContextWords = text.split(/\s+/).length;
     }
 
-    // CRITICAL VERIFICATION: Check if authorsNote is actually set before returning
+    // VERIFICATION: Check if author's note was injected into text
     if (CONFIG.ngo && CONFIG.ngo.enabled && state.ngo) {
-        if (state.memory && state.memory.authorsNote) {
-            safeLog(`✅ VERIFIED: authorsNote SET (${state.memory.authorsNote.length} chars)`, 'success');
-            safeLog(`🔍 authorsNote value: "${state.memory.authorsNote}"`, 'info');
-        } else {
-            safeLog(`❌ CRITICAL: authorsNote NOT SET in state.memory!`, 'error');
-            if (!state.memory) {
-                safeLog(`❌ state.memory is UNDEFINED - this is the problem!`, 'error');
-            } else {
-                safeLog(`⚠️ state.memory exists but authorsNote property is missing`, 'warn');
+        if (text.includes('[Author\'s note:')) {
+            const noteMatch = text.match(/\[Author's note: (.+?)\]/s);
+            if (noteMatch) {
+                safeLog(`✅ VERIFIED: Author's note INJECTED into context (${noteMatch[1].length} chars)`, 'success');
             }
+        } else {
+            safeLog(`⚠️ WARNING: No author's note found in final context!`, 'warn');
         }
     }
 
