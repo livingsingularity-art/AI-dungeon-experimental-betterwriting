@@ -988,20 +988,20 @@ commence => begin
 };
 
 /**
- * Create Trinity feature toggle card
+ * Create Trinity feature toggle cards (split into 3 cards for character limit)
  * Allows users to enable/disable major systems
- * @returns {boolean} True if card was created
+ * @returns {number} Number of cards created
  */
 const ensureTrinityFeaturesCard = () => {
-    const existing = storyCards.find(c => c.keys && c.keys.includes('trinity_features'));
-    if (existing) {
-        return false;
-    }
+    let created = 0;
 
-    const templateText =
-`# TRINITY FEATURE TOGGLES
-# Set to 'true' to enable, 'false' to disable
-# Save and refresh story to apply changes
+    // Card 1: Core & Analysis (VS, Bonepoke)
+    const existing1 = storyCards.find(c => c.keys && c.keys.includes('trinity_features_core'));
+    if (!existing1) {
+        const templateText1 =
+`# TRINITY TOGGLES: CORE & ANALYSIS
+# Set 'true' to enable, 'false' to disable
+# Save and refresh to apply changes
 
 ## CORE SYSTEMS
 
@@ -1023,6 +1023,30 @@ Dynamic Correction (auto-bans): true
 Fatigue Detection: true
 Quality Analysis: true
 Bonepoke Debug Logging: false
+
+# NOTES:
+# - Core systems work best together
+# - Debug logging OFF by default
+# - Changes apply on next turn`;
+
+        buildCard(
+            'Trinity Toggles: Core',
+            templateText1,
+            'Custom',
+            'trinity_features_core config_toggles',
+            'Core systems, VS, and Bonepoke settings',
+            10
+        );
+        created++;
+    }
+
+    // Card 2: Narrative & Enhancement (NGO, Smart Replacement)
+    const existing2 = storyCards.find(c => c.keys && c.keys.includes('trinity_features_narrative'));
+    if (!existing2) {
+        const templateText2 =
+`# TRINITY TOGGLES: NARRATIVE & ENHANCEMENT
+# Set 'true' to enable, 'false' to disable
+# Save and refresh to apply changes
 
 ## NGO (NARRATIVE GUIDANCE) OPTIONS
 
@@ -1048,6 +1072,30 @@ Log Replacement Reasons: true
 Log Context Analysis: false
 Log Validation: false
 
+# NOTES:
+# - NGO controls narrative pacing
+# - Smart Replacement prevents quality loss
+# - See Trinity Toggles: Core for main switches`;
+
+        buildCard(
+            'Trinity Toggles: Narrative',
+            templateText2,
+            'Custom',
+            'trinity_features_narrative config_toggles',
+            'NGO and Smart Replacement settings',
+            10
+        );
+        created++;
+    }
+
+    // Card 3: Commands & System
+    const existing3 = storyCards.find(c => c.keys && c.keys.includes('trinity_features_system'));
+    if (!existing3) {
+        const templateText3 =
+`# TRINITY TOGGLES: COMMANDS & SYSTEM
+# Set 'true' to enable, 'false' to disable
+# Save and refresh to apply changes
+
 ## COMMAND SYSTEM OPTIONS
 
 @req Commands: true
@@ -1061,40 +1109,57 @@ Command Debug Logging: false
 Persist State (save between sessions): true
 Enable Analytics: true
 
-# USAGE NOTES:
-# - Most features work best when enabled together
-# - Disabling core systems may reduce writing quality
-# - Debug logging is OFF by default (enable for troubleshooting)
-# - Changes take effect on next turn after save`;
+# NOTES:
+# - @req creates dual memory/action injection
+# - Parentheses () give high-priority instructions
+# - Persist State saves Trinity data between sessions
+# - See other Trinity Toggles cards for more options`;
 
-    const templateCard = buildCard(
-        'Trinity Feature Toggles',
-        templateText,
-        'Custom',
-        'trinity_features config_toggles',
-        'Enable/disable Trinity systems and debug options',
-        10  // High priority - near top of cards
-    );
+        buildCard(
+            'Trinity Toggles: System',
+            templateText3,
+            'Custom',
+            'trinity_features_system config_toggles',
+            'Command system and global settings',
+            10
+        );
+        created++;
+    }
 
-    safeLog('📝 Created Trinity Feature Toggles card', 'success');
-    return true;
+    if (created > 0) {
+        safeLog(`📝 Created ${created} Trinity Feature Toggle card(s)`, 'success');
+    }
+    return created;
 };
 
 /**
- * Load feature toggles from story card and apply to CONFIG
+ * Load feature toggles from story cards (all 3 parts) and apply to CONFIG
  * Called during initialization
  */
 const loadTrinityFeatureToggles = () => {
-    const card = storyCards.find(c => c.keys && c.keys.includes('trinity_features'));
-    if (!card || !card.entry) return;
+    // Find all three toggle cards
+    const coreCard = storyCards.find(c => c.keys && c.keys.includes('trinity_features_core'));
+    const narrativeCard = storyCards.find(c => c.keys && c.keys.includes('trinity_features_narrative'));
+    const systemCard = storyCards.find(c => c.keys && c.keys.includes('trinity_features_system'));
 
-    const lines = card.entry.split('\n');
+    // Also check for legacy single card
+    const legacyCard = storyCards.find(c => c.keys && c.keys.includes('trinity_features'));
+
+    // Collect all lines from all cards
+    let allLines = [];
+    if (coreCard && coreCard.entry) allLines = allLines.concat(coreCard.entry.split('\n'));
+    if (narrativeCard && narrativeCard.entry) allLines = allLines.concat(narrativeCard.entry.split('\n'));
+    if (systemCard && systemCard.entry) allLines = allLines.concat(systemCard.entry.split('\n'));
+    if (legacyCard && legacyCard.entry) allLines = allLines.concat(legacyCard.entry.split('\n'));
+
+    if (allLines.length === 0) return;
+
     const parseBoolean = (line) => {
         const match = line.match(/:\s*(true|false)\s*$/i);
         return match ? match[1].toLowerCase() === 'true' : null;
     };
 
-    lines.forEach(line => {
+    allLines.forEach(line => {
         const trimmed = line.trim();
         let value;
 
@@ -1236,7 +1301,8 @@ const loadTrinityFeatureToggles = () => {
         }
     });
 
-    safeLog('✅ Loaded Trinity feature toggles from story card', 'info');
+    const cardsFound = [coreCard, narrativeCard, systemCard, legacyCard].filter(c => c).length;
+    safeLog(`✅ Loaded Trinity feature toggles from ${cardsFound} card(s)`, 'info');
 };
 
 /**
