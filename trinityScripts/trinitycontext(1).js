@@ -98,6 +98,13 @@ const modifier = (text) => {
 
         try {
             const builtNote = buildLayeredAuthorsNote();
+
+            // CRITICAL: Ensure state.memory exists before setting authorsNote
+            if (!state.memory) {
+                safeLog(`⚠️ state.memory was undefined - initializing it`, 'warn');
+                state.memory = {};
+            }
+
             state.memory.authorsNote = builtNote;
 
             const phase = getCurrentNGOPhase();
@@ -105,6 +112,7 @@ const modifier = (text) => {
             safeLog(`📝 FINAL NOTE (${builtNote.length} chars): "${builtNote}"`, 'info');
         } catch (err) {
             safeLog(`❌ Critical error in NGO author's note system: ${err.message}`, 'error');
+            safeLog(`❌ Error stack: ${err.stack}`, 'error');
         }
     }
 
@@ -113,11 +121,15 @@ const modifier = (text) => {
     if (CONFIG.commands && CONFIG.commands.enabled && CONFIG.commands.reqDualInjection && state.commands) {
         const frontMemoryInjection = NGOCommands.buildFrontMemoryInjection();
         if (frontMemoryInjection) {
+            // Ensure state.memory exists
+            if (!state.memory) {
+                safeLog(`⚠️ state.memory was undefined for frontMemory - initializing`, 'warn');
+                state.memory = {};
+            }
+
             state.memory.frontMemory = (state.memory.frontMemory || '') + '\n\n' + frontMemoryInjection;
 
-            if (CONFIG.commands.debugLogging) {
-                safeLog(`💉 Front memory injected with @req: "${state.commands.narrativeRequest}"`, 'info');
-            }
+            safeLog(`💉 Front memory injected with @req: "${state.commands.narrativeRequest}"`, 'info');
         }
     }
 
@@ -169,6 +181,21 @@ const modifier = (text) => {
     if (CONFIG.system.enableAnalytics) {
         state.lastContextSize = text.length;
         state.lastContextWords = text.split(/\s+/).length;
+    }
+
+    // CRITICAL VERIFICATION: Check if authorsNote is actually set before returning
+    if (CONFIG.ngo && CONFIG.ngo.enabled && state.ngo) {
+        if (state.memory && state.memory.authorsNote) {
+            safeLog(`✅ VERIFIED: authorsNote SET (${state.memory.authorsNote.length} chars)`, 'success');
+            safeLog(`🔍 authorsNote value: "${state.memory.authorsNote}"`, 'info');
+        } else {
+            safeLog(`❌ CRITICAL: authorsNote NOT SET in state.memory!`, 'error');
+            if (!state.memory) {
+                safeLog(`❌ state.memory is UNDEFINED - this is the problem!`, 'error');
+            } else {
+                safeLog(`⚠️ state.memory exists but authorsNote property is missing`, 'warn');
+            }
+        }
     }
 
     return { text };
