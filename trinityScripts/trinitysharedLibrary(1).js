@@ -4898,6 +4898,7 @@ const NGOCommands = (() => {
      */
     const buildFrontMemoryInjection = () => {
         if (!CONFIG.commands.reqDualInjection) return '';
+        if (!state.commands) return '';
         if (!state.commands.narrativeRequest || state.commands.narrativeRequestTTL <= 0) return '';
 
         return `<SYSTEM>
@@ -4914,18 +4915,26 @@ ${state.commands.narrativeRequest}
     const buildAuthorsNoteLayer = () => {
         const result = { reqGuidance: '', memoryGuidance: '' };
 
+        // Check if state.commands exists
+        if (!state.commands) {
+            return result;
+        }
+
         if (state.commands.narrativeRequest && state.commands.narrativeRequestTTL > 0) {
             result.reqGuidance = `PRIORITY: Immediately and naturally introduce: ${state.commands.narrativeRequest}`;
         }
 
+        // Get current turn count (with fallback)
+        const currentTurn = (state.ngoStats && state.ngoStats.totalTurns) || 0;
+
         const memoryParts = [];
-        if (state.commands.memory1 && state.commands.expiration1 > state.ngoStats.totalTurns) {
+        if (state.commands.memory1 && state.commands.expiration1 > currentTurn) {
             memoryParts.push(`After the current phrase, flawlessly transition the story towards: ${state.commands.memory1}`);
         }
-        if (state.commands.memory2 && state.commands.expiration2 > state.ngoStats.totalTurns) {
+        if (state.commands.memory2 && state.commands.expiration2 > currentTurn) {
             memoryParts.push(`Additionally consider: ${state.commands.memory2}`);
         }
-        if (state.commands.memory3 && state.commands.expiration3 > state.ngoStats.totalTurns) {
+        if (state.commands.memory3 && state.commands.expiration3 > currentTurn) {
             memoryParts.push(`Background goal: ${state.commands.memory3}`);
         }
 
@@ -4943,6 +4952,7 @@ ${state.commands.narrativeRequest}
      */
     const detectFulfillment = (outputText) => {
         if (!CONFIG.commands.detectFulfillment) return { fulfilled: false, reason: 'disabled' };
+        if (!state.commands) return { fulfilled: false, reason: 'no_state' };
         if (!state.commands.narrativeRequest) return { fulfilled: false, reason: 'no_request' };
 
         const request = state.commands.narrativeRequest.toLowerCase();
@@ -4966,7 +4976,7 @@ ${state.commands.narrativeRequest}
             state.commands.narrativeRequestFulfilled = true;
             state.commands.narrativeRequest = null;
             state.commands.narrativeRequestTTL = 0;
-            state.ngoStats.requestsFulfilled++;
+            if (state.ngoStats) state.ngoStats.requestsFulfilled++;
             safeLog(`✅ Request FULFILLED! (score: ${fulfillmentScore.toFixed(2)})`, 'success');
             return { fulfilled: true, score: fulfillmentScore, reason: 'threshold_met' };
         } else {
@@ -4974,7 +4984,7 @@ ${state.commands.narrativeRequest}
 
             if (state.commands.narrativeRequestTTL <= 0) {
                 state.commands.narrativeRequest = null;
-                state.ngoStats.requestsFailed++;
+                if (state.ngoStats) state.ngoStats.requestsFailed++;
                 safeLog('❌ Request EXPIRED', 'warn');
                 return { fulfilled: false, score: fulfillmentScore, reason: 'ttl_expired' };
             }
@@ -5031,19 +5041,25 @@ ${state.commands.narrativeRequest}
     const cleanupExpiredMemories = () => {
         let expired = 0;
 
-        if (state.commands.expiration1 && state.commands.expiration1 <= state.ngoStats.totalTurns) {
+        if (!state.commands || !state.ngoStats) {
+            return expired;
+        }
+
+        const currentTurn = state.ngoStats.totalTurns || 0;
+
+        if (state.commands.expiration1 && state.commands.expiration1 <= currentTurn) {
             state.commands.memory1 = '';
             state.commands.expiration1 = null;
             expired++;
         }
 
-        if (state.commands.expiration2 && state.commands.expiration2 <= state.ngoStats.totalTurns) {
+        if (state.commands.expiration2 && state.commands.expiration2 <= currentTurn) {
             state.commands.memory2 = '';
             state.commands.expiration2 = null;
             expired++;
         }
 
-        if (state.commands.expiration3 && state.commands.expiration3 <= state.ngoStats.totalTurns) {
+        if (state.commands.expiration3 && state.commands.expiration3 <= currentTurn) {
             state.commands.memory3 = '';
             state.commands.expiration3 = null;
             expired++;
