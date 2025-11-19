@@ -51,44 +51,60 @@ const modifier = (text) => {
         const buildLayeredAuthorsNote = () => {
             const layers = [];
 
-            // LAYER 1: PlayersAuthorsNote story card content (replaces original)
-            // Player edits this card to provide stable custom narrative guidance
-            // This is the user's "author's note" since the original gets overwritten
-            const playerContent = PlayersAuthorsNoteCard.getPlayerContent();
-            if (playerContent) {
-                layers.push(playerContent);
-            }
-
-            // LAYER 2: NGO Phase Guidance
-            // Dynamic guidance based on current story phase (Introduction, Rising Action, etc.)
-            const currentPhase = getCurrentNGOPhase();
-            if (currentPhase && currentPhase.authorNoteGuidance) {
-                layers.push(currentPhase.authorNoteGuidance);
-            }
-
-            // LAYER 3 & 4: Command system layers
-            if (CONFIG.commands && CONFIG.commands.enabled && state.commands) {
-                const commandLayers = NGOCommands.buildAuthorsNoteLayer();
-
-                // Layer 3: Parentheses memory (gradual goals)
-                if (commandLayers.memoryGuidance) {
-                    layers.push(commandLayers.memoryGuidance);
+            try {
+                // LAYER 1: PlayersAuthorsNote story card content (replaces original)
+                // Player edits this card to provide stable custom narrative guidance
+                // This is the user's "author's note" since the original gets overwritten
+                const playerContent = PlayersAuthorsNoteCard.getPlayerContent();
+                if (playerContent) {
+                    layers.push(playerContent);
+                    safeLog(`✅ Layer 1 (Player): "${playerContent.substring(0, 50)}..."`, 'success');
+                } else {
+                    safeLog(`⚠️ Layer 1 (Player): EMPTY`, 'warn');
                 }
 
-                // Layer 4: @req immediate request (highest narrative priority)
-                if (commandLayers.reqGuidance) {
-                    layers.push(commandLayers.reqGuidance);
+                // LAYER 2: NGO Phase Guidance
+                // Dynamic guidance based on current story phase (Introduction, Rising Action, etc.)
+                const currentPhase = getCurrentNGOPhase();
+                if (currentPhase && currentPhase.authorNoteGuidance) {
+                    layers.push(currentPhase.authorNoteGuidance);
+                    safeLog(`✅ Layer 2 (NGO): "${currentPhase.authorNoteGuidance.substring(0, 60)}..."`, 'success');
+                } else {
+                    safeLog(`⚠️ Layer 2 (NGO): MISSING!`, 'warn');
                 }
+
+                // LAYER 3 & 4: Command system layers
+                if (CONFIG.commands && CONFIG.commands.enabled && state.commands) {
+                    const commandLayers = NGOCommands.buildAuthorsNoteLayer();
+
+                    // Layer 3: Parentheses memory (gradual goals)
+                    if (commandLayers.memoryGuidance) {
+                        layers.push(commandLayers.memoryGuidance);
+                        safeLog(`✅ Layer 3 (Memory): "${commandLayers.memoryGuidance.substring(0, 50)}..."`, 'success');
+                    }
+
+                    // Layer 4: @req immediate request (highest narrative priority)
+                    if (commandLayers.reqGuidance) {
+                        layers.push(commandLayers.reqGuidance);
+                        safeLog(`✅ Layer 4 (@req): "${commandLayers.reqGuidance}"`, 'success');
+                    }
+                }
+            } catch (err) {
+                safeLog(`❌ Error building layered author's note: ${err.message}`, 'error');
             }
 
             return layers.filter(Boolean).join(' ');
         };
 
-        state.memory.authorsNote = buildLayeredAuthorsNote();
+        try {
+            const builtNote = buildLayeredAuthorsNote();
+            state.memory.authorsNote = builtNote;
 
-        if (CONFIG.ngo.debugLogging) {
             const phase = getCurrentNGOPhase();
             safeLog(`📝 Author's note built with phase: ${phase.name} (temp: ${state.ngo.temperature})`, 'info');
+            safeLog(`📝 FINAL NOTE (${builtNote.length} chars): "${builtNote}"`, 'info');
+        } catch (err) {
+            safeLog(`❌ Critical error in NGO author's note system: ${err.message}`, 'error');
         }
     }
 
