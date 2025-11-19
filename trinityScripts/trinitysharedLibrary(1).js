@@ -3630,14 +3630,21 @@ const VerbalizedSampling = (() => {
      * Get or create VS system card
      */
     const ensureCard = () => {
+        // Try multiple lookup methods to find existing card
         let card = getCard(c => c.title === VS_CARD_TITLE);
 
         if (!card) {
+            // Try by keys if title lookup failed
+            card = getCard(c => c.keys && c.keys.includes('verbalized_sampling'));
+        }
+
+        if (!card) {
+            // Only create if we really can't find it
             card = buildCard(
                 VS_CARD_TITLE,
                 generateInstruction(),
                 "System",
-                "",  // No keys = always active
+                "verbalized_sampling vs_system",  // Unique keys to prevent collisions
                 "Verbalized Sampling - Diversity Enhancement",
                 0    // High priority
             );
@@ -5071,7 +5078,7 @@ ${state.commands.narrativeRequest}
 const PlayersAuthorsNoteCard = (() => {
     const CARD_TITLE = "PlayersAuthorsNote";
     const CARD_TYPE = "Custom";
-    const CARD_KEYS = ""; // No trigger keys - always active via script
+    const CARD_KEYS = "players_authors_note custom_guidance"; // Unique keys to prevent collisions
 
     /**
      * Ensure the player's authors note card exists
@@ -5079,8 +5086,13 @@ const PlayersAuthorsNoteCard = (() => {
      * @returns {Object|null} The story card reference
      */
     const ensureCard = () => {
-        // Find existing card
-        const existingIndex = storyCards.findIndex(card => card.title === CARD_TITLE);
+        // Try multiple lookup methods to find existing card
+        let existingIndex = storyCards.findIndex(card => card.title === CARD_TITLE);
+
+        if (existingIndex < 0) {
+            // Try by keys if title lookup failed
+            existingIndex = storyCards.findIndex(card => card.keys && card.keys.includes('players_authors_note'));
+        }
 
         if (existingIndex >= 0) {
             // Card exists - don't overwrite player's content
@@ -5144,19 +5156,25 @@ const PlayersAuthorsNoteCard = (() => {
 // Initialize state on library load
 initState();
 
-// Ensure VS card exists
-if (CONFIG.vs.enabled) {
-    VerbalizedSampling.ensureCard();
-}
+// Only create cards once per session (not on every modifier call)
+if (!state.cardsInitialized) {
+    // Ensure VS card exists
+    if (CONFIG.vs.enabled) {
+        VerbalizedSampling.ensureCard();
+    }
 
-// Ensure all word bank template cards exist
-ensureBannedWordsCard();   // PRECISE removal
-ensureAggressiveCard();     // AGGRESSIVE sentence removal
-ensureReplacerCard();       // REPLACER synonyms
+    // Ensure all word bank template cards exist
+    ensureBannedWordsCard();   // PRECISE removal
+    ensureAggressiveCard();     // AGGRESSIVE sentence removal
+    ensureReplacerCard();       // REPLACER synonyms
 
-// Ensure PlayersAuthorsNote card exists (player-editable, content injected into authorsNote)
-if (CONFIG.ngo.enabled) {
-    PlayersAuthorsNoteCard.ensureCard();
+    // Ensure PlayersAuthorsNote card exists (player-editable, content injected into authorsNote)
+    if (CONFIG.ngo.enabled) {
+        PlayersAuthorsNoteCard.ensureCard();
+    }
+
+    // Mark as initialized to prevent duplicate creation
+    state.cardsInitialized = true;
 }
 
 // #endregion
