@@ -573,8 +573,15 @@ Instructions:
 - Change preset to: conservative, balanced, or aggressive
 - Save card and refresh story to apply changes`;
 
-        addStoryCard(CARD_KEY, defaultConfig, ['smart_replacement', 'config']);
-        return storyCards.find(c => c.keys && c.keys.includes(CARD_KEY));
+        // addStoryCard signature: addStoryCard(keys, entry, type)
+        // keys can be a string with comma-separated values
+        const keys = `${CARD_KEY}, smart_replacement, config`;
+        const index = addStoryCard(keys, defaultConfig, 'Custom');
+        if (index === false) {
+            // Card already exists
+            return storyCards.find(c => c.keys && c.keys.includes(CARD_KEY));
+        }
+        return storyCards[index];
     };
 
     /**
@@ -823,29 +830,40 @@ const buildCard = (title = "", entry = "", type = "Custom",
     // Clamp insertion index
     insertionIndex = Math.min(Math.max(0, insertionIndex), storyCards.length);
 
-    // Create card with temporary title
-    addStoryCard("%TEMP%");
+    // Create card with proper parameters
+    // addStoryCard signature: addStoryCard(keys, entry, type)
+    // Returns the index of the new card or false if card with same keys exists
+    const newIndex = addStoryCard(keys, entry, type);
 
-    // Find and configure the new card
-    for (const [index, card] of storyCards.entries()) {
-        if (card.title !== "%TEMP%") continue;
-
-        card.type = type;
-        card.title = title;
-        card.keys = keys;
-        card.entry = entry;
-        card.description = description;
-
-        // Move to correct position if needed
-        if (index !== insertionIndex) {
-            storyCards.splice(index, 1);
-            storyCards.splice(insertionIndex, 0, card);
+    if (newIndex === false) {
+        // Card with same keys already exists, find and update it
+        const existing = storyCards.find(c => c.keys === keys);
+        if (existing) {
+            existing.title = title;
+            existing.entry = entry;
+            existing.description = description;
+            existing.type = type;
+            return Object.seal(existing);
         }
-
-        return Object.seal(card);
+        throw new Error("addStoryCard returned false but couldn't find existing card");
     }
 
-    throw new Error("Failed to create story card");
+    // Configure the newly created card
+    const card = storyCards[newIndex];
+    if (!card) {
+        throw new Error("Failed to create story card - card not found at returned index");
+    }
+
+    card.title = title;
+    card.description = description;
+
+    // Move to correct position if needed
+    if (newIndex !== insertionIndex) {
+        storyCards.splice(newIndex, 1);
+        storyCards.splice(insertionIndex, 0, card);
+    }
+
+    return Object.seal(card);
 };
 
 /**
