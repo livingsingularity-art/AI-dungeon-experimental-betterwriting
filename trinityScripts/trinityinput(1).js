@@ -24,6 +24,13 @@ const modifier = (text) => {
         if (Object.keys(commandResult.commands).length > 0) {
             safeLog(`🎮 Commands: ${JSON.stringify(commandResult.commands)}`, 'info');
         }
+
+        // CRITICAL FIX: If commands consumed all text, provide minimal input
+        // AI Dungeon crashes with empty input - use continue signal instead
+        if (!text || text.trim() === '') {
+            text = '.';  // Minimal continue command
+            safeLog(`⚠️ Commands consumed all input - using continue signal`, 'warn');
+        }
     }
 
     // Better Say Actions - Enhanced dialogue formatting
