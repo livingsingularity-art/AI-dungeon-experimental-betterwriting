@@ -40,7 +40,7 @@ const CONFIG = {
         fatigueThreshold: 3,    // Word repetition threshold (lowered for better detection)
         qualityThreshold: 2.5,  // Minimum average score (for logging)
         enableDynamicCorrection: true,  // Create guidance cards to prevent future issues
-        debugLogging: false
+        debugLogging: true
     },
 
     // NGO (Narrative Guidance Overhaul) - THE CENTRAL BRAIN
