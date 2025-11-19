@@ -848,18 +848,38 @@ const buildCard = (title = "", entry = "", type = "Custom",
         throw new Error("addStoryCard returned false but couldn't find existing card");
     }
 
-    // Configure the newly created card
-    const card = storyCards[newIndex];
+    // Find the newly created card
+    // The returned index may not always be accurate, so we try multiple approaches
+    let card = storyCards[newIndex];
+    let actualIndex = newIndex;
+
     if (!card) {
-        throw new Error("Failed to create story card - card not found at returned index");
+        // Try finding by keys
+        actualIndex = storyCards.findIndex(c => c.keys === keys);
+        if (actualIndex >= 0) {
+            card = storyCards[actualIndex];
+        }
     }
 
+    if (!card) {
+        // Try the last element (newly added cards often go to the end)
+        actualIndex = storyCards.length - 1;
+        if (actualIndex >= 0 && storyCards[actualIndex].keys === keys) {
+            card = storyCards[actualIndex];
+        }
+    }
+
+    if (!card) {
+        throw new Error(`Failed to create story card - not found at index ${newIndex}, by keys "${keys}", or at end of array`);
+    }
+
+    // Configure the card
     card.title = title;
     card.description = description;
 
     // Move to correct position if needed
-    if (newIndex !== insertionIndex) {
-        storyCards.splice(newIndex, 1);
+    if (actualIndex !== insertionIndex) {
+        storyCards.splice(actualIndex, 1);
         storyCards.splice(insertionIndex, 0, card);
     }
 
