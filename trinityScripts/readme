@@ -1,1 +1,229 @@
+# Trinity Scripts - Romance/Erotica Edition
 
+## Overview
+Trinity Scripts is a comprehensive AI Dungeon modding system designed to enhance storytelling through dynamic narrative pacing, quality analysis, and output refinement. This romance/erotica edition is specifically tuned for intimate, character-driven stories with emotional depth and sensual content.
+
+## Features
+
+### 1. NGO (Narrative Guidance Overhaul)
+- **Dynamic Heat & Temperature System**: Tracks romantic and sexual tension
+- **7-Phase Story Arc**: From initial attraction through climax to tender afterglow
+- **Overheat Mode**: Sustains peak intimacy across multiple turns
+- **Cooldown Phase**: Gentle resolution and emotional bonding
+
+### 2. Bonepoke Quality Analysis
+- Evaluates output across 5 dimensions: Emotional Strength, Character Clarity, Story Flow, Dialogue Quality, Word Variety
+- Detects repetitive phrases and suggests synonyms
+- Prevents purple prose and maintains genre-appropriate language
+- Smart replacement system respects intimate vocabulary
+
+### 3. Verbalized Sampling (VS)
+- Adaptive sampling that increases diversity during climactic scenes
+- Prevents generic or repetitive intimate descriptions
+- Balances creativity with coherence
+
+### 4. Player Commands
+- `@req [request]`: Immediate one-turn narrative direction
+- `(goal)`: Gradual multi-turn guidance
+- `@temp [number]`: Manually set temperature (1-15)
+- `@arc [phase]`: Jump to specific narrative phase
+
+## Installation
+
+1. Navigate to AI Dungeon Scenarios > Scripts
+2. Add the following scripts in order:
+   - **Shared Library**: `trinitysharedLibrary(1).js`
+   - **Input Modifier**: `trinityinput(1).js`
+   - **Context Modifier**: `trinitycontext(1).js`
+   - **Output Modifier**: `trinityoutput(1).js`
+
+3. Create Story Cards (World Info):
+   - **PlayersAuthorsNote**: Your custom author's note (persistent)
+   - **banned_words**: PRECISE removal (exact phrases to delete)
+   - **aggressive_removal**: AGGRESSIVE removal (removes entire sentences)
+   - **word_replacer**: Manual synonym overrides (format: `word => replacement`)
+
+## How to Use
+
+### Starting Your Story
+- Begin naturally—Trinity adapts to your narrative
+- Initial temperature: 1 (Introduction phase)
+- Heat builds automatically based on content
+
+### Building Tension
+- Describe attraction, longing looks, lingering touches
+- Words like "desire," "need," "ache" increase heat
+- Temperature rises gradually: Introduction → Rising Action → Climax
+
+### Reaching Climax
+- Temperature 10-12 is ideal for intimate scenes
+- Use `@temp 11` to manually enter peak intimacy
+- Overheat mode activates after sustained high temp (maintains intensity)
+
+### Afterglow & Resolution
+- Cooldown phase automatically follows overheat
+- Temperature decreases gradually
+- Focus shifts to tenderness, emotion, bonding
+
+### Manual Control
+- `@req more emotional depth`: Immediate adjustment
+- `(slowly build to first kiss)`: Multi-turn goal
+- `@temp 8`: Set rising tension
+- `@arc climax`: Jump to climax phase
+
+## Story Card Configuration
+
+### PlayersAuthorsNote
+Your persistent author's note. Examples:
+```
+Focus on sensory details and emotional interiority.
+Characters: Alex (confident, teasing) and Jordan (shy, responsive).
+Tone: Slow burn romance with explicit intimacy.
+```
+
+### banned_words (PRECISE Removal)
+Exact phrases to remove from output:
+```
+I'm sorry, but, it seems, as an AI, against my programming
+```
+
+### aggressive_removal (AGGRESSIVE Removal)
+Remove entire sentences containing these phrases:
+```
+content policy, inappropriate, explicit content
+```
+
+### word_replacer (Manual Synonyms)
+Override AI's word choices:
+```
+member => cock
+intimate area => pussy
+release => orgasm
+```
+
+## Temperature Guide
+
+| Temp | Phase | Focus | Example Scene |
+|------|-------|-------|---------------|
+| 1-3 | Introduction | Meet, attraction | First conversation, stolen glances |
+| 4-6 | Rising (Early) | Tension builds | Accidental touches, flirting |
+| 7-9 | Rising (Late) | Desire intensifies | Charged moments, restraint breaking |
+| 10 | Climax Entry | Point of no return | First kiss, clothes coming off |
+| 11-12 | Peak Climax | Full intimacy | Sex scene, emotional vulnerability |
+| 13-15 | Extreme | Overwhelming | Multiple orgasms, intense passion |
+| OH | Overheat | Sustained peak | Extended intimacy, deep connection |
+| CD | Cooldown | Afterglow | Tender touches, quiet confessions |
+
+## Best Practices
+
+### DO:
+- Let tension build naturally
+- Use commands sparingly for major redirects
+- Trust the NGO system to pace your story
+- Embrace genre-appropriate vocabulary
+- Focus on character emotion and sensation
+
+### DON'T:
+- Manually force temperature too high too fast
+- Overuse @req commands (breaks immersion)
+- Fight the system—work with narrative flow
+- Worry about repetition of anatomical terms (they're whitelisted)
+
+## Advanced Tips
+
+### Prolonging Tension
+- Keep temperature 7-9 for extended "almost" moments
+- Use calming words to prevent premature escalation
+- Build emotional barriers that slow physical progression
+
+### Enhanced Climax Scenes
+- Let temperature reach 11-12 naturally
+- Overheat mode will sustain intensity for 4 turns
+- Mix physical action with emotional vulnerability
+
+### Emotional Depth
+- Use PlayersAuthorsNote to define character voices
+- Request emotional interiority: `@req focus on Alex's conflicted feelings`
+- Cooldown phase is perfect for character development
+
+### Customization
+- Edit conflict/calming word lists in sharedLibrary for your specific story
+- Adjust heat thresholds if pacing feels too fast/slow
+- Use word_replacer card to match your preferred terminology
+
+## BDSM Content Support
+
+Trinity Scripts fully supports BDSM content with specialized features:
+
+### Power Dynamics
+- Words like "dominate," "submit," "control" increase heat
+- Role terms (dom, sub, master, etc.) are whitelisted (won't flag as repetitive)
+- Commands work great for scenes: `@req establish dom/sub dynamic`
+
+### Aftercare Support
+- Aftercare terms ("care," "check," "reassure") trigger calming
+- Cooldown phase is perfect for aftercare scenes
+- Safety terms (safeword, consent, boundary) are whitelisted
+
+### Equipment & Scenes
+- BDSM equipment terms increase tension appropriately
+- All gear vocabulary whitelisted (collar, cuff, rope, etc.)
+- Action terms (bind, spank, discipline) drive heat naturally
+
+## Troubleshooting
+
+**Story feels repetitive:**
+- Bonepoke will auto-replace fatigued words
+- Check if quality thresholds are too strict (Config: use "balanced" preset)
+
+**Temperature rising too fast:**
+- Reduce use of conflict words
+- Add calming words to slow pacing
+- Consider that heat threshold is set for slower burn (10)
+
+**Temperature stuck:**
+- Increase romantic/sexual content in your inputs
+- Use `@temp [number]` to manually adjust
+- Check that heat isn't decaying too quickly (set to 0.5 for slower decay)
+
+**Output too tame/too explicit:**
+- Adjust AI model settings (not script-controlled)
+- Use banned_words/aggressive_removal to filter
+- Guide with PlayersAuthorsNote and @req commands
+
+## Technical Notes
+
+- All debugging disabled for production use
+- Performance optimized for mobile and web
+- Analytics disabled to protect privacy
+- Scripts tested with AI Dungeon Griffin and Dragon models
+- Heat mechanics tuned for romance pacing (slower burn, higher capacity)
+- 200+ genre-specific terms whitelisted to prevent false positives
+
+## Version Information
+
+**Version:** 1.0.0-romance
+**Last Updated:** 2025-11-20
+**Genre Focus:** Romance, Erotica, Romantic Fantasy, BDSM
+**Based On:** Trinity Scripts Core System
+
+## Support & Contributions
+
+For issues, suggestions, or community stories:
+- GitHub: https://github.com/livingsingularity-art/AI-dungeon-experimental-betterwriting
+- Report bugs via GitHub Issues
+
+## Credits
+
+Trinity Scripts developed by livingsingularity-art
+Romance/Erotica tuning: Claude Code Agent
+Special thanks to the AI Dungeon modding community
+
+## License
+
+This project is part of the AI-dungeon-experimental-betterwriting repository.
+See repository for full license details.
+
+---
+
+**Enjoy crafting beautiful, intimate, emotionally resonant stories!**

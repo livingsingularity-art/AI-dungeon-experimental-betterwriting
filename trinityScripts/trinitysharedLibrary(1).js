@@ -31,7 +31,7 @@ const CONFIG = {
         tau: 0.10,              // Probability threshold (research-recommended)
         seamless: true,         // Hide process from output
         adaptive: true,         // Auto-adjust based on context (NOW ENABLED for NGO)
-        debugLogging: true      // Console logging
+        debugLogging: false     // Console logging
     },
 
     // Bonepoke Analysis
@@ -40,7 +40,7 @@ const CONFIG = {
         fatigueThreshold: 3,    // Word repetition threshold (lowered for better detection)
         qualityThreshold: 2.5,  // Minimum average score (for logging)
         enableDynamicCorrection: true,  // Create guidance cards to prevent future issues
-        debugLogging: true
+        debugLogging: false
     },
 
     // NGO (Narrative Guidance Overhaul) - THE CENTRAL BRAIN
@@ -49,11 +49,11 @@ const CONFIG = {
 
         // HEAT MECHANICS (short-term tension)
         initialHeat: 0,
-        heatDecayRate: 1,               // Natural decay per turn
+        heatDecayRate: 0.5,             // Natural decay per turn (slower for romance)
         heatIncreasePerConflict: 1,     // Per conflict word detected
         playerHeatMultiplier: 2,        // Player actions = stronger impact
         aiHeatMultiplier: 1,            // AI output = normal impact
-        maxHeat: 50,                    // Soft cap
+        maxHeat: 60,                    // Soft cap (higher for sustained tension)
 
         // TEMPERATURE MECHANICS (long-term arc)
         initialTemperature: 1,
@@ -106,8 +106,8 @@ const CONFIG = {
         parenthesesHeatBonus: 1,
 
         // DEBUG
-        debugLogging: true,
-        logStateChanges: true
+        debugLogging: false,
+        logStateChanges: false
     },
 
     // COMMAND SYSTEM (Player narrative pressure vectors)
@@ -134,7 +134,7 @@ const CONFIG = {
         detectFulfillment: true,
         fulfillmentThreshold: 0.4,
 
-        debugLogging: true
+        debugLogging: false
     },
 
     // Smart Replacement (Bonepoke-Enhanced Synonym Selection)
@@ -189,16 +189,16 @@ const CONFIG = {
         minScoreImprovement: 0.0,           // Minimum score delta to accept (0.0 = any improvement)
 
         // Debug
-        debugLogging: true,
-        logReplacementReasons: true,  // Show WHY each replacement was chosen
-        logContextAnalysis: true,     // Show context matching details
-        logValidation: true           // Show validation decisions
+        debugLogging: false,
+        logReplacementReasons: false,  // Show WHY each replacement was chosen
+        logContextAnalysis: false,     // Show context matching details
+        logValidation: false           // Show validation decisions
     },
 
     // System
     system: {
         persistState: true,     // Save state between sessions
-        enableAnalytics: true   // Track metrics over time (NOW ENABLED for NGO)
+        enableAnalytics: false  // Track metrics over time
     }
 };
 
@@ -3362,71 +3362,68 @@ const generateReplacementReport = () => {
  * These drive the heat accumulation system
  */
 const NGO_WORD_LISTS = {
-    // Words that INCREASE heat (conflict, tension, action)
+    // Words that INCREASE heat (romantic/sexual tension, intensity)
     conflict: [
-        // Violence
-        'attack', 'fight', 'battle', 'war', 'kill', 'murder', 'destroy',
-        'strike', 'punch', 'kick', 'stab', 'slash', 'shoot', 'blast',
-        'crush', 'smash', 'break', 'shatter', 'explode', 'detonate',
-        'wound', 'injure', 'hurt', 'harm', 'damage', 'wreck', 'ruin',
-        'slaughter', 'massacre', 'execute', 'assassinate', 'ambush',
-        // Danger
-        'danger', 'threat', 'enemy', 'foe', 'villain', 'monster',
-        'demon', 'beast', 'creature', 'predator', 'hunter', 'assassin',
-        'trap', 'poison', 'curse', 'plague', 'disease',
-        'death', 'dying', 'dead', 'corpse', 'grave', 'tomb',
+        // Romantic Tension
+        'desire', 'want', 'need', 'crave', 'hunger', 'ache', 'yearn', 'burn',
+        'tension', 'heat', 'pulse', 'throb', 'shiver', 'gasp', 'moan',
+        'breathless', 'dizzy', 'electric', 'magnetic', 'irresistible',
+        // Physical Intensity
+        'touch', 'caress', 'stroke', 'kiss', 'lips', 'skin', 'bare',
+        'press', 'pull', 'grip', 'tease', 'taste', 'lick', 'bite',
+        'closer', 'against', 'beneath', 'between', 'inside',
+        // Emotional Intensity
+        'vulnerable', 'exposed', 'surrender', 'take', 'claim', 'possess',
+        'mine', 'yours', 'belong', 'consume', 'devour', 'overwhelm',
+        'desperate', 'frantic', 'wild', 'fierce', 'raw',
+        // BDSM - Power Dynamics
+        'dominate', 'submit', 'control', 'command', 'obey', 'serve',
+        'master', 'mistress', 'sir', 'kneel', 'crawl', 'beg', 'plead',
+        // BDSM - Actions
+        'bind', 'restrain', 'tie', 'collar', 'leash', 'cuff',
+        'spank', 'flog', 'whip', 'discipline', 'punish',
+        'force', 'demand', 'order', 'forbidden', 'deny',
         // Urgency
-        'run', 'flee', 'escape', 'chase', 'pursue', 'hurry', 'rush',
-        'urgent', 'emergency', 'crisis', 'disaster', 'catastrophe',
-        'collapse', 'crash', 'fail', 'lose', 'lost',
-        // Negative emotion
-        'rage', 'fury', 'anger', 'hate', 'fear', 'terror', 'panic',
-        'scream', 'shout', 'yell', 'cry', 'sob', 'wail', 'shriek',
-        'despair', 'agony', 'torment', 'suffer', 'anguish',
-        'dread', 'horror', 'nightmare', 'trauma', 'shock',
-        // Confrontation
-        'confront', 'challenge', 'oppose', 'resist', 'defy', 'betray',
-        'deceive', 'steal', 'rob', 'threaten', 'demand',
-        'argue', 'conflict', 'dispute', 'clash',
-        'accuse', 'blame', 'condemn', 'judge', 'punish',
-        // High stakes
-        'blood', 'fire', 'explosion', 'destruction', 'chaos',
-        'invasion', 'siege', 'conquest', 'revolution',
-        'sacrifice', 'doom', 'fate', 'destiny', 'prophecy',
-        'ultimate', 'final', 'last', 'end', 'apocalypse'
+        'rush', 'hurry', 'urgent', 'now', 'immediate',
+        // Emotional conflict (keeps romantic tension)
+        'resist', 'struggle', 'fight', 'defy', 'deny',
+        'argue', 'conflict', 'challenge',
+        'fear', 'panic', 'terror', 'dread',
+        'rage', 'fury', 'anger', 'hate',
+        'betray', 'deceive', 'threaten'
     ],
 
-    // Words that DECREASE heat (calm, resolution, rest)
+    // Words that DECREASE heat (calm, afterglow, tenderness)
     calming: [
-        // Peace
+        // Tender Moments
+        'tender', 'gentle', 'soft', 'sweet', 'warm', 'safe', 'cherish',
+        'hold', 'embrace', 'cuddle', 'nestle', 'snuggle', 'nuzzle',
+        'stroke', 'caress', 'pet', 'soothe', 'comfort',
+        // Afterglow
+        'afterglow', 'sated', 'satisfied', 'content', 'peaceful', 'drowsy',
+        'lazy', 'linger', 'bask', 'drift', 'float', 'melt',
+        'murmur', 'whisper', 'hum', 'sigh', 'breathe',
+        // BDSM - Aftercare & Safety
+        'aftercare', 'care', 'tend', 'check', 'reassure',
+        'safe', 'safeword', 'consent', 'boundary', 'limit',
+        'praise', 'good', 'proud', 'well', 'perfect',
+        // Peace & Rest
         'peace', 'calm', 'quiet', 'still', 'serene', 'tranquil',
-        'gentle', 'soft', 'warm', 'safe', 'secure', 'protected',
-        'harmony', 'balance', 'stable', 'steady', 'settled',
-        // Rest
-        'rest', 'sleep', 'relax', 'breathe', 'sigh', 'exhale',
-        'settle', 'sit', 'lie', 'lean', 'recline', 'pause',
-        'wait', 'linger', 'stay', 'remain', 'stop',
-        'dream', 'slumber', 'doze', 'nap',
+        'rest', 'sleep', 'relax', 'settle', 'pause',
+        'lie', 'lean', 'recline', 'sink', 'slumber',
         // Positive emotion
-        'happy', 'joy', 'love', 'care', 'comfort', 'soothe',
-        'smile', 'laugh', 'giggle', 'chuckle', 'grin',
-        'hug', 'embrace', 'hold', 'cuddle', 'caress',
-        'content', 'satisfied', 'pleased', 'delighted',
-        // Resolution
-        'resolve', 'solve', 'fix', 'heal', 'recover', 'mend',
-        'forgive', 'apologize', 'reconcile', 'understand', 'agree',
-        'accept', 'approve', 'allow', 'permit', 'grant',
-        'complete', 'finish', 'accomplish', 'achieve', 'succeed',
-        // Connection
-        'friend', 'ally', 'companion', 'partner', 'family', 'home',
+        'happy', 'joy', 'love', 'smile', 'laugh', 'giggle', 'grin',
+        'content', 'pleased', 'delighted', 'blissful',
+        // Connection & Trust
         'trust', 'believe', 'hope', 'faith', 'together', 'united',
-        'bond', 'connection', 'relationship', 'friendship',
-        'support', 'help', 'aid', 'assist', 'guide',
-        // Mundane
-        'eat', 'drink', 'cook', 'clean', 'walk', 'talk', 'think',
-        'observe', 'notice', 'examine', 'study', 'learn', 'remember',
-        'write', 'read', 'listen', 'watch', 'see', 'look',
-        'ordinary', 'normal', 'usual', 'routine', 'daily'
+        'bond', 'connection', 'close', 'intimate', 'belong',
+        'partner', 'lover', 'beloved', 'darling', 'sweetheart',
+        // Resolution & Understanding
+        'understand', 'agree', 'accept', 'forgive', 'reconcile',
+        'heal', 'recover', 'mend', 'complete', 'whole',
+        // Mundane transition
+        'eat', 'drink', 'water', 'clean', 'wash',
+        'walk', 'talk', 'think', 'remember'
     ]
 };
 
@@ -3438,88 +3435,94 @@ const NGO_PHASES = {
     introduction: {
         tempRange: [1, 3],
         name: 'Introduction',
-        description: 'Establish characters, world, and hooks',
+        description: 'Establish character chemistry and initial attraction',
         authorNoteGuidance:
-            'Story Phase: Introduction. Focus on character establishment, ' +
-            'world-building, and subtle foreshadowing. Keep conflicts minimal. ' +
-            'Let the story breathe and establish tone.',
+            'Story Phase: Introduction. Establish character chemistry and initial attraction. ' +
+            'Introduce romantic tension through glances, subtle touches, or verbal sparring. ' +
+            'Set the emotional stakes. Let attraction simmer beneath the surface.',
         vsAdjustment: { k: 4, tau: 0.15 },
         bonepokeStrictness: 'relaxed'
     },
     risingEarly: {
         tempRange: [4, 6],
         name: 'Rising Action (Early)',
-        description: 'Introduce minor conflicts, build tension gradually',
+        description: 'Build romantic and sexual tension gradually',
         authorNoteGuidance:
-            'Story Phase: Rising Action. Introduce obstacles and challenges. ' +
-            'Characters face minor setbacks. Hint at greater conflicts ahead. ' +
-            'Increase tension gradually but maintain hope.',
+            'Story Phase: Rising Action. Build romantic and sexual tension gradually. ' +
+            'Characters notice physical details, feel attraction growing. ' +
+            'Introduce emotional barriers or complications that prevent immediate intimacy. ' +
+            'Charged glances, accidental touches, magnetic pull.',
         vsAdjustment: { k: 5, tau: 0.12 },
         bonepokeStrictness: 'normal'
     },
     risingLate: {
         tempRange: [7, 9],
         name: 'Rising Action (Late)',
-        description: 'Major complications, stakes increase',
+        description: 'Desire intensifies, intimate moments increase',
         authorNoteGuidance:
-            'Story Phase: Late Rising Action. Stakes are high. Characters face ' +
-            'serious challenges. Introduce plot twists and revelations. ' +
-            'Push characters toward difficult choices. The climax approaches.',
+            'Story Phase: Late Rising Action. Desire intensifies to almost unbearable levels. ' +
+            'Charged moments, lingering touches, heated exchanges. The air crackles with ' +
+            'unresolved tension. Characters struggle with their want. ' +
+            'Almost-kisses, restraint breaking down, anticipation building.',
         vsAdjustment: { k: 6, tau: 0.10 },
         bonepokeStrictness: 'strict'
     },
     climaxEntry: {
         tempRange: [10, 10],
         name: 'Climax Entry',
-        description: 'Major conflict begins, point of no return',
+        description: 'First intimate contact, boundary crossing',
         authorNoteGuidance:
-            'Story Phase: CLIMAX. Maximum tension. The main conflict erupts. ' +
-            'Characters face their greatest challenge. Shocking developments occur. ' +
-            'Everything changes. No turning back.',
+            'Story Phase: CLIMAX ENTRY. The point of no return. First kiss, first touch of bare skin. ' +
+            'Barriers fall away. Characters surrender to desire. The moment of crossing from ' +
+            'tension to action. Breath catches, hearts race, the world narrows to this moment.',
         vsAdjustment: { k: 7, tau: 0.08 },
         bonepokeStrictness: 'strict'
     },
     peakClimax: {
         tempRange: [11, 12],
         name: 'Peak Climax',
-        description: 'Sustained maximum intensity',
+        description: 'Full physical and emotional intimacy',
         authorNoteGuidance:
-            'Story Phase: PEAK CLIMAX. Consequences cascade. Every action matters. ' +
-            'Characters pushed to absolute limits. Life-changing decisions. ' +
-            'Outcome uncertain. Maximum emotional intensity.',
+            'Story Phase: PEAK CLIMAX. Full physical and emotional intimacy. ' +
+            'Passion, vulnerability, and connection at maximum. Bodies and hearts fully engaged. ' +
+            'Raw honesty and sensation. Every touch, every breath, every word matters. ' +
+            'Complete surrender to pleasure and emotion.',
         vsAdjustment: { k: 8, tau: 0.07 },
         bonepokeStrictness: 'strict'
     },
     extremeClimax: {
         tempRange: [13, 15],
         name: 'Extreme Climax',
-        description: 'Catastrophic intensity (use sparingly)',
+        description: 'Overwhelming passion and sensation',
         authorNoteGuidance:
-            'Story Phase: EXTREME CLIMAX. Reality bends. Cataclysmic events unfold. ' +
-            'Ultimate test. Death and destruction are real possibilities. ' +
-            'Nothing is safe. The world may never be the same.',
+            'Story Phase: EXTREME CLIMAX. Overwhelming passion that transcends the physical. ' +
+            'Multiple peaks, intense sensation, complete abandon. The height of physical ' +
+            'and emotional ecstasy. Time loses meaning. Nothing exists but this connection, ' +
+            'this pleasure, this moment of absolute intensity.',
         vsAdjustment: { k: 9, tau: 0.06 },
         bonepokeStrictness: 'maximum'
     },
     overheat: {
         tempRange: null,
         name: 'Overheat (Sustained Climax)',
-        description: 'Maintain peak intensity, begin resolution hints',
+        description: 'Sustained intimacy with emotional depth',
         authorNoteGuidance:
-            'Story Phase: SUSTAINED CLIMAX. Maintain intensity but introduce ' +
-            'hints of resolution. Characters find inner strength. The tide may ' +
-            'be turning. Keep tension high but show possible ways forward.',
+            'Story Phase: SUSTAINED CLIMAX. Continue passion while weaving in vulnerability. ' +
+            'Multiple waves of pleasure, emotional breakthroughs, whispered confessions. ' +
+            'Maintain intensity but add emotional depth. Connection deepens through shared intimacy. ' +
+            'Bodies and souls intertwined.',
         vsAdjustment: { k: 7, tau: 0.09 },
         bonepokeStrictness: 'strict'
     },
     cooldown: {
         tempRange: null,
         name: 'Cooldown (Falling Action)',
-        description: 'Resolve conflicts, process events',
+        description: 'Afterglow, tender connection, emotional bonding',
         authorNoteGuidance:
-            'Story Phase: Falling Action. The crisis passes. Characters process ' +
-            'what happened. Resolve plot threads. Allow emotional moments. ' +
-            'Rest and recovery are possible. Reflect on consequences.',
+            'Story Phase: Afterglow and Falling Action. Tender connection and emotional processing. ' +
+            'Gentle touches, quiet words, vulnerability without urgency. Characters bond through ' +
+            'shared intimacy. Soft kisses, whispered confessions, peaceful moments. ' +
+            'Rest and recovery. Basking in closeness and newfound connection.',
         vsAdjustment: { k: 4, tau: 0.14 },
         bonepokeStrictness: 'relaxed'
     }
@@ -3740,7 +3743,63 @@ const BonepokeAnalysis = (() => {
 
         // Other common functional words
         'both', 'each', 'every', 'all', 'any', 'none', 'either', 'neither',
-        'same', 'other', 'another', 'than', 'too', 'very', 'only', 'even'
+        'same', 'other', 'another', 'than', 'too', 'very', 'only', 'even',
+
+        // Romance/Erotica Genre - Body Parts (anatomical terms)
+        'chest', 'hand', 'hands', 'finger', 'fingers', 'arm', 'arms', 'leg', 'legs',
+        'hip', 'hips', 'thigh', 'thighs', 'waist', 'neck', 'shoulder', 'shoulders',
+        'back', 'stomach', 'belly', 'skin', 'hair', 'mouth', 'tongue', 'throat', 'lip', 'lips',
+        'breast', 'breasts', 'nipple', 'nipples', 'cock', 'pussy', 'clit', 'clitoris',
+        'ass', 'hole', 'shaft', 'tip', 'head', 'balls', 'cunt', 'dick', 'penis', 'vagina',
+        'testicles', 'scrotum', 'member', 'length', 'girth',
+
+        // Romance/Erotica - Sensory & Physical Actions
+        'touch', 'feel', 'feeling', 'felt', 'sensation', 'pressure', 'warmth', 'heat',
+        'wet', 'slick', 'slippery', 'hard', 'soft', 'tight', 'loose', 'full', 'stretch', 'fill',
+        'slide', 'stroke', 'rub', 'press', 'squeeze', 'grip', 'hold', 'held', 'pull', 'pulled',
+        'push', 'pushed', 'thrust', 'thrusting', 'grind', 'grinding', 'rock', 'rocking',
+        'move', 'moving', 'moved', 'shift', 'shifting', 'shifted',
+
+        // Romance/Erotica - Intimate Verbs
+        'kiss', 'kissing', 'kissed', 'kisses', 'lick', 'licking', 'licked', 'licks',
+        'suck', 'sucking', 'sucked', 'sucks', 'bite', 'biting', 'bit', 'bitten', 'nibble',
+        'fuck', 'fucking', 'fucked', 'fucks', 'come', 'coming', 'came', 'comes', 'cum', 'cumming',
+        'orgasm', 'climax', 'release', 'peak',
+
+        // Romance/Erotica - Emotional/Reaction Words
+        'moan', 'moaning', 'moaned', 'moans', 'gasp', 'gasping', 'gasped', 'gasps',
+        'pant', 'panting', 'panted', 'pants', 'shudder', 'shuddering', 'shuddered',
+        'shiver', 'shivering', 'shivered', 'tremble', 'trembling', 'trembled',
+        'whimper', 'whimpering', 'whimpered', 'whisper', 'whispering', 'whispered',
+        'breathe', 'breathing', 'breathed', 'breath', 'sigh', 'sighing', 'sighed', 'groan', 'groaning', 'groaned',
+
+        // Romance/Erotica - Romance-Specific Terms
+        'desire', 'want', 'wanted', 'need', 'needed', 'pleasure', 'arousal', 'aroused',
+        'intimate', 'intimacy', 'passion', 'passionate', 'sensual', 'erotic',
+        'lover', 'beloved', 'darling', 'sweetheart', 'love', 'loved', 'loving',
+
+        // BDSM - Roles & Relationships
+        'dom', 'domme', 'sub', 'submissive', 'dominant', 'master', 'mistress', 'slave',
+        'pet', 'daddy', 'mommy', 'sir', 'ma\'am', 'owner',
+
+        // BDSM - Equipment & Actions
+        'collar', 'collared', 'leash', 'leashed', 'cuff', 'cuffs', 'cuffed', 'rope', 'ropes',
+        'chain', 'chains', 'chained', 'gag', 'gagged', 'blindfold', 'blindfolded',
+        'flogger', 'whip', 'paddle', 'crop', 'restraint', 'restraints', 'restrained',
+        'bond', 'bondage', 'bound', 'bind', 'tied', 'tie', 'tying',
+
+        // BDSM - Actions & Dynamics
+        'kneel', 'kneeling', 'knelt', 'crawl', 'crawling', 'crawled',
+        'serve', 'serving', 'served', 'obey', 'obeying', 'obeyed',
+        'submit', 'submitting', 'submitted', 'submission',
+        'dominate', 'dominating', 'dominated', 'dominance',
+        'control', 'controlling', 'controlled', 'command', 'commanding', 'commanded',
+        'spank', 'spanking', 'spanked', 'flog', 'flogging', 'flogged',
+        'punish', 'punishing', 'punished', 'punishment', 'discipline', 'disciplined',
+
+        // BDSM - Concepts & Safety
+        'power', 'ownership', 'possession', 'owned', 'possess', 'possessed',
+        'safeword', 'consent', 'consenting', 'aftercare', 'limit', 'limits', 'boundary', 'boundaries'
     ]);
 
     /**
