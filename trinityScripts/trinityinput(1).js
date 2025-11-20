@@ -31,6 +31,17 @@ const modifier = (text) => {
             text = '.';  // Minimal continue command
             safeLog(`⚠️ Commands consumed all input - using continue signal`, 'warn');
         }
+
+        // === @REQ FRONT MEMORY INJECTION ===
+        // Set frontMemory in INPUT modifier (not context!) - pattern from Narrative-Steering-Wheel line 110
+        // This ensures @req is injected into context BEFORE AI processes it
+        if (CONFIG.commands.reqDualInjection && state.commands && state.commands.narrativeRequest && state.commands.narrativeRequestTTL > 0) {
+            const frontMemoryInjection = NGOCommands.buildFrontMemoryInjection();
+            if (frontMemoryInjection && state.memory) {
+                state.memory.frontMemory = frontMemoryInjection;
+                safeLog(`💉 Front memory set with @req: "${state.commands.narrativeRequest}"`, 'info');
+            }
+        }
     }
 
     // Better Say Actions - Enhanced dialogue formatting

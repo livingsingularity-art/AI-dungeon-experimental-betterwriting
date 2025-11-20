@@ -115,19 +115,8 @@ const modifier = (text) => {
         }
     }
 
-    // === NGO FRONT MEMORY INJECTION (@req command) ===
-    // @req goes ONLY to frontMemory for immediate, high-priority narrative shaping
-    // Pattern from Narrative-Steering-Wheel script (uses state.memory.frontMemory)
-    // Note: @req does NOT go to author's note - only to frontMemory
-    if (CONFIG.commands && CONFIG.commands.enabled && CONFIG.commands.reqDualInjection && state.commands) {
-        const frontMemoryInjection = NGOCommands.buildFrontMemoryInjection();
-        if (frontMemoryInjection && state.memory) {
-            // CORRECT APPROACH: Set state.memory.frontMemory directly
-            // AI Dungeon reads this property and prepends it to context automatically
-            state.memory.frontMemory = frontMemoryInjection;
-            safeLog(`💉 Front memory set with @req: "${state.commands.narrativeRequest}"`, 'info');
-        }
-    }
+    // Note: frontMemory (@req) is set in INPUT modifier, not here
+    // Pattern from Narrative-Steering-Wheel: frontMemory must be set in input modifier to work correctly
 
     // Adaptive VS configuration based on context (NOW NGO-AWARE)
     if (CONFIG.vs.enabled && CONFIG.vs.adaptive) {
