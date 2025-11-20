@@ -1096,14 +1096,14 @@ const SYNONYM_MAP = {
 
     // Body parts - CREATIVE WRITING CONTEXT
     // In narrative prose, metonymy and part-for-whole are standard
-    'eyes': ['gaze', 'stare', 'glance'],  // Metonymy: "her eyes" = "her gaze"
+    'eyes': ['glance', 'look', 'sight', 'gaze'],  // FIXED: Better context substitutes
     'fingers': ['digits'],  // Fingers ARE digits (anatomically correct)
     'face': ['visage', 'features'],  // Literary synonyms
     'hair': ['locks', 'tresses'],  // Poetic variations
-    'lips': ['mouth'],  // Part-for-whole (acceptable in context)
+    'lips': ['mouth', 'smile', 'kiss'],  // FIXED: Added context-dependent options
     'noggin': ['head'],  // Slang → proper
     'ticker': ['heart'], // Slang → proper
-    'breath': ['exhale', 'inhale'],  // Context-dependent but common
+    'breath': ['sigh', 'gasp', 'exhale', 'inhale'],  // FIXED: Better substitutes
 
     // Common adjectives - BASIC TO COLLEGE LEVEL
     // Vocabulary range from common to sophisticated
@@ -1234,10 +1234,49 @@ const SYNONYM_MAP = {
     'defeat': ['loss', 'failure', 'rout'],
     'war': ['conflict', 'battle', 'combat', 'warfare', 'hostilities'],
     'peace': ['tranquility', 'serenity', 'harmony', 'concord'],
-    'journey': ['trip', 'voyage', 'expedition', 'trek', 'sojourn'],
+    'journey': ['quest', 'voyage', 'expedition', 'trek', 'odyssey', 'pilgrimage', 'sojourn'],
     'end': ['conclusion', 'termination', 'finale', 'cessation', 'denouement'],
     'beginning': ['start', 'commencement', 'inception', 'genesis', 'origin'],
     'ship': ['vessel', 'craft', 'spacecraft', 'rocket', 'hull'],
+
+    // === HERO'S JOURNEY VOCABULARY (Genre-Agnostic Adventure Terms) ===
+
+    // Journey & Path
+    'quest': ['journey', 'mission', 'expedition', 'pursuit', 'venture'],
+    'path': ['road', 'route', 'trail', 'way', 'course'],
+    'destination': ['goal', 'objective', 'endpoint', 'target'],
+
+    // Challenge & Obstacles
+    'challenge': ['trial', 'test', 'ordeal', 'obstacle', 'hurdle'],
+    'obstacle': ['barrier', 'hurdle', 'impediment', 'hindrance', 'obstruction'],
+    'test': ['trial', 'challenge', 'examination', 'ordeal'],
+    'ordeal': ['trial', 'tribulation', 'test', 'hardship', 'suffering'],
+    'threat': ['danger', 'menace', 'peril', 'hazard', 'risk'],
+
+    // Transformation & Growth
+    'transformed': ['changed', 'evolved', 'converted', 'metamorphosed', 'reformed'],
+    'learned': ['discovered', 'realized', 'understood', 'comprehended', 'grasped'],
+    'grew': ['developed', 'matured', 'evolved', 'progressed', 'advanced'],
+    'overcame': ['conquered', 'surmounted', 'triumphed over', 'prevailed over', 'defeated'],
+    'mastered': ['perfected', 'conquered', 'learned fully', 'became skilled at'],
+
+    // Mentor & Guide
+    'mentor': ['guide', 'teacher', 'advisor', 'counselor', 'sage'],
+    'guide': ['lead', 'direct', 'shepherd', 'escort', 'conduct'],
+    'teach': ['instruct', 'train', 'educate', 'coach', 'school'],
+    'wisdom': ['knowledge', 'insight', 'understanding', 'enlightenment', 'sagacity'],
+
+    // Return & Resolution
+    'returned': ['came back', 'went back', 'journeyed home', 'arrived home', 'retraced'],
+    'home': ['homeland', 'origin', 'dwelling', 'starting place'],
+    'gift': ['boon', 'treasure', 'prize', 'reward', 'elixir'],
+    'completed': ['finished', 'accomplished', 'concluded', 'fulfilled', 'achieved'],
+
+    // Conflict & Battle (Genre-neutral)
+    'fought': ['battled', 'struggled', 'contended', 'clashed', 'combated'],
+    'battle': ['fight', 'conflict', 'struggle', 'clash', 'confrontation'],
+    'struggle': ['fight', 'strive', 'battle', 'wrestle', 'labor'],
+    'survived': ['endured', 'persevered', 'withstood', 'outlasted', 'persisted'],
 
     // Common 2-word phrases (will be matched as complete phrases)
     'combat boots': ['military footwear', 'tactical boots', 'heavy boots', 'steel-toed boots'],
@@ -2591,6 +2630,123 @@ const ENHANCED_SYNONYM_MAP = {
             { word: 'hull', emotion: 2, precision: 5, tags: ['technical', 'part-for-whole'] }
         ],
         baseEmotion: 1, basePrecision: 2
+    },
+
+    // === HERO'S JOURNEY VOCABULARY (Emotion/Precision Calibrated) ===
+
+    // Ordeal/Climax Words (High Emotion, High Precision)
+    'fought': {
+        synonyms: [
+            { word: 'battled', emotion: 5, precision: 4, tags: ['intense', 'prolonged'] },
+            { word: 'struggled', emotion: 5, precision: 4, tags: ['difficult', 'effort'] },
+            { word: 'contended', emotion: 4, precision: 4, tags: ['formal', 'opposed'] },
+            { word: 'clashed', emotion: 5, precision: 4, tags: ['violent', 'sudden'] },
+            { word: 'combated', emotion: 4, precision: 4, tags: ['formal', 'opposed'] }
+        ],
+        baseEmotion: 4, basePrecision: 3
+    },
+
+    'struggled': {
+        synonyms: [
+            { word: 'fought', emotion: 5, precision: 4, tags: ['combat', 'resistance'] },
+            { word: 'strived', emotion: 4, precision: 4, tags: ['effort', 'goal'] },
+            { word: 'battled', emotion: 5, precision: 4, tags: ['intense', 'prolonged'] },
+            { word: 'wrestled', emotion: 4, precision: 4, tags: ['physical', 'close'] },
+            { word: 'labored', emotion: 3, precision: 3, tags: ['effort', 'work'] }
+        ],
+        baseEmotion: 4, basePrecision: 3
+    },
+
+    'survived': {
+        synonyms: [
+            { word: 'endured', emotion: 4, precision: 4, tags: ['suffered', 'persistent'] },
+            { word: 'persevered', emotion: 4, precision: 5, tags: ['determined', 'persistent'] },
+            { word: 'withstood', emotion: 4, precision: 4, tags: ['resisted', 'strong'] },
+            { word: 'outlasted', emotion: 3, precision: 4, tags: ['duration', 'patience'] },
+            { word: 'persisted', emotion: 3, precision: 3, tags: ['continued', 'stubborn'] }
+        ],
+        baseEmotion: 4, basePrecision: 3
+    },
+
+    // Call to Adventure (Medium Emotion, High Precision)
+    'discovered': {
+        synonyms: [
+            { word: 'found', emotion: 3, precision: 2, tags: ['basic', 'located'] },
+            { word: 'uncovered', emotion: 3, precision: 4, tags: ['revealed', 'hidden'] },
+            { word: 'revealed', emotion: 4, precision: 4, tags: ['shown', 'exposed'] },
+            { word: 'detected', emotion: 2, precision: 4, tags: ['noticed', 'aware'] },
+            { word: 'unearthed', emotion: 4, precision: 5, tags: ['buried', 'dramatic'] }
+        ],
+        baseEmotion: 3, basePrecision: 3
+    },
+
+    'noticed': {
+        synonyms: [
+            { word: 'observed', emotion: 2, precision: 3, tags: ['watched', 'aware'] },
+            { word: 'spotted', emotion: 2, precision: 4, tags: ['found', 'located'] },
+            { word: 'detected', emotion: 2, precision: 4, tags: ['sensed', 'aware'] },
+            { word: 'perceived', emotion: 3, precision: 4, tags: ['understood', 'sensed'] },
+            { word: 'discerned', emotion: 3, precision: 5, tags: ['distinguished', 'careful'] }
+        ],
+        baseEmotion: 2, basePrecision: 3
+    },
+
+    // Transformation/Growth (Medium-High Emotion, High Precision)
+    'transformed': {
+        synonyms: [
+            { word: 'changed', emotion: 3, precision: 2, tags: ['altered', 'basic'] },
+            { word: 'evolved', emotion: 4, precision: 4, tags: ['developed', 'progressed'] },
+            { word: 'metamorphosed', emotion: 5, precision: 5, tags: ['dramatic', 'complete'] },
+            { word: 'converted', emotion: 3, precision: 4, tags: ['switched', 'altered'] },
+            { word: 'reformed', emotion: 4, precision: 4, tags: ['improved', 'corrected'] }
+        ],
+        baseEmotion: 4, basePrecision: 3
+    },
+
+    'overcame': {
+        synonyms: [
+            { word: 'conquered', emotion: 5, precision: 4, tags: ['defeated', 'victory'] },
+            { word: 'surmounted', emotion: 4, precision: 5, tags: ['climbed-over', 'formal'] },
+            { word: 'triumphed over', emotion: 5, precision: 5, tags: ['victorious', 'dramatic'] },
+            { word: 'prevailed over', emotion: 4, precision: 5, tags: ['won', 'persistent'] },
+            { word: 'defeated', emotion: 4, precision: 3, tags: ['beaten', 'won'] }
+        ],
+        baseEmotion: 4, basePrecision: 3
+    },
+
+    // Return/Resolution (Medium Emotion, High Precision)
+    'completed': {
+        synonyms: [
+            { word: 'finished', emotion: 3, precision: 3, tags: ['done', 'ended'] },
+            { word: 'accomplished', emotion: 4, precision: 4, tags: ['achieved', 'success'] },
+            { word: 'concluded', emotion: 3, precision: 4, tags: ['ended', 'formal'] },
+            { word: 'fulfilled', emotion: 4, precision: 5, tags: ['satisfied', 'promise'] },
+            { word: 'achieved', emotion: 4, precision: 4, tags: ['attained', 'goal'] }
+        ],
+        baseEmotion: 3, basePrecision: 3
+    },
+
+    'finished': {
+        synonyms: [
+            { word: 'completed', emotion: 3, precision: 3, tags: ['done', 'ended'] },
+            { word: 'concluded', emotion: 3, precision: 4, tags: ['ended', 'formal'] },
+            { word: 'ended', emotion: 2, precision: 2, tags: ['stopped', 'basic'] },
+            { word: 'wrapped up', emotion: 2, precision: 3, tags: ['informal', 'done'] },
+            { word: 'terminated', emotion: 2, precision: 4, tags: ['formal', 'stopped'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    // Challenge/Obstacle (Medium-High Emotion, High Precision)
+    'challenged': {
+        synonyms: [
+            { word: 'tested', emotion: 3, precision: 4, tags: ['examined', 'tried'] },
+            { word: 'confronted', emotion: 4, precision: 4, tags: ['faced', 'direct'] },
+            { word: 'opposed', emotion: 4, precision: 3, tags: ['resisted', 'against'] },
+            { word: 'contested', emotion: 4, precision: 4, tags: ['disputed', 'fought'] },
+            { word: 'defied', emotion: 5, precision: 4, tags: ['refused', 'rebellious'] }
+        ],
+        baseEmotion: 3, basePrecision: 3
     }
 };
 
@@ -3740,7 +3896,10 @@ const BonepokeAnalysis = (() => {
 
         // Other common functional words
         'both', 'each', 'every', 'all', 'any', 'none', 'either', 'neither',
-        'same', 'other', 'another', 'than', 'too', 'very', 'only', 'even'
+        'same', 'other', 'another', 'than', 'too', 'very', 'only', 'even',
+
+        // Narrative transition words (essential for story structure)
+        'soon', 'once', 'always', 'never', 'often', 'sometimes', 'perhaps', 'maybe'
     ]);
 
     /**
