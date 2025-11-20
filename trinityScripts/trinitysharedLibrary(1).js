@@ -4905,24 +4905,22 @@ ${state.commands.narrativeRequest}
     };
 
     /**
-     * Build author's note layers for commands
-     * @returns {Object} { reqGuidance, memoryGuidance }
+     * Build author's note layer for parentheses () commands
+     * Note: @req goes to frontMemory (buildFrontMemoryInjection), NOT author's note
+     * @returns {Object} { memoryGuidance } - Only parentheses memories
      */
     const buildAuthorsNoteLayer = () => {
-        const result = { reqGuidance: '', memoryGuidance: '' };
+        const result = { memoryGuidance: '' };
 
         // Check if state.commands exists
         if (!state.commands) {
             return result;
         }
 
-        if (state.commands.narrativeRequest && state.commands.narrativeRequestTTL > 0) {
-            result.reqGuidance = `PRIORITY: Immediately and naturally introduce: ${state.commands.narrativeRequest}`;
-        }
-
         // Get current turn count (with fallback)
         const currentTurn = (state.ngoStats && state.ngoStats.totalTurns) || 0;
 
+        // Build guidance from parentheses () memories only
         const memoryParts = [];
         if (state.commands.memory1 && state.commands.expiration1 > currentTurn) {
             memoryParts.push(`After the current phrase, flawlessly transition the story towards: ${state.commands.memory1}`);

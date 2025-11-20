@@ -73,20 +73,15 @@ const modifier = (text) => {
                     safeLog(`⚠️ Layer 2 (NGO): MISSING!`, 'warn');
                 }
 
-                // LAYER 3 & 4: Command system layers
+                // LAYER 3: Parentheses memory (gradual goals)
+                // Note: @req goes to frontMemory, NOT author's note (see below)
                 if (CONFIG.commands && CONFIG.commands.enabled && state.commands) {
                     const commandLayers = NGOCommands.buildAuthorsNoteLayer();
 
-                    // Layer 3: Parentheses memory (gradual goals)
+                    // Layer 3: Parentheses () memory (gradual goals over 4 turns)
                     if (commandLayers.memoryGuidance) {
                         layers.push(commandLayers.memoryGuidance);
                         safeLog(`✅ Layer 3 (Memory): "${commandLayers.memoryGuidance.substring(0, 50)}..."`, 'success');
-                    }
-
-                    // Layer 4: @req immediate request (highest narrative priority)
-                    if (commandLayers.reqGuidance) {
-                        layers.push(commandLayers.reqGuidance);
-                        safeLog(`✅ Layer 4 (@req): "${commandLayers.reqGuidance}"`, 'success');
                     }
                 }
             } catch (err) {
@@ -120,9 +115,10 @@ const modifier = (text) => {
         }
     }
 
-    // === NGO FRONT MEMORY INJECTION (@req dual injection) ===
-    // Inject @req into front of context for immediate, high-priority narrative shaping
+    // === NGO FRONT MEMORY INJECTION (@req command) ===
+    // @req goes ONLY to frontMemory for immediate, high-priority narrative shaping
     // Pattern from Narrative-Steering-Wheel script (uses state.memory.frontMemory)
+    // Note: @req does NOT go to author's note - only to frontMemory
     if (CONFIG.commands && CONFIG.commands.enabled && CONFIG.commands.reqDualInjection && state.commands) {
         const frontMemoryInjection = NGOCommands.buildFrontMemoryInjection();
         if (frontMemoryInjection && state.memory) {
