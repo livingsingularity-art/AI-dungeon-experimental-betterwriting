@@ -1016,83 +1016,100 @@ commence => begin
  * NOTE: Only actual synonyms - no pronoun changes or POV shifts
  */
 const SYNONYM_MAP = {
-    // Adverbs
-    'suddenly': ['abruptly', 'quickly', 'unexpectedly', 'swiftly', 'instantly', 'promptly', 'sharply'],
-    'very': ['extremely', 'quite', 'remarkably', 'considerably', 'exceptionally', 'intensely', 'highly'],
-    'really': ['truly', 'genuinely', 'indeed', 'certainly', 'absolutely', 'definitely'],
-    'literally': ['actually', 'truly', 'genuinely', 'precisely', 'exactly'],
-    'just': ['merely', 'only', 'simply', 'barely'],
-    'finally': ['eventually', 'ultimately', 'lastly', 'at last'],
-    'slowly': ['gradually', 'steadily', 'leisurely', 'unhurriedly'],
-    'quickly': ['rapidly', 'swiftly', 'speedily', 'hastily', 'promptly'],
+    // Adverbs (XianXia-tuned: formal, traditional tone)
+    'suddenly': ['abruptly', 'unexpectedly', 'swiftly', 'instantly', 'in a flash', 'without warning'],
+    'very': ['extremely', 'exceedingly', 'remarkably', 'exceptionally', 'profoundly', 'immensely'],
+    'really': ['truly', 'genuinely', 'indeed', 'verily', 'assuredly'],
+    'literally': ['actually', 'truly', 'precisely', 'exactly', 'in truth'],
+    'just': ['merely', 'only', 'simply', 'but'],
+    'finally': ['eventually', 'ultimately', 'at last', 'in time'],
+    'slowly': ['gradually', 'steadily', 'leisurely', 'with deliberation'],
+    'quickly': ['rapidly', 'swiftly', 'with haste', 'fleetingly'],
 
-    // Common verbs - BASIC TO COLLEGE LEVEL
-    'said': ['stated', 'mentioned', 'remarked', 'noted', 'declared', 'expressed', 'uttered', 'voiced', 'articulated', 'proclaimed', 'asserted'],
-    'got': ['obtained', 'received', 'acquired', 'gained', 'secured', 'procured'],
-    'get': ['obtain', 'receive', 'acquire', 'gain', 'secure', 'procure'],
-    'went': ['moved', 'proceeded', 'traveled', 'headed', 'walked', 'traversed', 'ventured'],
-    'came': ['arrived', 'approached', 'entered', 'appeared', 'emerged', 'materialized'],
-    'made': ['created', 'formed', 'crafted', 'produced', 'fashioned', 'constructed', 'fabricated'],
-    'looked': ['gazed', 'stared', 'glanced', 'peered', 'observed', 'scrutinized', 'examined'],
-    'turned': ['rotated', 'pivoted', 'spun', 'twisted', 'shifted', 'revolved'],
-    'walked': ['strode', 'paced', 'stepped', 'moved', 'proceeded', 'ambled', 'sauntered', 'traversed'],
-    'asked': ['inquired', 'questioned', 'queried', 'requested', 'interrogated'],
-    'took': ['grabbed', 'seized', 'grasped', 'snatched', 'clutched', 'appropriated', 'commandeered'],
-    'gave': ['offered', 'handed', 'presented', 'provided', 'extended', 'bestowed', 'conferred'],
-    'felt': ['sensed', 'perceived', 'experienced', 'noticed', 'discerned'],
-    'heard': ['detected', 'caught', 'perceived', 'noticed', 'discerned', 'ascertained'],
-    'saw': ['spotted', 'noticed', 'observed', 'glimpsed', 'caught sight of', 'beheld', 'witnessed', 'perceived'],
-    'moved': ['shifted', 'stirred', 'budged', 'relocated', 'transitioned', 'migrated'],
-    'stood': ['rose', 'remained upright', 'positioned herself', 'positioned himself', 'erected himself', 'erected herself'],
-    'sat': ['settled', 'perched', 'rested', 'seated herself', 'seated himself', 'reclined'],
-    'pulled': ['tugged', 'yanked', 'drew', 'dragged', 'hauled', 'extracted'],
-    'pushed': ['shoved', 'pressed', 'thrust', 'nudged', 'propelled', 'impelled'],
-    'held': ['gripped', 'clutched', 'grasped', 'clenched', 'clasped', 'retained'],
-    'opened': ['unlocked', 'unsealed', 'spread', 'unlatched', 'unfurled'],
-    'closed': ['shut', 'sealed', 'latched', 'fastened', 'secured'],
-    'grabbed': ['seized', 'snatched', 'clutched', 'gripped', 'apprehended'],
-    'touched': ['grazed', 'brushed', 'contacted', 'felt', 'caressed'],
-    'smiled': ['grinned', 'beamed', 'smirked'],
-    'laughed': ['chuckled', 'giggled', 'snickered', 'cackled', 'guffawed'],
-    'nodded': ['bobbed her head', 'bobbed his head', 'dipped her chin', 'dipped his chin', 'acquiesced'],
-    'shook': ['trembled', 'quivered', 'shuddered', 'vibrated', 'oscillated'],
-    'whispered': ['murmured', 'muttered', 'breathed', 'hissed', 'susurrated'],
-    'shouted': ['yelled', 'called out', 'hollered', 'bellowed', 'exclaimed', 'proclaimed'],
-    'spoke': ['talked', 'conversed', 'verbalized', 'articulated', 'discoursed'],
-    'watched': ['observed', 'monitored', 'studied', 'eyed', 'surveyed', 'scrutinized'],
-    'waited': ['paused', 'lingered', 'remained', 'stayed', 'tarried', 'loitered'],
-    'tried': ['attempted', 'endeavored', 'sought', 'ventured', 'undertook'],
-    'knew': ['understood', 'realized', 'recognized', 'comprehended', 'discerned', 'apprehended'],
-    'thought': ['considered', 'pondered', 'reflected', 'mused', 'contemplated', 'ruminated'],
-    'wanted': ['desired', 'craved', 'wished', 'yearned', 'coveted', 'longed for'],
-    'needed': ['required', 'demanded', 'necessitated', 'mandated'],
-    'seemed': ['appeared', 'looked', 'sounded'],
-    'began': ['started', 'commenced', 'initiated', 'launched', 'inaugurated', 'embarked'],
-    'stopped': ['halted', 'ceased', 'paused', 'froze', 'terminated', 'discontinued'],
-    'continued': ['proceeded', 'persisted', 'carried on', 'maintained', 'sustained', 'perpetuated'],
-    'followed': ['trailed', 'pursued', 'tracked', 'shadowed', 'succeeded'],
-    'reached': ['extended', 'stretched', 'arrived at', 'attained', 'achieved'],
-    'leaned': ['tilted', 'inclined', 'bent', 'slanted', 'reclined'],
-    'pressed': ['pushed', 'squeezed', 'compressed', 'applied pressure', 'exerted force'],
-    'lifted': ['raised', 'hoisted', 'elevated', 'picked up', 'heaved'],
-    'dropped': ['released', 'let fall', 'let go of', 'discarded', 'relinquished'],
-    'showed': ['displayed', 'exhibited', 'demonstrated', 'revealed', 'manifested'],
-    'found': ['discovered', 'located', 'uncovered', 'detected', 'ascertained'],
-    'brought': ['carried', 'conveyed', 'transported', 'delivered'],
-    'kept': ['retained', 'maintained', 'preserved', 'sustained'],
-    'left': ['departed', 'exited', 'abandoned', 'vacated', 'withdrew'],
-    'ran': ['sprinted', 'dashed', 'rushed', 'bolted', 'hastened'],
-    'fell': ['dropped', 'descended', 'plummeted', 'tumbled', 'collapsed'],
-    'died': ['perished', 'expired', 'succumbed', 'passed away'],
-    'lived': ['existed', 'resided', 'dwelled', 'inhabited'],
-    'grew': ['expanded', 'increased', 'developed', 'flourished', 'burgeoned'],
-    'changed': ['altered', 'modified', 'transformed', 'converted', 'metamorphosed'],
-    'helped': ['assisted', 'aided', 'supported', 'facilitated'],
-    'hurt': ['injured', 'harmed', 'wounded', 'damaged'],
-    'broke': ['shattered', 'fractured', 'splintered', 'ruptured'],
-    'built': ['constructed', 'erected', 'assembled', 'fabricated'],
-    'wrote': ['penned', 'composed', 'authored', 'inscribed', 'transcribed'],
-    'read': ['perused', 'scanned', 'examined', 'studied'],
+    // Common verbs (XianXia-tuned: martial, formal, archaic-friendly)
+    'said': ['stated', 'remarked', 'declared', 'uttered', 'voiced', 'spoke', 'pronounced', 'intoned'],
+    'got': ['obtained', 'received', 'acquired', 'gained', 'secured', 'procured', 'attained'],
+    'get': ['obtain', 'receive', 'acquire', 'gain', 'secure', 'procure', 'attain'],
+    'went': ['proceeded', 'traveled', 'headed', 'departed', 'advanced', 'ventured forth'],
+    'came': ['arrived', 'approached', 'entered', 'appeared', 'emerged', 'descended'],
+    'made': ['created', 'formed', 'crafted', 'forged', 'fashioned', 'wrought'],
+    'looked': ['gazed', 'glanced', 'peered', 'observed', 'regarded', 'beheld'],
+    'turned': ['pivoted', 'spun', 'whirled', 'shifted', 'rotated', 'wheeled'],
+    'walked': ['strode', 'paced', 'stepped', 'moved', 'advanced', 'traversed', 'proceeded'],
+    'asked': ['inquired', 'questioned', 'queried', 'demanded'],
+    'took': ['seized', 'grasped', 'claimed', 'captured', 'commandeered'],
+    'gave': ['offered', 'presented', 'bestowed', 'granted', 'conferred', 'imparted'],
+    'felt': ['sensed', 'perceived', 'experienced', 'detected', 'discerned'],
+    'heard': ['detected', 'caught', 'perceived', 'discerned'],
+    'saw': ['spotted', 'noticed', 'observed', 'glimpsed', 'beheld', 'witnessed', 'perceived'],
+    'moved': ['shifted', 'stirred', 'glided', 'flowed', 'drifted'],
+    'stood': ['rose', 'stood upright', 'straightened'],
+    'sat': ['settled', 'seated himself', 'seated herself', 'took a seat', 'assumed a seated position'],
+    'pulled': ['drew', 'dragged', 'yanked', 'hauled'],
+    'pushed': ['shoved', 'pressed', 'thrust', 'propelled'],
+    'held': ['gripped', 'clutched', 'grasped', 'clasped', 'clenched'],
+    'opened': ['unsealed', 'spread', 'parted', 'revealed'],
+    'closed': ['shut', 'sealed', 'secured', 'fastened'],
+    'grabbed': ['seized', 'snatched', 'clutched', 'claimed'],
+    'touched': ['grazed', 'brushed', 'contacted', 'made contact with'],
+    'smiled': ['grinned', 'smirked', 'curved his lips', 'curved her lips'],
+    'laughed': ['chuckled', 'snickered'],
+    'nodded': ['inclined his head', 'inclined her head', 'dipped his chin', 'dipped her chin'],
+    'shook': ['trembled', 'quivered', 'shuddered', 'vibrated'],
+    'whispered': ['murmured', 'muttered', 'breathed', 'spoke softly'],
+    'shouted': ['roared', 'bellowed', 'called out', 'exclaimed', 'thundered'],
+    'spoke': ['conversed', 'articulated', 'voiced', 'intoned'],
+    'watched': ['observed', 'monitored', 'studied', 'surveyed', 'regarded'],
+    'waited': ['paused', 'lingered', 'remained', 'bided his time', 'bided her time'],
+    'tried': ['attempted', 'endeavored', 'sought', 'strove'],
+    'knew': ['understood', 'realized', 'recognized', 'comprehended', 'discerned'],
+    'thought': ['considered', 'pondered', 'reflected', 'mused', 'contemplated'],
+    'wanted': ['desired', 'craved', 'wished', 'yearned', 'sought'],
+    'needed': ['required', 'demanded', 'necessitated'],
+    'seemed': ['appeared', 'looked'],
+    'began': ['started', 'commenced', 'initiated'],
+    'stopped': ['halted', 'ceased', 'paused', 'froze'],
+    'continued': ['proceeded', 'persisted', 'pressed on', 'maintained'],
+    'followed': ['trailed', 'pursued', 'tracked', 'shadowed'],
+    'reached': ['extended', 'stretched', 'arrived at', 'attained'],
+    'leaned': ['tilted', 'inclined', 'bent'],
+    'pressed': ['pushed', 'squeezed', 'applied pressure'],
+    'lifted': ['raised', 'hoisted', 'elevated'],
+    'dropped': ['released', 'let fall', 'relinquished'],
+    'showed': ['displayed', 'demonstrated', 'revealed', 'manifested'],
+    'found': ['discovered', 'located', 'uncovered', 'detected'],
+    'brought': ['carried', 'conveyed', 'bore', 'delivered'],
+    'kept': ['retained', 'maintained', 'preserved'],
+    'left': ['departed', 'exited', 'withdrew', 'vacated'],
+    'ran': ['sprinted', 'dashed', 'rushed', 'bolted', 'flew'],
+    'fell': ['descended', 'plummeted', 'tumbled', 'dropped'],
+    'died': ['perished', 'fell', 'met his end', 'met her end', 'breathed his last', 'breathed her last'],
+    'lived': ['existed', 'dwelled', 'resided'],
+    'grew': ['increased', 'expanded', 'developed', 'flourished'],
+    'changed': ['altered', 'transformed', 'shifted', 'evolved'],
+    'helped': ['assisted', 'aided', 'supported'],
+    'hurt': ['injured', 'harmed', 'wounded'],
+    'broke': ['shattered', 'fractured', 'splintered', 'sundered'],
+    'built': ['constructed', 'erected', 'forged'],
+    'wrote': ['penned', 'inscribed', 'composed'],
+    'read': ['perused', 'studied', 'examined'],
+
+    // XianXia-specific action verbs
+    'attacked': ['struck', 'assaulted', 'engaged', 'charged', 'launched an offensive'],
+    'struck': ['hit', 'smote', 'delivered a blow', 'lashed out'],
+    'hit': ['struck', 'smote', 'impacted', 'connected'],
+    'dodged': ['evaded', 'sidestepped', 'avoided', 'slipped past'],
+    'blocked': ['deflected', 'parried', 'intercepted', 'countered'],
+    'killed': ['slew', 'slayed', 'struck down', 'ended'],
+    'defeated': ['vanquished', 'overcame', 'bested', 'triumphed over'],
+    'fought': ['battled', 'clashed', 'engaged in combat', 'dueled'],
+    'defended': ['guarded', 'protected', 'shielded', 'warded'],
+    'charged': ['surged forward', 'rushed', 'advanced rapidly', 'burst forth'],
+    'retreated': ['withdrew', 'fell back', 'stepped back', 'gave ground'],
+    'unleashed': ['released', 'discharged', 'let loose', 'manifested'],
+    'channeled': ['directed', 'focused', 'guided', 'funneled'],
+    'summoned': ['called forth', 'invoked', 'manifested', 'conjured'],
+    'gathered': ['collected', 'amassed', 'accumulated', 'drew together'],
 
     // Body parts - CREATIVE WRITING CONTEXT
     // In narrative prose, metonymy and part-for-whole are standard
@@ -1105,158 +1122,163 @@ const SYNONYM_MAP = {
     'ticker': ['heart'], // Slang → proper
     'breath': ['exhale', 'inhale'],  // Context-dependent but common
 
-    // Common adjectives - BASIC TO COLLEGE LEVEL
-    // Vocabulary range from common to sophisticated
-    'big': ['large', 'sizeable', 'substantial', 'considerable'],
-    'small': ['little', 'compact', 'diminutive'],  // NOT minuscule (too extreme)
-    'huge': ['enormous', 'massive', 'colossal', 'immense', 'prodigious', 'gargantuan'],
-    'tiny': ['minuscule', 'infinitesimal', 'microscopic'],
-    'good': ['fine', 'decent', 'admirable', 'commendable'],
-    'excellent': ['superb', 'outstanding', 'exemplary', 'exceptional', 'superlative'],
-    'bad': ['poor', 'unfavorable', 'inferior', 'substandard'],
-    'awful': ['terrible', 'dreadful', 'abysmal', 'atrocious', 'deplorable'],
-    'old': ['aged', 'elderly', 'antiquated', 'venerable'],
-    'ancient': ['archaic', 'primordial', 'antediluvian'],
-    'new': ['fresh', 'recent', 'novel', 'contemporary'],
-    'dark': ['dim', 'shadowy', 'murky', 'obscure', 'tenebrous'],
-    'light': ['bright', 'illuminated', 'luminous', 'radiant'],
-    'happy': ['cheerful', 'joyful', 'content', 'elated', 'jubilant'],
-    'sad': ['unhappy', 'sorrowful', 'melancholy', 'dejected', 'despondent'],
-    'angry': ['mad', 'furious', 'irate', 'incensed', 'wrathful'],
-    'scared': ['afraid', 'frightened', 'terrified', 'apprehensive', 'trepidatious'],
-    'brave': ['courageous', 'valiant', 'bold', 'intrepid', 'dauntless'],
-    'smart': ['intelligent', 'clever', 'bright', 'astute', 'sagacious', 'perspicacious'],
-    'stupid': ['dumb', 'foolish', 'idiotic', 'asinine', 'moronic'],
-    'pretty': ['attractive', 'comely', 'fair', 'fetching'],
-    'handsome': ['attractive', 'good-looking', 'striking'],
-    // Colors - shades ARE acceptable in descriptive prose
-    'red': ['crimson', 'scarlet'],  // Shade variations OK for creative writing
-    'blue': ['azure', 'cobalt'],
-    'green': ['emerald', 'jade'],
-    'white': ['pale', 'ivory'],
-    'black': ['ebony', 'obsidian'],
+    // Common adjectives - XIANXIA-TUNED
+    // Formal, archaic, and cultivation-appropriate word choices
+    'big': ['large', 'sizeable', 'substantial', 'considerable', 'vast'],
+    'small': ['little', 'compact', 'diminutive', 'slight'],
+    'huge': ['enormous', 'massive', 'colossal', 'immense', 'prodigious', 'boundless', 'vast'],
+    'tiny': ['minuscule', 'infinitesimal', 'minute'],
+    'good': ['fine', 'admirable', 'commendable', 'meritorious', 'virtuous'],
+    'excellent': ['superb', 'outstanding', 'exemplary', 'exceptional', 'superlative', 'supreme'],
+    'bad': ['poor', 'unfavorable', 'inferior', 'lacking', 'deficient'],
+    'awful': ['terrible', 'dreadful', 'abysmal', 'atrocious', 'deplorable', 'lamentable'],
+    'old': ['aged', 'elderly', 'antiquated', 'venerable', 'time-worn'],
+    'ancient': ['archaic', 'primordial', 'antediluvian', 'timeless', 'ageless'],
+    'new': ['fresh', 'recent', 'novel', 'nascent'],
+    'dark': ['dim', 'shadowy', 'murky', 'obscure', 'tenebrous', 'stygian'],
+    'light': ['bright', 'illuminated', 'luminous', 'radiant', 'resplendent'],
+    'happy': ['cheerful', 'joyful', 'content', 'exultant', 'jubilant'],
+    'sad': ['sorrowful', 'melancholy', 'dejected', 'despondent', 'forlorn'],
+    'angry': ['furious', 'irate', 'incensed', 'wrathful', 'enraged'],
+    'scared': ['afraid', 'frightened', 'terrified', 'apprehensive', 'fearful'],
+    'brave': ['courageous', 'valiant', 'bold', 'intrepid', 'dauntless', 'indomitable'],
+    'smart': ['intelligent', 'clever', 'astute', 'sagacious', 'perspicacious', 'wise'],
+    'stupid': ['foolish', 'idiotic', 'asinine', 'witless', 'dull-witted'],
+    'pretty': ['attractive', 'comely', 'fair', 'graceful', 'elegant'],
+    'handsome': ['striking', 'distinguished', 'noble in bearing'],
+
+    // Colors - poetic shades for XianXia aesthetic
+    'red': ['crimson', 'scarlet', 'vermillion'],
+    'blue': ['azure', 'cobalt', 'cerulean'],
+    'green': ['emerald', 'jade', 'verdant'],
+    'white': ['pale', 'ivory', 'pristine'],
+    'black': ['ebony', 'obsidian', 'pitch'],
     'gray': ['grey', 'silver', 'ashen'],
+    'gold': ['golden', 'aureate', 'gilded'],
+    'silver': ['silvery', 'argent', 'lustrous'],
+
+    // Physical qualities - martial/cultivation context
     'soft': ['gentle', 'tender', 'pliant', 'supple'],
-    'hard': ['solid', 'firm', 'rigid', 'unyielding'],
-    'hot': ['heated', 'sweltering', 'torrid'],
-    'warm': ['heated', 'tepid', 'lukewarm'],
-    'burning': ['scorching', 'searing', 'blazing'],
-    'cold': ['chilly', 'frigid', 'gelid'],
-    'cool': ['chilly', 'refreshing'],
-    'wet': ['damp', 'moist', 'sodden'],
-    'soaked': ['drenched', 'saturated', 'waterlogged'],
-    'dry': ['arid', 'parched', 'desiccated'],
-    'loud': ['noisy', 'clamorous', 'boisterous'],
-    'deafening': ['thunderous', 'earsplitting'],
-    'quiet': ['silent', 'hushed', 'tranquil', 'serene'],
-    'fast': ['quick', 'rapid', 'swift', 'speedy', 'expeditious'],
-    'slow': ['sluggish', 'leisurely', 'languid', 'torpid'],
-    'heavy': ['weighty', 'ponderous', 'burdensome'],
+    'hard': ['solid', 'firm', 'rigid', 'unyielding', 'adamantine'],
+    'hot': ['heated', 'sweltering', 'torrid', 'blazing'],
+    'warm': ['heated', 'temperate'],
+    'burning': ['scorching', 'searing', 'blazing', 'incandescent'],
+    'cold': ['frigid', 'gelid', 'icy', 'frost-laden'],
+    'cool': ['chilly', 'crisp', 'refreshing'],
+    'wet': ['damp', 'moist', 'sodden', 'waterlogged'],
+    'soaked': ['drenched', 'saturated', 'thoroughly wet'],
+    'dry': ['arid', 'parched', 'desiccated', 'withered'],
+    'loud': ['thunderous', 'clamorous', 'boisterous', 'resounding'],
+    'deafening': ['thunderous', 'overwhelming', 'ear-shattering'],
+    'quiet': ['silent', 'hushed', 'tranquil', 'serene', 'still'],
+    'fast': ['swift', 'rapid', 'lightning-quick', 'fleet', 'expeditious'],
+    'slow': ['sluggish', 'leisurely', 'languid', 'unhurried'],
+    'heavy': ['weighty', 'ponderous', 'burdensome', 'oppressive'],
     'empty': ['vacant', 'hollow', 'void', 'barren', 'desolate'],
-    'full': ['filled', 'replete', 'saturated', 'brimming'],
+    'full': ['filled', 'replete', 'brimming', 'overflowing'],
     'long': ['lengthy', 'extended', 'prolonged', 'protracted'],
-    'short': ['brief', 'concise', 'abbreviated', 'truncated'],
-    'wide': ['broad', 'expansive', 'extensive'],
-    'narrow': ['slim', 'slender', 'constricted'],
-    'high': ['tall', 'elevated', 'lofty', 'towering'],
-    'deep': ['profound', 'abyssal', 'unfathomable'],
-    'thick': ['dense', 'viscous', 'substantial'],
-    'thin': ['slender', 'slim', 'lean', 'gaunt', 'emaciated'],
-    'strong': ['powerful', 'robust', 'sturdy', 'formidable', 'mighty'],
-    'weak': ['feeble', 'frail', 'infirm', 'enervated'],
+    'short': ['brief', 'abbreviated', 'fleeting'],
+    'wide': ['broad', 'expansive', 'extensive', 'far-reaching'],
+    'narrow': ['slim', 'slender', 'constricted', 'confined'],
+    'high': ['tall', 'elevated', 'lofty', 'towering', 'soaring'],
+    'deep': ['profound', 'abyssal', 'unfathomable', 'bottomless'],
+    'thick': ['dense', 'viscous', 'substantial', 'impenetrable'],
+    'thin': ['slender', 'slim', 'lean', 'gaunt'],
+    'strong': ['powerful', 'robust', 'formidable', 'mighty', 'indomitable'],
+    'weak': ['feeble', 'frail', 'infirm', 'enfeebled'],
     'rough': ['coarse', 'uneven', 'jagged', 'rugged'],
-    'smooth': ['sleek', 'even', 'polished', 'silky'],
-    'sharp': ['keen', 'pointed', 'acute', 'piercing'],
-    'dull': ['blunt', 'obtuse'],
-    'clean': ['spotless', 'pristine', 'immaculate', 'unblemished'],
-    'dirty': ['filthy', 'soiled', 'grimy', 'squalid'],
-    'beautiful': ['lovely', 'attractive', 'exquisite', 'resplendent'],
-    'gorgeous': ['stunning', 'magnificent', 'splendid'],
-    'ugly': ['unattractive', 'unsightly', 'hideous', 'grotesque'],
-    'strange': ['odd', 'peculiar', 'bizarre', 'anomalous', 'aberrant'],
-    'normal': ['ordinary', 'typical', 'conventional', 'standard'],
-    'rare': ['uncommon', 'scarce', 'infrequent', 'anomalous'],
-    'common': ['usual', 'ordinary', 'prevalent', 'ubiquitous'],
-    'easy': ['simple', 'effortless', 'uncomplicated', 'facile'],
-    'hard': ['difficult', 'challenging', 'arduous', 'onerous'],
-    'important': ['significant', 'crucial', 'vital', 'paramount', 'pivotal'],
-    'dangerous': ['perilous', 'hazardous', 'treacherous', 'precarious'],
-    'safe': ['secure', 'protected', 'sheltered'],
-    'crazy': ['insane', 'mad', 'deranged', 'demented', 'lunatic'],
-    'calm': ['peaceful', 'tranquil', 'serene', 'placid', 'unperturbed'],
+    'smooth': ['sleek', 'polished', 'silky', 'flawless'],
+    'sharp': ['keen', 'acute', 'piercing', 'razor-edged'],
+    'dull': ['blunt', 'obtuse', 'lackluster'],
+    'clean': ['spotless', 'pristine', 'immaculate', 'unblemished', 'pure'],
+    'dirty': ['filthy', 'soiled', 'grimy', 'sullied'],
+    'beautiful': ['lovely', 'exquisite', 'resplendent', 'breathtaking', 'celestial'],
+    'gorgeous': ['stunning', 'magnificent', 'splendid', 'radiant'],
+    'ugly': ['unsightly', 'hideous', 'grotesque', 'repulsive'],
+    'strange': ['odd', 'peculiar', 'bizarre', 'anomalous', 'uncanny'],
+    'normal': ['ordinary', 'typical', 'conventional', 'commonplace'],
+    'rare': ['uncommon', 'scarce', 'exceptional', 'precious'],
+    'common': ['ordinary', 'prevalent', 'ubiquitous', 'widespread'],
+    'easy': ['simple', 'effortless', 'uncomplicated', 'straightforward'],
+    'hard': ['difficult', 'challenging', 'arduous', 'formidable'],
+    'important': ['significant', 'crucial', 'vital', 'paramount', 'momentous'],
+    'dangerous': ['perilous', 'hazardous', 'treacherous', 'deadly'],
+    'safe': ['secure', 'protected', 'sheltered', 'safeguarded'],
+    'crazy': ['mad', 'deranged', 'demented', 'unhinged'],
+    'calm': ['peaceful', 'tranquil', 'serene', 'placid', 'composed'],
 
-    // Common nouns - BASIC TO COLLEGE LEVEL
-    // Vocabulary range from common to sophisticated
-    'thing': ['object', 'item', 'article', 'entity'],
+    // Common nouns - XIANXIA-TUNED
+    // Formal, classical vocabulary appropriate for cultivation stories
+    'thing': ['object', 'item', 'article', 'entity', 'matter'],
     'stuff': ['things', 'items', 'possessions', 'belongings'],
-    'place': ['location', 'spot', 'locale', 'venue', 'locus'],
-    'way': ['manner', 'method', 'approach', 'mode'],
-    'room': ['chamber', 'quarters', 'compartment'],
-    'door': ['doorway', 'portal', 'threshold', 'entrance'],
-    'wall': ['partition', 'barrier', 'barricade'],
-    'window': ['pane', 'aperture'],
-    'light': ['illumination', 'glow', 'lamp', 'luminescence', 'radiance'],
+    'place': ['location', 'locale', 'site', 'locus'],
+    'way': ['manner', 'method', 'approach', 'means'],
+    'room': ['chamber', 'quarters', 'hall'],
+    'door': ['doorway', 'portal', 'threshold', 'entrance', 'gateway'],
+    'wall': ['partition', 'barrier'],
+    'window': ['aperture', 'opening'],
+    'light': ['illumination', 'radiance', 'luminescence', 'glow'],
     'fire': ['flame', 'blaze', 'conflagration', 'inferno'],
-    'sound': ['noise', 'resonance', 'reverberation'],
-    'smell': ['scent', 'odor', 'aroma', 'fragrance', 'redolence'],
-    'street': ['road', 'avenue', 'thoroughfare', 'boulevard'],
-    'house': ['home', 'dwelling', 'residence', 'abode', 'domicile'],
-    'building': ['structure', 'edifice', 'construction'],
-    'city': ['town', 'metropolis', 'municipality', 'urban center'],
-    'world': ['globe', 'planet', 'earth', 'sphere'],
-    'person': ['individual', 'human', 'being', 'soul'],
-    'man': ['guy', 'fellow', 'gentleman'],
-    'woman': ['lady', 'gal'],
-    'child': ['kid', 'youngster', 'youth', 'juvenile'],
-    'friend': ['companion', 'pal', 'buddy', 'comrade', 'confidant'],
-    'enemy': ['foe', 'adversary', 'antagonist', 'nemesis'],
-    'moment': ['instant', 'second', 'juncture'],
-    'silence': ['quiet', 'stillness', 'hush', 'tranquility'],
-    'noise': ['sound', 'racket', 'clamor', 'din', 'cacophony'],
-    'word': ['term', 'expression', 'utterance', 'vocable'],
-    'question': ['query', 'inquiry', 'interrogation'],
+    'sound': ['resonance', 'reverberation', 'echo'],
+    'smell': ['scent', 'aroma', 'fragrance', 'redolence'],
+    'street': ['road', 'avenue', 'thoroughfare', 'path'],
+    'house': ['dwelling', 'residence', 'abode', 'estate'],
+    'building': ['structure', 'edifice', 'hall'],
+    'city': ['metropolis', 'municipality', 'settlement'],
+    'world': ['realm', 'domain', 'sphere', 'plane'],
+    'person': ['individual', 'being', 'soul', 'figure'],
+    'man': ['fellow', 'gentleman', 'figure'],
+    'woman': ['lady', 'maiden', 'figure'],
+    'child': ['youngster', 'youth', 'juvenile'],
+    'friend': ['companion', 'comrade', 'ally', 'confidant'],
+    'enemy': ['foe', 'adversary', 'antagonist', 'nemesis', 'opponent'],
+    'moment': ['instant', 'heartbeat', 'breath'],
+    'silence': ['stillness', 'hush', 'tranquility', 'quietude'],
+    'noise': ['clamor', 'din', 'cacophony', 'tumult'],
+    'word': ['utterance', 'expression', 'statement'],
+    'question': ['query', 'inquiry', 'question'],
     'answer': ['response', 'reply', 'retort', 'rejoinder'],
-    'problem': ['issue', 'difficulty', 'dilemma', 'predicament', 'quandary'],
-    'idea': ['thought', 'notion', 'concept', 'conception'],
-    'feeling': ['emotion', 'sentiment', 'sensation', 'affect'],
-    'pain': ['ache', 'hurt', 'suffering', 'discomfort', 'agony', 'torment'],
-    'pleasure': ['delight', 'enjoyment', 'gratification', 'satisfaction'],
-    'fear': ['dread', 'terror', 'fright', 'trepidation', 'apprehension'],
-    'hope': ['optimism', 'expectation', 'aspiration'],
-    'anger': ['rage', 'fury', 'wrath', 'ire', 'indignation'],
-    'love': ['affection', 'adoration', 'devotion', 'fondness'],
-    'hate': ['loathing', 'abhorrence', 'detestation', 'animosity'],
-    'truth': ['fact', 'reality', 'veracity', 'verity'],
-    'lie': ['falsehood', 'untruth', 'fabrication', 'prevarication'],
-    'power': ['strength', 'force', 'might', 'potency'],
-    'weakness': ['frailty', 'feebleness', 'vulnerability', 'infirmity'],
+    'problem': ['difficulty', 'dilemma', 'predicament', 'tribulation'],
+    'idea': ['thought', 'notion', 'concept', 'understanding'],
+    'feeling': ['emotion', 'sentiment', 'sensation'],
+    'pain': ['ache', 'suffering', 'agony', 'torment', 'anguish'],
+    'pleasure': ['delight', 'satisfaction', 'gratification', 'contentment'],
+    'fear': ['dread', 'terror', 'trepidation', 'apprehension'],
+    'hope': ['aspiration', 'expectation', 'desire'],
+    'anger': ['rage', 'fury', 'wrath', 'ire'],
+    'love': ['affection', 'adoration', 'devotion'],
+    'hate': ['loathing', 'abhorrence', 'animosity', 'enmity'],
+    'truth': ['reality', 'veracity', 'verity'],
+    'lie': ['falsehood', 'deception', 'fabrication'],
+    'power': ['might', 'force', 'strength', 'prowess'],
+    'weakness': ['frailty', 'vulnerability', 'infirmity'],
     'victory': ['triumph', 'conquest', 'success'],
-    'defeat': ['loss', 'failure', 'rout'],
-    'war': ['conflict', 'battle', 'combat', 'warfare', 'hostilities'],
-    'peace': ['tranquility', 'serenity', 'harmony', 'concord'],
-    'journey': ['trip', 'voyage', 'expedition', 'trek', 'sojourn'],
-    'end': ['conclusion', 'termination', 'finale', 'cessation', 'denouement'],
-    'beginning': ['start', 'commencement', 'inception', 'genesis', 'origin'],
-    'ship': ['vessel', 'craft', 'spacecraft', 'rocket', 'hull'],
+    'defeat': ['loss', 'failure', 'downfall'],
+    'war': ['conflict', 'battle', 'combat', 'warfare', 'strife'],
+    'peace': ['tranquility', 'serenity', 'harmony', 'calm'],
+    'journey': ['voyage', 'expedition', 'trek', 'sojourn'],
+    'end': ['conclusion', 'finale', 'culmination', 'cessation'],
+    'beginning': ['commencement', 'inception', 'genesis', 'dawn'],
+    'ship': ['vessel', 'craft'],
 
-    // Common 2-word phrases (will be matched as complete phrases)
-    'combat boots': ['military footwear', 'tactical boots', 'heavy boots', 'steel-toed boots'],
-    'emerald eyes': ['green eyes', 'jade gaze', 'verdant eyes', 'forest-green eyes'],
-    'nervous laugh': ['awkward chuckle', 'uneasy giggle', 'tense laugh', 'forced chuckle'],
-    'deep breath': ['long inhale', 'steady breath', 'calming breath', 'slow inhale'],
-    'slight smile': ['faint grin', 'subtle smirk', 'small smile', 'hint of a smile'],
-    'quick glance': ['brief look', 'fleeting glimpse', 'rapid peek', 'swift glance'],
-    'long sigh': ['deep exhale', 'heavy breath', 'weary sigh', 'prolonged exhale'],
+    // Common 2-word phrases - XIANXIA-TUNED
+    // Formal, martial, cultivation-appropriate phrases
+    'combat boots': ['heavy boots', 'sturdy boots', 'reinforced footwear'],
+    'emerald eyes': ['jade gaze', 'verdant eyes', 'green eyes'],
+    'nervous laugh': ['uneasy chuckle', 'forced laugh', 'strained mirth'],
+    'deep breath': ['long inhale', 'steadying breath', 'calming breath'],
+    'slight smile': ['faint smile', 'subtle expression', 'trace of a smile'],
+    'quick glance': ['brief look', 'fleeting glimpse', 'swift glance'],
+    'long sigh': ['heavy breath', 'prolonged exhale', 'weary sigh'],
+    'cold stare': ['icy gaze', 'piercing look', 'frosty glare'],
+    'sharp gaze': ['keen stare', 'penetrating look', 'acute glance'],
 
-    // Sound effects (common overused ones)
-    '*scuff*': ['*scrape*', '*shuffle*', '*scratch*', '*drag*'],
-    '*gulp*': ['*swallow*', '*glug*', '*swig*'],
-    '*schlick*': ['*squelch*', '*slurp*', '*slosh*'],
-    '*schlorp*': ['*slurp*', '*gulp*', '*glug*'],
-    '*thud*': ['*thump*', '*bang*', '*crash*', '*slam*'],
-    '*click*': ['*snap*', '*clack*', '*tick*'],
-    '*creak*': ['*groan*', '*squeak*', '*scrape*'],
-    '*rustle*': ['*swish*', '*whisper*', '*flutter*']
+    // Sound effects - minimized (XianXia prefers descriptive prose over sound effects)
+    '*thud*': ['*thump*', '*crash*', '*slam*'],
+    '*click*': ['*snap*', '*clack*'],
+    '*creak*': ['*groan*', '*scrape*'],
+    '*rustle*': ['*swish*', '*whisper*', '*flutter*'],
+    '*whoosh*': ['*rush*', '*sweep*']
 };
 
 /**
@@ -3473,109 +3495,112 @@ const NGO_WORD_LISTS = {
 };
 
 /**
- * NGO Story Phase Definitions - XianXia Edition
- * Each phase maps to cultivation progression stages
+ * NGO Story Phase Definitions - XianXia Edition (Generic Cultivation Loop)
+ * Each phase represents a universal pattern that repeats at every cultivation stage
+ * Works for: Qi Condensation → Foundation, Foundation → Core, Core → Nascent Soul, etc.
  */
 const NGO_PHASES = {
     introduction: {
         tempRange: [1, 3],
-        name: 'Mortal Awakening',
-        description: 'Discovery of cultivation path, humble beginnings',
+        name: 'Realm Stability',
+        description: 'Mastering current realm, peaceful cultivation',
         authorNoteGuidance:
-            'Story Phase: Mortal Awakening. The protagonist discovers their connection to cultivation. ' +
-            'Introduce the sect hierarchy, spiritual energy (qi), and cultivation concepts. ' +
-            'Show initial weakness but hint at hidden potential or special constitution. ' +
-            'Emphasize wonder and mystery of the immortal path.',
+            'Cultivation Phase: REALM STABILITY. The protagonist has stabilized in their current realm. ' +
+            'Show daily cultivation practice, mastery of techniques, and gradual improvement. ' +
+            'Introduce sect activities, resource gathering, and routine challenges. ' +
+            'Hint at approaching bottleneck or next breakthrough opportunity. ' +
+            'Emphasize steady progress and deepening dao comprehension.',
         vsAdjustment: { k: 4, tau: 0.15 },
         bonepokeStrictness: 'relaxed'
     },
     risingEarly: {
         tempRange: [4, 6],
-        name: 'Foundation Building',
-        description: 'Cultivation training, early breakthroughs, sect politics',
+        name: 'Rising Pressure',
+        description: 'Challenges increase, bottleneck approaches',
         authorNoteGuidance:
-            'Story Phase: Foundation Building. The protagonist undergoes rigorous cultivation training. ' +
-            'Show progress through minor breakthroughs and small victories. ' +
-            'Introduce cultivation techniques, spirit stones, and pill refinement. ' +
-            'Establish rivalries with arrogant young masters. Hint at deeper sect mysteries.',
+            'Cultivation Phase: RISING PRESSURE. The protagonist senses a bottleneck ahead. ' +
+            'Introduce obstacles, rivalries, and resource competition. ' +
+            'Show intensive training and preparation for breakthrough. ' +
+            'Hint at dangers of forced advancement or insufficient foundation. ' +
+            'Build tension through minor conflicts and increasing stakes.',
         vsAdjustment: { k: 5, tau: 0.12 },
         bonepokeStrictness: 'normal'
     },
     risingLate: {
         tempRange: [7, 9],
-        name: 'Core Formation Trials',
-        description: 'Life-death battles, secret realms, powerful enemies',
+        name: 'Trial by Fire',
+        description: 'Life-death tests before major breakthrough',
         authorNoteGuidance:
-            'Story Phase: Core Formation Trials. The protagonist faces life-threatening challenges. ' +
-            'Enter secret realms, ancient ruins, or forbidden territories. ' +
-            'Battle powerful enemies and demonic cultivators. ' +
-            'Discover heavenly treasures and lost cultivation techniques. ' +
-            'The path grows dangerous. Breakthrough requires facing death itself.',
+            'Cultivation Phase: TRIAL BY FIRE. The protagonist faces severe tests of worthiness. ' +
+            'Enter dangerous realms, battle powerful opponents, or face sect trials. ' +
+            'Show acquisition of necessary breakthrough resources. ' +
+            'Reveal hidden cards, trump techniques, or dao insights. ' +
+            'The path grows deadly. Only through adversity can they advance.',
         vsAdjustment: { k: 6, tau: 0.10 },
         bonepokeStrictness: 'strict'
     },
     climaxEntry: {
         tempRange: [10, 10],
-        name: 'Tribulation Descent',
-        description: 'Heavenly tribulation begins, breakthrough or death',
+        name: 'Tribulation Approaches',
+        description: 'Preparation for heavenly tribulation',
         authorNoteGuidance:
-            'Story Phase: TRIBULATION DESCENT. The heavens respond to cultivation advancement. ' +
-            'Dark clouds gather. Lightning tribulation descends. ' +
-            'Face inner demons and external enemies simultaneously. ' +
-            'This is the moment of breakthrough or death. ' +
-            'The protagonist must prove worthy of defying heaven\'s will.',
+            'Cultivation Phase: TRIBULATION APPROACHES. The heavens sense impending breakthrough. ' +
+            'Dark clouds gather. Spiritual pressure builds. Enemies plot sabotage. ' +
+            'Show final preparations: protective formations, healing pills, ally support. ' +
+            'This is the moment before transcendence. Retreat is no longer possible. ' +
+            'The protagonist must face heaven\'s judgment.',
         vsAdjustment: { k: 7, tau: 0.08 },
         bonepokeStrictness: 'strict'
     },
     peakClimax: {
         tempRange: [11, 12],
         name: 'Heavenly Tribulation',
-        description: 'Nine waves of tribulation, dao heart tested',
+        description: 'Facing heaven\'s test, breakthrough or annihilation',
         authorNoteGuidance:
-            'Story Phase: HEAVENLY TRIBULATION. Nine waves of heavenly lightning descend. ' +
-            'Each wave stronger than the last. The protagonist\'s dao heart is tested. ' +
-            'Ancient powers observe from the shadows. The sect\'s fate hangs in balance. ' +
-            'Success means ascension. Failure means annihilation. ' +
-            'Reality trembles with the weight of cultivation\'s ultimate test.',
+            'Cultivation Phase: HEAVENLY TRIBULATION. Lightning descends from the heavens. ' +
+            'Each wave tests body, soul, and dao heart. Inner demons manifest. ' +
+            'Ancient powers watch from afar. The protagonist\'s life hangs by a thread. ' +
+            'Success brings transcendence. Failure means death or crippled cultivation. ' +
+            'Reality trembles with the weight of defying heaven.',
         vsAdjustment: { k: 8, tau: 0.07 },
         bonepokeStrictness: 'strict'
     },
     extremeClimax: {
         tempRange: [13, 15],
-        name: 'Immortal Ascension',
-        description: 'Transcending mortality, world-shaking consequences',
+        name: 'Beyond the Veil',
+        description: 'Exceptional breakthrough, heaven-defying advancement',
         authorNoteGuidance:
-            'Story Phase: IMMORTAL ASCENSION. The protagonist transcends mortal limits. ' +
-            'Immortals descend to prevent or enable ascension. Ancient seals break. ' +
-            'The fabric of reality tears. Continents crack. Sects crumble or rise. ' +
-            'This moment rewrites the cultivation world\'s history. ' +
-            'Nothing will ever be the same. The dao itself evolves.',
+            'Cultivation Phase: BEYOND THE VEIL. The protagonist achieves an impossible breakthrough. ' +
+            'Heaven itself trembles. Immortals descend. Ancient seals react. ' +
+            'The cultivation world witnesses a once-in-a-millennium event. ' +
+            'Fundamental dao principles are touched or even challenged. ' +
+            'Nothing will ever be the same. Legends are born in this moment.',
         vsAdjustment: { k: 9, tau: 0.06 },
         bonepokeStrictness: 'maximum'
     },
     overheat: {
         tempRange: null,
         name: 'Dao Consolidation',
-        description: 'Stabilizing breakthrough, integrating power',
+        description: 'Stabilizing new realm, integrating power',
         authorNoteGuidance:
-            'Story Phase: DAO CONSOLIDATION. The breakthrough succeeds but power must be stabilized. ' +
-            'The protagonist enters seclusion to consolidate their cultivation base. ' +
-            'New dao insights emerge. Spiritual energy circulates through meridians. ' +
-            'The path forward becomes clearer. ' +
-            'Maintain intensity but show the protagonist gaining control.',
+            'Cultivation Phase: DAO CONSOLIDATION. The breakthrough succeeds but requires stabilization. ' +
+            'Enter seclusion. Circulate spiritual energy through newly opened meridians. ' +
+            'Comprehend dao insights gained during tribulation. ' +
+            'Power gradually comes under control. The new realm solidifies. ' +
+            'Maintain narrative tension while showing mastery emerging.',
         vsAdjustment: { k: 7, tau: 0.09 },
         bonepokeStrictness: 'strict'
     },
     cooldown: {
         tempRange: null,
-        name: 'Sect Recovery',
-        description: 'Meditation, rewards, preparation for next journey',
+        name: 'Recovery Cycle',
+        description: 'Rest, rewards, preparation for next stage',
         authorNoteGuidance:
-            'Story Phase: Sect Recovery. The storm passes. The protagonist meditates and recovers. ' +
-            'Allies celebrate. Rewards are distributed. Cultivation insights deepen. ' +
-            'Allow moments of peace and reflection. Show the fruits of victory. ' +
-            'Rest and prepare. The immortal path stretches onward. ' +
-            'Greater challenges await beyond the horizon.',
+            'Cultivation Phase: RECOVERY CYCLE. The storm passes. Time to recover and adapt. ' +
+            'Show sect recognition, rewards distributed, status elevated. ' +
+            'Allow peaceful cultivation to deepen new realm understanding. ' +
+            'Hint at the next bottleneck or higher realm challenges. ' +
+            'The cycle will begin anew. Prepare for the next cultivation stage.',
         vsAdjustment: { k: 4, tau: 0.14 },
         bonepokeStrictness: 'relaxed'
     }
