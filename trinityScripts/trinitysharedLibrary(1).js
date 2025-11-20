@@ -3754,7 +3754,7 @@ const BonepokeAnalysis = (() => {
 
     /**
      * Stopwords: Common functional words that should NEVER be flagged as repetitive
-     * These are structural words essential to English grammar
+     * These are structural words essential to English grammar + XianXia technical terms
      */
     const STOPWORDS = new Set([
         // Pronouns
@@ -3796,7 +3796,62 @@ const BonepokeAnalysis = (() => {
 
         // Other common functional words
         'both', 'each', 'every', 'all', 'any', 'none', 'either', 'neither',
-        'same', 'other', 'another', 'than', 'too', 'very', 'only', 'even'
+        'same', 'other', 'another', 'than', 'too', 'very', 'only', 'even',
+
+        // ========== XIANXIA TECHNICAL TERMS ==========
+        // These are genre-specific terms with precise meanings that should NEVER be replaced
+
+        // Core Concepts
+        'qi', 'chi', 'dao', 'tao', 'cultivation', 'cultivate', 'cultivator', 'cultivating',
+        'sect', 'clan', 'realm', 'stage', 'level', 'layer',
+
+        // Breakthrough & Progress
+        'breakthrough', 'bottleneck', 'tribulation', 'ascension', 'ascend',
+        'foundation', 'core', 'nascent', 'soul', 'immortal', 'mortal',
+
+        // Anatomy & Energy
+        'meridian', 'meridians', 'dantian', 'acupoint', 'acupoints',
+        'spiritual', 'spirit', 'divine', 'heavenly', 'celestial',
+
+        // Resources & Items
+        'pill', 'pills', 'elixir', 'elixirs', 'stone', 'stones',
+        'formation', 'formations', 'array', 'arrays', 'artifact', 'artifacts',
+        'treasure', 'treasures', 'manual', 'scripture', 'technique', 'techniques',
+
+        // Titles & Roles
+        'elder', 'elders', 'patriarch', 'matriarch', 'ancestor', 'ancestors',
+        'master', 'disciple', 'disciples', 'junior', 'senior', 'brother', 'sister',
+        'sect master', 'grand elder', 'dao companion',
+
+        // Physical Traits
+        'physique', 'constitution', 'bloodline', 'lineage', 'inheritance',
+        'talent', 'aptitude', 'roots', 'potential',
+
+        // Combat & Weapons
+        'sword', 'blade', 'saber', 'spear', 'staff', 'fist', 'palm',
+        'art', 'arts', 'style', 'method', 'law', 'intent',
+
+        // Mental/Spiritual
+        'comprehension', 'enlightenment', 'insight', 'realization', 'epiphany',
+        'heart', 'mind', 'will', 'intent', 'consciousness',
+
+        // Realms & Places
+        'world', 'realm', 'dimension', 'plane', 'domain', 'territory',
+        'heaven', 'earth', 'void', 'chaos',
+
+        // Energy Types
+        'yin', 'yang', 'fire', 'water', 'wood', 'metal', 'earth',
+        'lightning', 'thunder', 'wind', 'ice', 'darkness', 'light',
+
+        // Actions (cultivation-specific)
+        'refine', 'refining', 'refined', 'condense', 'condensing', 'condensed',
+        'circulate', 'circulating', 'absorb', 'absorbing', 'absorbed',
+        'consolidate', 'consolidating', 'consolidated', 'stabilize', 'stabilizing',
+        'temper', 'tempering', 'tempered', 'nourish', 'nourishing',
+
+        // States & Conditions
+        'seclusion', 'meditation', 'retreat', 'closed-door',
+        'enlightened', 'awakened', 'transcendent', 'profound'
     ]);
 
     /**
