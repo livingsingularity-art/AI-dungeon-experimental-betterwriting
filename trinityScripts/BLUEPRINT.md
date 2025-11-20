@@ -54,6 +54,146 @@ smartReplacement: {
 
 ---
 
+## Part 1.5: Synonym Word Banks & Stopwords Review
+
+### 1.5.1 Current State Analysis
+
+**SYNONYM_MAP (Basic):**
+- 200+ entries covering verbs, nouns, adjectives, adverbs, phrases, sound effects
+- Random selection from arrays (no intelligence)
+- Works well but needs Hero's Journey-specific terms
+
+**ENHANCED_SYNONYM_MAP (Advanced):**
+- Emotion scores (1-5): How emotionally charged the word is
+- Precision scores (1-5): How specific/descriptive the word is
+- Tags: Context hints for smart selection (e.g., 'fast', 'loud', 'formal')
+- Partial coverage (~40 words with full metadata)
+
+**STOPWORDS:**
+- 120+ functional grammar words
+- Pronouns, prepositions, articles, conjunctions, auxiliaries
+- Never flagged as repetitive (essential to sentence structure)
+
+### 1.5.2 Hero's Journey Enhancements
+
+#### A. Add Adventure-Appropriate Synonyms (Genre-Agnostic)
+
+**Journey/Travel Words:**
+```javascript
+'journey': ['quest', 'voyage', 'expedition', 'trek', 'odyssey', 'pilgrimage'],
+'path': ['road', 'route', 'trail', 'way', 'course'],
+'destination': ['goal', 'objective', 'endpoint', 'target'],
+```
+
+**Challenge/Obstacle Words:**
+```javascript
+'challenge': ['trial', 'test', 'ordeal', 'obstacle', 'hurdle'],
+'obstacle': ['barrier', 'hurdle', 'impediment', 'hindrance', 'obstruction'],
+'danger': ['peril', 'hazard', 'threat', 'menace', 'jeopardy'],
+'test': ['trial', 'challenge', 'examination', 'ordeal'],
+```
+
+**Transformation/Growth Words:**
+```javascript
+'changed': ['transformed', 'evolved', 'metamorphosed', 'converted'],
+'learned': ['discovered', 'realized', 'understood', 'comprehended'],
+'grew': ['developed', 'matured', 'evolved', 'progressed'],
+'overcame': ['conquered', 'surmounted', 'triumphed over', 'prevailed'],
+```
+
+**Mentor/Guide Words:**
+```javascript
+'mentor': ['guide', 'teacher', 'advisor', 'counselor', 'sage'],
+'guide': ['lead', 'direct', 'shepherd', 'escort', 'conduct'],
+'teach': ['instruct', 'train', 'educate', 'coach', 'school'],
+'wisdom': ['knowledge', 'insight', 'understanding', 'enlightenment'],
+```
+
+**Return/Resolution Words:**
+```javascript
+'returned': ['came back', 'went back', 'journeyed home', 'arrived home'],
+'home': ['homeland', 'origin', 'starting place', 'familiar world'],
+'gift': ['boon', 'treasure', 'prize', 'reward', 'elixir'],
+'victory': ['triumph', 'success', 'conquest', 'win'],
+```
+
+#### B. Adjust Emotion/Precision Scores for Narrative Beats
+
+**Ordinary World (Low Emotion, High Precision):**
+- Words should be clear, grounded, mundane
+- 'walked': emotion 2, precision 3 ✓ (correct)
+- 'said': emotion 1, precision 2 ✓ (correct)
+
+**Call to Adventure (Medium Emotion, High Precision):**
+- Words should be intriguing, specific
+- 'discovered': emotion 3, precision 4 (add to ENHANCED_MAP)
+- 'noticed': emotion 2, precision 3 (add to ENHANCED_MAP)
+
+**Ordeal/Climax (High Emotion, Medium-High Precision):**
+- Words should be intense, visceral
+- 'fought': emotion 5, precision 4 (add to ENHANCED_MAP)
+- 'struggled': emotion 5, precision 4 (add to ENHANCED_MAP)
+- 'survived': emotion 5, precision 4 (add to ENHANCED_MAP)
+
+**Return (Medium Emotion, High Precision):**
+- Words should be reflective, conclusive
+- 'completed': emotion 3, precision 4 (add to ENHANCED_MAP)
+- 'finished': emotion 2, precision 3 (add to ENHANCED_MAP)
+
+#### C. Expand STOPWORDS for Narrative Terms
+
+Add these essential narrative transition words that should NEVER be flagged:
+
+```javascript
+// Narrative transitions (essential story structure)
+'then', 'next', 'after', 'before', 'later', 'earlier', 'meanwhile', 'finally',
+'suddenly' // CONTROVERSIAL: "suddenly" is often overused BUT also essential for pacing
+
+// Time markers
+'moment', 'second', 'minute', 'hour', 'day', 'night', 'morning', 'evening',
+
+// Common story beats (used frequently but not repetitive)
+'door', 'room', 'eyes' // CONTROVERSIAL: These CAN be overused, but are fundamental to scenes
+```
+
+**DECISION:** Keep STOPWORDS conservative. Don't add 'suddenly', 'door', 'room', 'eyes' to stopwords. Instead, let Bonepoke flag them and use smart synonyms. This maintains quality control while allowing natural language.
+
+**FINAL STOPWORDS ADDITIONS:**
+```javascript
+// Add only these truly functional narrative words:
+'soon', 'once', 'always', 'never', 'often', 'sometimes', 'perhaps', 'maybe'
+```
+
+#### D. Review Existing Synonyms for Appropriateness
+
+**Potentially Problematic Synonyms to Review:**
+
+1. **'eyes': ['gaze', 'stare', 'glance']**
+   - ISSUE: Not true synonyms (eyes = body part, gaze = action)
+   - FIX: Change to `'eyes': ['glance', 'look', 'sight']` (all can substitute in context)
+
+2. **'lips': ['mouth']**
+   - ISSUE: Part-for-whole can feel awkward
+   - FIX: Keep but add more: `'lips': ['mouth', 'smile', 'kiss']` (context-dependent)
+
+3. **'breath': ['exhale', 'inhale']**
+   - ISSUE: These are types of breath, not synonyms
+   - FIX: Change to `'breath': ['sigh', 'gasp', 'exhale']` (better substitutes)
+
+4. **Color shades:**
+   - KEEP: 'red': ['crimson', 'scarlet'] - these ARE shades and work well in prose
+
+### 1.5.3 Implementation Checklist
+
+- [ ] Add 30+ Hero's Journey-specific synonyms to SYNONYM_MAP
+- [ ] Add 20+ adventure words to ENHANCED_SYNONYM_MAP with emotion/precision scores
+- [ ] Fix problematic synonyms ('eyes', 'breath', 'lips')
+- [ ] Add 8 narrative transition words to STOPWORDS
+- [ ] Test synonym quality with sample outputs
+- [ ] Document changes in README
+
+---
+
 ## Part 2: Hero's Journey Integration
 
 ### 2.1 The 12 Stages Mapped to NGO System
@@ -365,11 +505,15 @@ Before release, test these scenarios:
 
 ## Part 6: Implementation Roadmap
 
-### Phase 1: Cleanup (Estimated: 2 hours)
+### Phase 1: Cleanup & Word Bank Review (Estimated: 3 hours)
 1. Disable all debug logging via CONFIG
 2. Remove PerformanceBenchmark module
 3. Remove validation tracking stats
 4. Clean up comments
+5. **Add 30+ Hero's Journey synonyms to SYNONYM_MAP**
+6. **Add 20+ adventure words to ENHANCED_SYNONYM_MAP with scores**
+7. **Fix problematic synonyms ('eyes', 'breath', 'lips')**
+8. **Add 8 narrative words to STOPWORDS**
 
 ### Phase 2: Hero's Journey Implementation (Estimated: 4 hours)
 1. Design 12-phase system in shared library
@@ -383,6 +527,7 @@ Before release, test these scenarios:
 2. Add inline documentation
 3. Create examples for each genre
 4. Document all commands
+5. Document synonym/stopword enhancements
 
 ### Phase 4: Testing (Estimated: 2 hours)
 1. Test all 12 phases
@@ -390,12 +535,15 @@ Before release, test these scenarios:
 3. Test @arc and @temp commands
 4. Test multiple genres
 5. Validate quality
+6. Test synonym replacements
 
 ### Phase 5: Release (Estimated: 1 hour)
 1. Final review
 2. Version bump to 3.0.0
 3. Commit and push
 4. Create release notes
+
+**Total Estimated Time: 12 hours** (increased from 11 due to synonym/stopword work)
 
 ---
 
