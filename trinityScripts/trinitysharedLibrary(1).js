@@ -1256,7 +1256,39 @@ const SYNONYM_MAP = {
     '*thud*': ['*thump*', '*bang*', '*crash*', '*slam*'],
     '*click*': ['*snap*', '*clack*', '*tick*'],
     '*creak*': ['*groan*', '*squeak*', '*scrape*'],
-    '*rustle*': ['*swish*', '*whisper*', '*flutter*']
+    '*rustle*': ['*swish*', '*whisper*', '*flutter*'],
+
+    // Romance/Erotica - Intimate Verbs
+    'kissed': ['pressed lips to', 'brushed lips against', 'captured', 'claimed'],
+    'caressed': ['stroked', 'traced', 'brushed', 'swept over', 'glided across'],
+    'moaned': ['gasped', 'sighed', 'breathed', 'whimpered', 'groaned'],
+    'gasped': ['inhaled sharply', 'caught breath', 'sucked in air', 'breathed sharply'],
+    'trembled': ['shivered', 'quivered', 'shook', 'shuddered', 'quaked'],
+    'ached': ['throbbed', 'pulsed', 'burned', 'yearned', 'longed'],
+    'teased': ['tormented', 'taunted', 'tantalized', 'toyed with', 'played with'],
+    'explored': ['discovered', 'traced', 'mapped', 'learned', 'traveled'],
+    'gripped': ['clutched', 'held', 'grasped', 'seized', 'clenched'],
+    'arched': ['curved', 'bent', 'lifted', 'bowed', 'flexed'],
+
+    // Romance/Erotica - Body/Touch Descriptions
+    'hot': ['heated', 'warm', 'feverish', 'burning', 'searing', 'scorching'],
+    'wet': ['slick', 'damp', 'moist', 'slippery', 'soaked'],
+    'hard': ['firm', 'rigid', 'stiff', 'solid', 'unyielding'],
+    'soft': ['gentle', 'tender', 'supple', 'silky', 'smooth', 'pliant'],
+    'tight': ['snug', 'close', 'constricting', 'gripping', 'clenching'],
+
+    // Romance/Erotica - Emotional States
+    'desired': ['wanted', 'craved', 'yearned for', 'longed for', 'hungered for'],
+    'excited': ['aroused', 'thrilled', 'electrified', 'charged', 'stimulated'],
+    'nervous': ['anxious', 'jittery', 'uneasy', 'apprehensive', 'hesitant'],
+    'breathless': ['winded', 'gasping', 'panting', 'out of breath'],
+    'overwhelmed': ['consumed', 'overtaken', 'engulfed', 'flooded', 'swept away'],
+
+    // Romance/Erotica - Intimate Nouns
+    'kiss': ['caress', 'brush', 'press of lips', 'touch'],
+    'embrace': ['hold', 'hug', 'clasp', 'encirclement'],
+    'glance': ['look', 'glimpse', 'peek', 'quick look', 'fleeting look'],
+    'gaze': ['stare', 'look', 'regard', 'steady look', 'lingering look']
 };
 
 /**
@@ -1310,13 +1342,13 @@ const ENHANCED_SYNONYM_MAP = {
     'looked': {
         synonyms: [
             { word: 'glanced', emotion: 2, precision: 4, tags: ['quick', 'brief'] },
-            { word: 'stared', emotion: 3, precision: 4, tags: ['intense', 'prolonged'] },
-            { word: 'gazed', emotion: 3, precision: 4, tags: ['soft', 'prolonged'] },
+            { word: 'stared', emotion: 4, precision: 4, tags: ['intense', 'prolonged'] },
+            { word: 'gazed', emotion: 4, precision: 4, tags: ['soft', 'prolonged', 'intimate'] },
             { word: 'peered', emotion: 3, precision: 4, tags: ['careful', 'scrutinizing'] },
             { word: 'glared', emotion: 4, precision: 4, tags: ['angry', 'intense'] },
             { word: 'observed', emotion: 2, precision: 3, tags: ['neutral', 'watchful'] }
         ],
-        baseEmotion: 1, basePrecision: 2
+        baseEmotion: 2, basePrecision: 2
     },
 
     'went': {
@@ -1345,9 +1377,9 @@ const ENHANCED_SYNONYM_MAP = {
         synonyms: [
             { word: 'grinned', emotion: 4, precision: 4, tags: ['wide', 'happy'] },
             { word: 'beamed', emotion: 4, precision: 4, tags: ['bright', 'joyful'] },
-            { word: 'smirked', emotion: 4, precision: 4, tags: ['smug', 'knowing'] }
+            { word: 'smirked', emotion: 4, precision: 4, tags: ['smug', 'knowing', 'seductive'] }
         ],
-        baseEmotion: 2, basePrecision: 3
+        baseEmotion: 3, basePrecision: 3
     },
 
     'laughed': {
@@ -1373,11 +1405,11 @@ const ENHANCED_SYNONYM_MAP = {
 
     'felt': {
         synonyms: [
-            { word: 'sensed', emotion: 3, precision: 4, tags: ['intuitive', 'aware'] },
-            { word: 'experienced', emotion: 2, precision: 3, tags: ['neutral', 'direct'] },
-            { word: 'perceived', emotion: 3, precision: 4, tags: ['intellectual', 'aware'] }
+            { word: 'sensed', emotion: 4, precision: 4, tags: ['intuitive', 'aware', 'physical'] },
+            { word: 'experienced', emotion: 3, precision: 3, tags: ['direct', 'embodied'] },
+            { word: 'perceived', emotion: 3, precision: 4, tags: ['aware', 'noticed'] }
         ],
-        baseEmotion: 2, basePrecision: 2
+        baseEmotion: 3, basePrecision: 3
     },
 
     'nodded': {
@@ -1393,12 +1425,12 @@ const ENHANCED_SYNONYM_MAP = {
 
     'shook': {
         synonyms: [
-            { word: 'trembled', emotion: 4, precision: 4, tags: ['fear', 'cold'] },
-            { word: 'quivered', emotion: 4, precision: 4, tags: ['slight', 'fear'] },
-            { word: 'shuddered', emotion: 5, precision: 4, tags: ['intense', 'disgust'] },
+            { word: 'trembled', emotion: 4, precision: 4, tags: ['fear', 'cold', 'arousal'] },
+            { word: 'quivered', emotion: 4, precision: 4, tags: ['slight', 'fear', 'anticipation'] },
+            { word: 'shuddered', emotion: 5, precision: 4, tags: ['intense', 'disgust', 'pleasure'] },
             { word: 'vibrated', emotion: 2, precision: 3, tags: ['mechanical', 'rapid'] }
         ],
-        baseEmotion: 2, basePrecision: 2
+        baseEmotion: 3, basePrecision: 3
     },
 
     'big': {
@@ -1613,22 +1645,25 @@ const ENHANCED_SYNONYM_MAP = {
 
     'touched': {
         synonyms: [
-            { word: 'grazed', emotion: 2, precision: 4, tags: ['light', 'brief'] },
-            { word: 'brushed', emotion: 2, precision: 4, tags: ['gentle', 'passing'] },
-            { word: 'contacted', emotion: 1, precision: 3, tags: ['neutral', 'connected'] },
-            { word: 'caressed', emotion: 4, precision: 4, tags: ['gentle', 'affectionate'] }
+            { word: 'caressed', emotion: 4, precision: 4, tags: ['gentle', 'intimate'] },
+            { word: 'stroked', emotion: 4, precision: 4, tags: ['sensual', 'deliberate'] },
+            { word: 'traced', emotion: 4, precision: 5, tags: ['exploring', 'delicate'] },
+            { word: 'grazed', emotion: 3, precision: 4, tags: ['light', 'teasing'] },
+            { word: 'brushed', emotion: 3, precision: 4, tags: ['soft', 'fleeting'] },
+            { word: 'explored', emotion: 4, precision: 4, tags: ['discovering', 'intimate'] }
         ],
-        baseEmotion: 2, basePrecision: 2
+        baseEmotion: 3, basePrecision: 3
     },
 
     'whispered': {
         synonyms: [
-            { word: 'murmured', emotion: 3, precision: 4, tags: ['soft', 'quiet'], dialogue: true },
-            { word: 'muttered', emotion: 3, precision: 4, tags: ['low', 'grumbling'], dialogue: true },
-            { word: 'breathed', emotion: 4, precision: 4, tags: ['intimate', 'soft'], dialogue: true },
+            { word: 'murmured', emotion: 4, precision: 4, tags: ['soft', 'intimate'], dialogue: true },
+            { word: 'breathed', emotion: 5, precision: 5, tags: ['intimate', 'sensual'], dialogue: true },
+            { word: 'muttered', emotion: 3, precision: 3, tags: ['low', 'quiet'], dialogue: true },
+            { word: 'purred', emotion: 5, precision: 4, tags: ['seductive', 'pleased'], dialogue: true },
             { word: 'hissed', emotion: 4, precision: 4, tags: ['angry', 'sharp'], dialogue: true }
         ],
-        baseEmotion: 3, basePrecision: 3, dialogueVerb: true
+        baseEmotion: 4, basePrecision: 3, dialogueVerb: true
     },
 
     'shouted': {
@@ -1711,14 +1746,15 @@ const ENHANCED_SYNONYM_MAP = {
 
     'wanted': {
         synonyms: [
-            { word: 'desired', emotion: 3, precision: 3, tags: ['wished', 'craved'] },
-            { word: 'craved', emotion: 4, precision: 4, tags: ['intense', 'yearning'] },
-            { word: 'wished', emotion: 2, precision: 2, tags: ['hoped', 'wanted'] },
-            { word: 'yearned', emotion: 4, precision: 4, tags: ['longing', 'deep'] },
+            { word: 'desired', emotion: 4, precision: 4, tags: ['wished', 'craved'] },
+            { word: 'craved', emotion: 5, precision: 4, tags: ['intense', 'yearning'] },
+            { word: 'wished', emotion: 3, precision: 3, tags: ['hoped', 'wanted'] },
+            { word: 'yearned', emotion: 5, precision: 4, tags: ['longing', 'deep'] },
             { word: 'coveted', emotion: 4, precision: 4, tags: ['envious', 'desired'] },
-            { word: 'longed for', emotion: 4, precision: 4, tags: ['deep', 'persistent'] }
+            { word: 'longed for', emotion: 5, precision: 4, tags: ['deep', 'persistent'] },
+            { word: 'hungered for', emotion: 5, precision: 5, tags: ['intense', 'desperate'] }
         ],
-        baseEmotion: 2, basePrecision: 2
+        baseEmotion: 3, basePrecision: 3
     },
 
     'needed': {
@@ -2591,6 +2627,167 @@ const ENHANCED_SYNONYM_MAP = {
             { word: 'hull', emotion: 2, precision: 5, tags: ['technical', 'part-for-whole'] }
         ],
         baseEmotion: 1, basePrecision: 2
+    },
+
+    // === ROMANCE/EROTICA ADDITIONS ===
+
+    'kissed': {
+        synonyms: [
+            { word: 'pressed lips to', emotion: 4, precision: 4, tags: ['tender', 'intimate'] },
+            { word: 'brushed lips against', emotion: 4, precision: 5, tags: ['soft', 'gentle'] },
+            { word: 'captured', emotion: 5, precision: 4, tags: ['passionate', 'claiming'] },
+            { word: 'claimed', emotion: 5, precision: 4, tags: ['possessive', 'intense'] },
+            { word: 'tasted', emotion: 5, precision: 4, tags: ['sensual', 'exploring'] }
+        ],
+        baseEmotion: 4, basePrecision: 3
+    },
+
+    'moaned': {
+        synonyms: [
+            { word: 'gasped', emotion: 5, precision: 4, tags: ['breathless', 'sudden'] },
+            { word: 'whimpered', emotion: 5, precision: 4, tags: ['soft', 'needy'] },
+            { word: 'sighed', emotion: 4, precision: 3, tags: ['content', 'pleasure'] },
+            { word: 'groaned', emotion: 5, precision: 4, tags: ['deep', 'intense'] },
+            { word: 'breathed', emotion: 4, precision: 4, tags: ['soft', 'intimate'] }
+        ],
+        baseEmotion: 5, basePrecision: 3, dialogue: true
+    },
+
+    'trembled': {
+        synonyms: [
+            { word: 'shivered', emotion: 4, precision: 4, tags: ['arousal', 'anticipation'] },
+            { word: 'quivered', emotion: 4, precision: 4, tags: ['subtle', 'responsive'] },
+            { word: 'shuddered', emotion: 5, precision: 4, tags: ['intense', 'pleasure'] },
+            { word: 'quaked', emotion: 5, precision: 4, tags: ['overwhelming', 'strong'] }
+        ],
+        baseEmotion: 4, basePrecision: 3
+    },
+
+    'ached': {
+        synonyms: [
+            { word: 'throbbed', emotion: 5, precision: 4, tags: ['pulsing', 'intense'] },
+            { word: 'pulsed', emotion: 4, precision: 4, tags: ['rhythmic', 'alive'] },
+            { word: 'burned', emotion: 5, precision: 4, tags: ['fierce', 'consuming'] },
+            { word: 'yearned', emotion: 4, precision: 4, tags: ['longing', 'emotional'] },
+            { word: 'hungered', emotion: 5, precision: 4, tags: ['desperate', 'need'] }
+        ],
+        baseEmotion: 4, basePrecision: 3
+    },
+
+    'teased': {
+        synonyms: [
+            { word: 'tantalized', emotion: 5, precision: 5, tags: ['tempting', 'deliberate'] },
+            { word: 'tormented', emotion: 5, precision: 4, tags: ['cruel', 'playful'] },
+            { word: 'toyed with', emotion: 4, precision: 4, tags: ['playful', 'control'] },
+            { word: 'played with', emotion: 4, precision: 3, tags: ['casual', 'exploring'] },
+            { word: 'provoked', emotion: 5, precision: 4, tags: ['challenging', 'intense'] }
+        ],
+        baseEmotion: 4, basePrecision: 3
+    },
+
+    'gripped': {
+        synonyms: [
+            { word: 'clutched', emotion: 4, precision: 4, tags: ['desperate', 'tight'] },
+            { word: 'grasped', emotion: 3, precision: 3, tags: ['firm', 'secure'] },
+            { word: 'seized', emotion: 5, precision: 4, tags: ['sudden', 'possessive'] },
+            { word: 'clenched', emotion: 4, precision: 4, tags: ['tight', 'intense'] },
+            { word: 'held', emotion: 3, precision: 3, tags: ['steady', 'secure'] }
+        ],
+        baseEmotion: 3, basePrecision: 3
+    },
+
+    'arched': {
+        synonyms: [
+            { word: 'curved', emotion: 3, precision: 4, tags: ['graceful', 'fluid'] },
+            { word: 'bowed', emotion: 3, precision: 4, tags: ['bending', 'flexible'] },
+            { word: 'lifted', emotion: 3, precision: 3, tags: ['rising', 'offering'] },
+            { word: 'flexed', emotion: 4, precision: 4, tags: ['controlled', 'responsive'] }
+        ],
+        baseEmotion: 3, basePrecision: 3
+    },
+
+    'pulled': {
+        synonyms: [
+            { word: 'tugged', emotion: 3, precision: 3, tags: ['quick', 'insistent'] },
+            { word: 'drew', emotion: 3, precision: 4, tags: ['smooth', 'deliberate'] },
+            { word: 'yanked', emotion: 4, precision: 4, tags: ['rough', 'urgent'] },
+            { word: 'dragged', emotion: 4, precision: 4, tags: ['forceful', 'dominant'] },
+            { word: 'hauled', emotion: 4, precision: 4, tags: ['strong', 'determined'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'pushed': {
+        synonyms: [
+            { word: 'pressed', emotion: 3, precision: 4, tags: ['firm', 'intimate'] },
+            { word: 'shoved', emotion: 4, precision: 4, tags: ['rough', 'urgent'] },
+            { word: 'thrust', emotion: 5, precision: 4, tags: ['forceful', 'intense'] },
+            { word: 'nudged', emotion: 2, precision: 3, tags: ['gentle', 'encouraging'] },
+            { word: 'propelled', emotion: 3, precision: 4, tags: ['forceful', 'momentum'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'hot': {
+        synonyms: [
+            { word: 'heated', emotion: 4, precision: 3, tags: ['warm', 'aroused'] },
+            { word: 'burning', emotion: 5, precision: 4, tags: ['intense', 'consuming'] },
+            { word: 'feverish', emotion: 5, precision: 4, tags: ['sick', 'aroused'] },
+            { word: 'scorching', emotion: 5, precision: 5, tags: ['extreme', 'overwhelming'] },
+            { word: 'searing', emotion: 5, precision: 5, tags: ['painful', 'intense'] }
+        ],
+        baseEmotion: 3, basePrecision: 2
+    },
+
+    'wet': {
+        synonyms: [
+            { word: 'slick', emotion: 4, precision: 4, tags: ['smooth', 'aroused'] },
+            { word: 'damp', emotion: 3, precision: 3, tags: ['moist', 'light'] },
+            { word: 'moist', emotion: 3, precision: 3, tags: ['wet', 'subtle'] },
+            { word: 'soaked', emotion: 4, precision: 4, tags: ['very-wet', 'saturated'] },
+            { word: 'slippery', emotion: 4, precision: 4, tags: ['slick', 'smooth'] }
+        ],
+        baseEmotion: 3, basePrecision: 2
+    },
+
+    'tight': {
+        synonyms: [
+            { word: 'snug', emotion: 3, precision: 4, tags: ['fitted', 'comfortable'] },
+            { word: 'constricting', emotion: 4, precision: 4, tags: ['restrictive', 'gripping'] },
+            { word: 'gripping', emotion: 4, precision: 4, tags: ['holding', 'clutching'] },
+            { word: 'clenching', emotion: 5, precision: 4, tags: ['intense', 'contracting'] }
+        ],
+        baseEmotion: 3, basePrecision: 2
+    },
+
+    'breathless': {
+        synonyms: [
+            { word: 'panting', emotion: 5, precision: 4, tags: ['aroused', 'exerted'] },
+            { word: 'gasping', emotion: 5, precision: 4, tags: ['desperate', 'sudden'] },
+            { word: 'winded', emotion: 3, precision: 3, tags: ['exhausted', 'out-of-breath'] }
+        ],
+        baseEmotion: 4, basePrecision: 3
+    },
+
+    'desired': {
+        synonyms: [
+            { word: 'craved', emotion: 5, precision: 4, tags: ['intense', 'need'] },
+            { word: 'yearned for', emotion: 5, precision: 4, tags: ['longing', 'deep'] },
+            { word: 'hungered for', emotion: 5, precision: 5, tags: ['desperate', 'consuming'] },
+            { word: 'longed for', emotion: 4, precision: 4, tags: ['want', 'emotional'] }
+        ],
+        baseEmotion: 4, basePrecision: 3
+    },
+
+    'gazed': {
+        synonyms: [
+            { word: 'stared', emotion: 3, precision: 3, tags: ['intense', 'fixed'] },
+            { word: 'looked', emotion: 2, precision: 2, tags: ['simple', 'direct'] },
+            { word: 'watched', emotion: 3, precision: 3, tags: ['observing', 'attentive'] },
+            { word: 'admired', emotion: 4, precision: 4, tags: ['appreciative', 'fond'] },
+            { word: 'drank in', emotion: 5, precision: 5, tags: ['absorbing', 'savoring'] }
+        ],
+        baseEmotion: 3, basePrecision: 3
     }
 };
 
