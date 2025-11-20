@@ -63,6 +63,17 @@ const modifier = (text) => {
     // Initialize quality tracking counter if needed
     state.regenCount = state.regenCount || 0;
 
+    // === NGO AUTHOR'S NOTE RESTORATION ===
+    // Restore author's note if AI Dungeon reset it (original NGO pattern lines 57-59)
+    // This ensures our layered author's note persists across turns
+    if (CONFIG.ngo && CONFIG.ngo.enabled && state.memory && state.authorsNoteStorage) {
+        // Check if author's note was cleared or reset
+        if (!state.memory.authorsNote || state.memory.authorsNote !== state.authorsNoteStorage) {
+            state.memory.authorsNote = state.authorsNoteStorage;
+            safeLog(`🔄 Author's note restored from storage`, 'info');
+        }
+    }
+
     // CRITICAL FIX: Clean output FIRST before analysis
     // This prevents VS instructions from being analyzed as part of the story
     const cleanOutput = (output) => {

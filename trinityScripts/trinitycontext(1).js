@@ -43,65 +43,80 @@ const modifier = (text) => {
 
     // === NGO LAYERED AUTHOR'S NOTE SYSTEM ===
     // Build author's note with priority layers:
-    // 1. Original user note (base)
-    // 2. PlayersAuthorsNote card content (player's custom guidance)
+    // 1. PlayersAuthorsNote card (user's stable author's note)
+    // 2. NGO Phase Guidance (dynamic narrative direction)
     // 3. Parentheses memory (gradual goals)
     // 4. @req immediate request (urgent player intent)
     if (CONFIG.ngo && CONFIG.ngo.enabled && state.ngo) {
         const buildLayeredAuthorsNote = () => {
             const layers = [];
 
-            // LAYER 1: Original user note (base)
-            if (state.originalAuthorsNote) {
-                layers.push(state.originalAuthorsNote);
-            }
-
-            // LAYER 2: PlayersAuthorsNote story card content
-            // Player edits this card to add custom narrative guidance
-            // Content is automatically injected into authorsNote every turn
-            const playerContent = PlayersAuthorsNoteCard.getPlayerContent();
-            if (playerContent) {
-                layers.push(playerContent);
-            }
-
-            // LAYER 3 & 4: Command system layers
-            if (CONFIG.commands && CONFIG.commands.enabled && state.commands) {
-                const commandLayers = NGOCommands.buildAuthorsNoteLayer();
-
-                // Layer 3: Parentheses memory (gradual)
-                if (commandLayers.memoryGuidance) {
-                    layers.push(commandLayers.memoryGuidance);
+            try {
+                // LAYER 1: PlayersAuthorsNote story card content (replaces original)
+                // Player edits this card to provide stable custom narrative guidance
+                // This is the user's "author's note" since the original gets overwritten
+                const playerContent = PlayersAuthorsNoteCard.getPlayerContent();
+                if (playerContent) {
+                    layers.push(playerContent);
+                    safeLog(`✅ Layer 1 (Player): "${playerContent.substring(0, 50)}..."`, 'success');
+                } else {
+                    safeLog(`⚠️ Layer 1 (Player): EMPTY`, 'warn');
                 }
 
-                // Layer 4: @req immediate request (highest narrative priority)
-                if (commandLayers.reqGuidance) {
-                    layers.push(commandLayers.reqGuidance);
+                // LAYER 2: NGO Phase Guidance
+                // Dynamic guidance based on current story phase (Introduction, Rising Action, etc.)
+                const currentPhase = getCurrentNGOPhase();
+                if (currentPhase && currentPhase.authorNoteGuidance) {
+                    layers.push(currentPhase.authorNoteGuidance);
+                    safeLog(`✅ Layer 2 (NGO): "${currentPhase.authorNoteGuidance.substring(0, 60)}..."`, 'success');
+                } else {
+                    safeLog(`⚠️ Layer 2 (NGO): MISSING!`, 'warn');
                 }
+
+                // LAYER 3: Parentheses memory (gradual goals)
+                // Note: @req goes to frontMemory, NOT author's note (see below)
+                if (CONFIG.commands && CONFIG.commands.enabled && state.commands) {
+                    const commandLayers = NGOCommands.buildAuthorsNoteLayer();
+
+                    // Layer 3: Parentheses () memory (gradual goals over 4 turns)
+                    if (commandLayers.memoryGuidance) {
+                        layers.push(commandLayers.memoryGuidance);
+                        safeLog(`✅ Layer 3 (Memory): "${commandLayers.memoryGuidance.substring(0, 50)}..."`, 'success');
+                    }
+                }
+            } catch (err) {
+                safeLog(`❌ Error building layered author's note: ${err.message}`, 'error');
             }
 
             return layers.filter(Boolean).join(' ');
         };
 
-        state.memory.authorsNote = buildLayeredAuthorsNote();
+        try {
+            const builtNote = buildLayeredAuthorsNote();
 
-        if (CONFIG.ngo.debugLogging) {
-            const phase = getCurrentNGOPhase();
-            safeLog(`📝 Author's note built with phase: ${phase.name} (temp: ${state.ngo.temperature})`, 'info');
-        }
-    }
+            // CORRECT APPROACH: Set state.memory.authorsNote directly
+            // AI Dungeon reads this property and injects it into context automatically
+            // Pattern from original NGO scripts (ngoInput Script lines 163-229)
+            if (builtNote && state.memory) {
+                state.memory.authorsNote = builtNote;
 
-    // === NGO FRONT MEMORY INJECTION (@req dual injection) ===
-    // Inject @req into front memory for immediate, high-priority narrative shaping
-    if (CONFIG.commands && CONFIG.commands.enabled && CONFIG.commands.reqDualInjection && state.commands) {
-        const frontMemoryInjection = NGOCommands.buildFrontMemoryInjection();
-        if (frontMemoryInjection) {
-            state.memory.frontMemory = (state.memory.frontMemory || '') + '\n\n' + frontMemoryInjection;
+                // Store backup for output script restoration (original NGO pattern line 296)
+                state.authorsNoteStorage = builtNote;
 
-            if (CONFIG.commands.debugLogging) {
-                safeLog(`💉 Front memory injected with @req: "${state.commands.narrativeRequest}"`, 'info');
+                const phase = getCurrentNGOPhase();
+                safeLog(`📝 Author's note set with phase: ${phase.name} (temp: ${state.ngo.temperature})`, 'info');
+                safeLog(`📝 Content (${builtNote.length} chars): "${builtNote.substring(0, 80)}..."`, 'info');
+            } else if (!state.memory) {
+                safeLog(`⚠️ WARNING: state.memory not available, cannot set author's note`, 'warn');
             }
+        } catch (err) {
+            safeLog(`❌ Critical error in NGO author's note system: ${err.message}`, 'error');
+            safeLog(`❌ Error stack: ${err.stack}`, 'error');
         }
     }
+
+    // Note: frontMemory (@req) is set in INPUT modifier, not here
+    // Pattern from Narrative-Steering-Wheel: frontMemory must be set in input modifier to work correctly
 
     // Adaptive VS configuration based on context (NOW NGO-AWARE)
     if (CONFIG.vs.enabled && CONFIG.vs.adaptive) {

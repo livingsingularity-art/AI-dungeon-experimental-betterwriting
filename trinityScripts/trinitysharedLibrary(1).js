@@ -31,7 +31,7 @@ const CONFIG = {
         tau: 0.10,              // Probability threshold (research-recommended)
         seamless: true,         // Hide process from output
         adaptive: true,         // Auto-adjust based on context (NOW ENABLED for NGO)
-        debugLogging: false     // Console logging
+        debugLogging: true      // Console logging
     },
 
     // Bonepoke Analysis
@@ -40,7 +40,7 @@ const CONFIG = {
         fatigueThreshold: 3,    // Word repetition threshold (lowered for better detection)
         qualityThreshold: 2.5,  // Minimum average score (for logging)
         enableDynamicCorrection: true,  // Create guidance cards to prevent future issues
-        debugLogging: false
+        debugLogging: true
     },
 
     // NGO (Narrative Guidance Overhaul) - THE CENTRAL BRAIN
@@ -63,7 +63,7 @@ const CONFIG = {
 
         // Temperature increase triggers
         heatThresholdForTempIncrease: 10,
-        tempIncreaseChance: 15,         // % chance when heat high
+        tempIncreaseChance: 30,         // % chance when heat high (was 15, increased for better pacing)
         tempIncreaseOnConsecutiveConflicts: 3,
 
         // Temperature decrease triggers
@@ -94,7 +94,7 @@ const CONFIG = {
         driftReducesHeat: true,
         driftHeatReduction: 3,
         qualityGatesTemperatureIncrease: true,
-        qualityThresholdForIncrease: 3.0,
+        qualityThresholdForIncrease: 2.0,        // Was 3.0, lowered for metaphor-heavy styles (Bradbury)
 
         // VS INTEGRATION
         temperatureAffectsVS: true,
@@ -106,7 +106,7 @@ const CONFIG = {
         parenthesesHeatBonus: 1,
 
         // DEBUG
-        debugLogging: false,
+        debugLogging: true,
         logStateChanges: true
     },
 
@@ -134,7 +134,7 @@ const CONFIG = {
         detectFulfillment: true,
         fulfillmentThreshold: 0.4,
 
-        debugLogging: false
+        debugLogging: true
     },
 
     // Smart Replacement (Bonepoke-Enhanced Synonym Selection)
@@ -189,10 +189,10 @@ const CONFIG = {
         minScoreImprovement: 0.0,           // Minimum score delta to accept (0.0 = any improvement)
 
         // Debug
-        debugLogging: false,
+        debugLogging: true,
         logReplacementReasons: true,  // Show WHY each replacement was chosen
-        logContextAnalysis: false,     // Show context matching details
-        logValidation: false           // Show validation decisions
+        logContextAnalysis: true,     // Show context matching details
+        logValidation: true           // Show validation decisions
     },
 
     // System
@@ -573,8 +573,15 @@ Instructions:
 - Change preset to: conservative, balanced, or aggressive
 - Save card and refresh story to apply changes`;
 
-        addStoryCard(CARD_KEY, defaultConfig, ['smart_replacement', 'config']);
-        return storyCards.find(c => c.keys && c.keys.includes(CARD_KEY));
+        // addStoryCard signature: addStoryCard(keys, entry, type)
+        // keys can be a string with comma-separated values
+        const keys = `${CARD_KEY}, smart_replacement, config`;
+        const index = addStoryCard(keys, defaultConfig, 'Custom');
+        if (index === false) {
+            // Card already exists
+            return storyCards.find(c => c.keys && c.keys.includes(CARD_KEY));
+        }
+        return storyCards[index];
     };
 
     /**
@@ -780,12 +787,8 @@ const initState = () => {
             }
         };
 
-        // Store original author's note
-        if (state.memory && state.memory.authorsNote) {
-            state.originalAuthorsNote = state.memory.authorsNote;
-        } else {
-            state.originalAuthorsNote = '';
-        }
+        // Note: Original author's note is NOT preserved - it gets overwritten constantly
+        // PlayersAuthorsNote story card serves as the user's stable author's note instead
 
         // PHASE 7: Load user configuration from story card
         SmartReplacementConfig.loadAndApply();
@@ -823,29 +826,60 @@ const buildCard = (title = "", entry = "", type = "Custom",
     // Clamp insertion index
     insertionIndex = Math.min(Math.max(0, insertionIndex), storyCards.length);
 
-    // Create card with temporary title
-    addStoryCard("%TEMP%");
+    // Create card with proper parameters
+    // addStoryCard signature: addStoryCard(keys, entry, type)
+    // Returns the index of the new card or false if card with same keys exists
+    const newIndex = addStoryCard(keys, entry, type);
 
-    // Find and configure the new card
-    for (const [index, card] of storyCards.entries()) {
-        if (card.title !== "%TEMP%") continue;
-
-        card.type = type;
-        card.title = title;
-        card.keys = keys;
-        card.entry = entry;
-        card.description = description;
-
-        // Move to correct position if needed
-        if (index !== insertionIndex) {
-            storyCards.splice(index, 1);
-            storyCards.splice(insertionIndex, 0, card);
+    if (newIndex === false) {
+        // Card with same keys already exists, find and update it
+        const existing = storyCards.find(c => c.keys === keys);
+        if (existing) {
+            existing.title = title;
+            existing.entry = entry;
+            existing.description = description;
+            existing.type = type;
+            return Object.seal(existing);
         }
-
-        return Object.seal(card);
+        throw new Error("addStoryCard returned false but couldn't find existing card");
     }
 
-    throw new Error("Failed to create story card");
+    // Find the newly created card
+    // The returned index may not always be accurate, so we try multiple approaches
+    let card = storyCards[newIndex];
+    let actualIndex = newIndex;
+
+    if (!card) {
+        // Try finding by keys
+        actualIndex = storyCards.findIndex(c => c.keys === keys);
+        if (actualIndex >= 0) {
+            card = storyCards[actualIndex];
+        }
+    }
+
+    if (!card) {
+        // Try the last element (newly added cards often go to the end)
+        actualIndex = storyCards.length - 1;
+        if (actualIndex >= 0 && storyCards[actualIndex].keys === keys) {
+            card = storyCards[actualIndex];
+        }
+    }
+
+    if (!card) {
+        throw new Error(`Failed to create story card - not found at index ${newIndex}, by keys "${keys}", or at end of array`);
+    }
+
+    // Configure the card
+    card.title = title;
+    card.description = description;
+
+    // Move to correct position if needed
+    if (actualIndex !== insertionIndex) {
+        storyCards.splice(actualIndex, 1);
+        storyCards.splice(insertionIndex, 0, card);
+    }
+
+    return Object.seal(card);
 };
 
 /**
@@ -1171,8 +1205,8 @@ const SYNONYM_MAP = {
     'city': ['town', 'metropolis', 'municipality', 'urban center'],
     'world': ['globe', 'planet', 'earth', 'sphere'],
     'person': ['individual', 'human', 'being', 'soul'],
-    'man': ['guy', 'fellow', 'gentleman', 'male'],
-    'woman': ['lady', 'gal', 'female'],
+    'man': ['guy', 'fellow', 'gentleman'],
+    'woman': ['lady', 'gal'],
     'child': ['kid', 'youngster', 'youth', 'juvenile'],
     'friend': ['companion', 'pal', 'buddy', 'comrade', 'confidant'],
     'enemy': ['foe', 'adversary', 'antagonist', 'nemesis'],
@@ -1203,6 +1237,7 @@ const SYNONYM_MAP = {
     'journey': ['trip', 'voyage', 'expedition', 'trek', 'sojourn'],
     'end': ['conclusion', 'termination', 'finale', 'cessation', 'denouement'],
     'beginning': ['start', 'commencement', 'inception', 'genesis', 'origin'],
+    'ship': ['vessel', 'craft', 'spacecraft', 'rocket', 'hull'],
 
     // Common 2-word phrases (will be matched as complete phrases)
     'combat boots': ['military footwear', 'tactical boots', 'heavy boots', 'steel-toed boots'],
@@ -2545,6 +2580,17 @@ const ENHANCED_SYNONYM_MAP = {
             { word: 'swift glance', emotion: 2, precision: 4, tags: ['quick', 'fast'] }
         ],
         baseEmotion: 1, basePrecision: 2
+    },
+
+    'ship': {
+        synonyms: [
+            { word: 'vessel', emotion: 2, precision: 4, tags: ['formal', 'nautical'] },
+            { word: 'craft', emotion: 2, precision: 4, tags: ['technical', 'neutral'] },
+            { word: 'spacecraft', emotion: 2, precision: 5, tags: ['scifi', 'technical'] },
+            { word: 'rocket', emotion: 3, precision: 4, tags: ['action', 'scifi'] },
+            { word: 'hull', emotion: 2, precision: 5, tags: ['technical', 'part-for-whole'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
     }
 };
 
@@ -3580,14 +3626,21 @@ const VerbalizedSampling = (() => {
      * Get or create VS system card
      */
     const ensureCard = () => {
+        // Try multiple lookup methods to find existing card
         let card = getCard(c => c.title === VS_CARD_TITLE);
 
         if (!card) {
+            // Try by keys if title lookup failed
+            card = getCard(c => c.keys && c.keys.includes('verbalized_sampling'));
+        }
+
+        if (!card) {
+            // Only create if we really can't find it
             card = buildCard(
                 VS_CARD_TITLE,
                 generateInstruction(),
                 "System",
-                "",  // No keys = always active
+                "verbalized_sampling vs_system",  // Unique keys to prevent collisions
                 "Verbalized Sampling - Diversity Enhancement",
                 0    // High priority
             );
@@ -3670,6 +3723,9 @@ const BonepokeAnalysis = (() => {
 
         // Conjunctions
         'and', 'but', 'or', 'nor', 'for', 'yet', 'so', 'if', 'when', 'while',
+
+        // Simile/comparison indicators (literary devices - not lazy repetition)
+        'like', 'as',
 
         // Common verbs & auxiliaries
         'have', 'has', 'had', 'having',
@@ -4640,7 +4696,7 @@ const NGOCommands = (() => {
 
         state.commands.requestHistory.push({
             request,
-            turn: state.ngoStats.totalTurns,
+            turn: (state.ngoStats && state.ngoStats.totalTurns) || 0,
             timestamp: Date.now()
         });
 
@@ -4838,6 +4894,7 @@ const NGOCommands = (() => {
      */
     const buildFrontMemoryInjection = () => {
         if (!CONFIG.commands.reqDualInjection) return '';
+        if (!state.commands) return '';
         if (!state.commands.narrativeRequest || state.commands.narrativeRequestTTL <= 0) return '';
 
         return `<SYSTEM>
@@ -4848,24 +4905,30 @@ ${state.commands.narrativeRequest}
     };
 
     /**
-     * Build author's note layers for commands
-     * @returns {Object} { reqGuidance, memoryGuidance }
+     * Build author's note layer for parentheses () commands
+     * Note: @req goes to frontMemory (buildFrontMemoryInjection), NOT author's note
+     * @returns {Object} { memoryGuidance } - Only parentheses memories
      */
     const buildAuthorsNoteLayer = () => {
-        const result = { reqGuidance: '', memoryGuidance: '' };
+        const result = { memoryGuidance: '' };
 
-        if (state.commands.narrativeRequest && state.commands.narrativeRequestTTL > 0) {
-            result.reqGuidance = `PRIORITY: Immediately and naturally introduce: ${state.commands.narrativeRequest}`;
+        // Check if state.commands exists
+        if (!state.commands) {
+            return result;
         }
 
+        // Get current turn count (with fallback)
+        const currentTurn = (state.ngoStats && state.ngoStats.totalTurns) || 0;
+
+        // Build guidance from parentheses () memories only
         const memoryParts = [];
-        if (state.commands.memory1 && state.commands.expiration1 > state.ngoStats.totalTurns) {
+        if (state.commands.memory1 && state.commands.expiration1 > currentTurn) {
             memoryParts.push(`After the current phrase, flawlessly transition the story towards: ${state.commands.memory1}`);
         }
-        if (state.commands.memory2 && state.commands.expiration2 > state.ngoStats.totalTurns) {
+        if (state.commands.memory2 && state.commands.expiration2 > currentTurn) {
             memoryParts.push(`Additionally consider: ${state.commands.memory2}`);
         }
-        if (state.commands.memory3 && state.commands.expiration3 > state.ngoStats.totalTurns) {
+        if (state.commands.memory3 && state.commands.expiration3 > currentTurn) {
             memoryParts.push(`Background goal: ${state.commands.memory3}`);
         }
 
@@ -4883,6 +4946,7 @@ ${state.commands.narrativeRequest}
      */
     const detectFulfillment = (outputText) => {
         if (!CONFIG.commands.detectFulfillment) return { fulfilled: false, reason: 'disabled' };
+        if (!state.commands) return { fulfilled: false, reason: 'no_state' };
         if (!state.commands.narrativeRequest) return { fulfilled: false, reason: 'no_request' };
 
         const request = state.commands.narrativeRequest.toLowerCase();
@@ -4906,7 +4970,7 @@ ${state.commands.narrativeRequest}
             state.commands.narrativeRequestFulfilled = true;
             state.commands.narrativeRequest = null;
             state.commands.narrativeRequestTTL = 0;
-            state.ngoStats.requestsFulfilled++;
+            if (state.ngoStats) state.ngoStats.requestsFulfilled++;
             safeLog(`✅ Request FULFILLED! (score: ${fulfillmentScore.toFixed(2)})`, 'success');
             return { fulfilled: true, score: fulfillmentScore, reason: 'threshold_met' };
         } else {
@@ -4914,7 +4978,7 @@ ${state.commands.narrativeRequest}
 
             if (state.commands.narrativeRequestTTL <= 0) {
                 state.commands.narrativeRequest = null;
-                state.ngoStats.requestsFailed++;
+                if (state.ngoStats) state.ngoStats.requestsFailed++;
                 safeLog('❌ Request EXPIRED', 'warn');
                 return { fulfilled: false, score: fulfillmentScore, reason: 'ttl_expired' };
             }
@@ -4971,19 +5035,25 @@ ${state.commands.narrativeRequest}
     const cleanupExpiredMemories = () => {
         let expired = 0;
 
-        if (state.commands.expiration1 && state.commands.expiration1 <= state.ngoStats.totalTurns) {
+        if (!state.commands || !state.ngoStats) {
+            return expired;
+        }
+
+        const currentTurn = state.ngoStats.totalTurns || 0;
+
+        if (state.commands.expiration1 && state.commands.expiration1 <= currentTurn) {
             state.commands.memory1 = '';
             state.commands.expiration1 = null;
             expired++;
         }
 
-        if (state.commands.expiration2 && state.commands.expiration2 <= state.ngoStats.totalTurns) {
+        if (state.commands.expiration2 && state.commands.expiration2 <= currentTurn) {
             state.commands.memory2 = '';
             state.commands.expiration2 = null;
             expired++;
         }
 
-        if (state.commands.expiration3 && state.commands.expiration3 <= state.ngoStats.totalTurns) {
+        if (state.commands.expiration3 && state.commands.expiration3 <= currentTurn) {
             state.commands.memory3 = '';
             state.commands.expiration3 = null;
             expired++;
@@ -5018,7 +5088,7 @@ ${state.commands.narrativeRequest}
 const PlayersAuthorsNoteCard = (() => {
     const CARD_TITLE = "PlayersAuthorsNote";
     const CARD_TYPE = "Custom";
-    const CARD_KEYS = ""; // No trigger keys - always active via script
+    const CARD_KEYS = "players_authors_note custom_guidance"; // Unique keys to prevent collisions
 
     /**
      * Ensure the player's authors note card exists
@@ -5026,8 +5096,13 @@ const PlayersAuthorsNoteCard = (() => {
      * @returns {Object|null} The story card reference
      */
     const ensureCard = () => {
-        // Find existing card
-        const existingIndex = storyCards.findIndex(card => card.title === CARD_TITLE);
+        // Try multiple lookup methods to find existing card
+        let existingIndex = storyCards.findIndex(card => card.title === CARD_TITLE);
+
+        if (existingIndex < 0) {
+            // Try by keys if title lookup failed
+            existingIndex = storyCards.findIndex(card => card.keys && card.keys.includes('players_authors_note'));
+        }
 
         if (existingIndex >= 0) {
             // Card exists - don't overwrite player's content
@@ -5091,19 +5166,25 @@ const PlayersAuthorsNoteCard = (() => {
 // Initialize state on library load
 initState();
 
-// Ensure VS card exists
-if (CONFIG.vs.enabled) {
-    VerbalizedSampling.ensureCard();
-}
+// Only create cards once per session (not on every modifier call)
+if (!state.cardsInitialized) {
+    // Ensure VS card exists
+    if (CONFIG.vs.enabled) {
+        VerbalizedSampling.ensureCard();
+    }
 
-// Ensure all word bank template cards exist
-ensureBannedWordsCard();   // PRECISE removal
-ensureAggressiveCard();     // AGGRESSIVE sentence removal
-ensureReplacerCard();       // REPLACER synonyms
+    // Ensure all word bank template cards exist
+    ensureBannedWordsCard();   // PRECISE removal
+    ensureAggressiveCard();     // AGGRESSIVE sentence removal
+    ensureReplacerCard();       // REPLACER synonyms
 
-// Ensure PlayersAuthorsNote card exists (player-editable, content injected into authorsNote)
-if (CONFIG.ngo.enabled) {
-    PlayersAuthorsNoteCard.ensureCard();
+    // Ensure PlayersAuthorsNote card exists (player-editable, content injected into authorsNote)
+    if (CONFIG.ngo.enabled) {
+        PlayersAuthorsNoteCard.ensureCard();
+    }
+
+    // Mark as initialized to prevent duplicate creation
+    state.cardsInitialized = true;
 }
 
 // #endregion
