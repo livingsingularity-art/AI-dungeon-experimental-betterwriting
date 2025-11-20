@@ -31,7 +31,7 @@ const CONFIG = {
         tau: 0.10,              // Probability threshold (research-recommended)
         seamless: true,         // Hide process from output
         adaptive: true,         // Auto-adjust based on context (NOW ENABLED for NGO)
-        debugLogging: true      // Console logging
+        debugLogging: false     // PRODUCTION: Console logging disabled
     },
 
     // Bonepoke Analysis
@@ -40,7 +40,7 @@ const CONFIG = {
         fatigueThreshold: 3,    // Word repetition threshold (lowered for better detection)
         qualityThreshold: 2.5,  // Minimum average score (for logging)
         enableDynamicCorrection: true,  // Create guidance cards to prevent future issues
-        debugLogging: true
+        debugLogging: false     // PRODUCTION: Debug logging disabled
     },
 
     // NGO (Narrative Guidance Overhaul) - THE CENTRAL BRAIN
@@ -106,8 +106,8 @@ const CONFIG = {
         parenthesesHeatBonus: 1,
 
         // DEBUG
-        debugLogging: true,
-        logStateChanges: true
+        debugLogging: false,        // PRODUCTION: Debug logging disabled
+        logStateChanges: false      // PRODUCTION: State change logging disabled
     },
 
     // COMMAND SYSTEM (Player narrative pressure vectors)
@@ -134,7 +134,7 @@ const CONFIG = {
         detectFulfillment: true,
         fulfillmentThreshold: 0.4,
 
-        debugLogging: true
+        debugLogging: false         // PRODUCTION: Debug logging disabled
     },
 
     // Smart Replacement (Bonepoke-Enhanced Synonym Selection)
@@ -189,10 +189,10 @@ const CONFIG = {
         minScoreImprovement: 0.0,           // Minimum score delta to accept (0.0 = any improvement)
 
         // Debug
-        debugLogging: true,
-        logReplacementReasons: true,  // Show WHY each replacement was chosen
-        logContextAnalysis: true,     // Show context matching details
-        logValidation: true           // Show validation decisions
+        debugLogging: false,                // PRODUCTION: Debug logging disabled
+        logReplacementReasons: false,       // PRODUCTION: Replacement reason logging disabled
+        logContextAnalysis: false,          // PRODUCTION: Context analysis logging disabled
+        logValidation: false                // PRODUCTION: Validation decision logging disabled
     },
 
     // System
@@ -454,85 +454,6 @@ const pruneReplacementHistory = () => {
 
     return { wordsPruned, synonymsPruned };
 };
-
-// #endregion
-
-// #region Phase 6 (MEDIUM #9): Performance Benchmarking
-
-/**
- * Performance benchmarking module for tracking replacement system performance
- */
-const PerformanceBenchmark = (() => {
-    const timings = {
-        totalReplacements: 0,
-        totalTime: 0,
-        avgTime: 0,
-        maxTime: 0,
-        minTime: Infinity,
-        lastTime: 0
-    };
-
-    /**
-     * Start timing a replacement operation
-     * @returns {number} Start timestamp
-     */
-    const start = () => {
-        return Date.now();  // Use Date.now() for AI Dungeon compatibility
-    };
-
-    /**
-     * End timing and record results
-     * @param {number} startTime - Timestamp from start()
-     * @returns {number} Elapsed time in milliseconds
-     */
-    const end = (startTime) => {
-        const elapsed = Date.now() - startTime;
-
-        timings.totalReplacements++;
-        timings.totalTime += elapsed;
-        timings.avgTime = timings.totalTime / timings.totalReplacements;
-        timings.maxTime = Math.max(timings.maxTime, elapsed);
-        timings.minTime = Math.min(timings.minTime, elapsed);
-        timings.lastTime = elapsed;
-
-        if (CONFIG.smartReplacement && CONFIG.smartReplacement.debugLogging) {
-            safeLog(`⏱️ Replacement took ${elapsed.toFixed(2)}ms`, 'info');
-        }
-
-        return elapsed;
-    };
-
-    /**
-     * Get performance report
-     * @returns {string} Formatted performance statistics
-     */
-    const getReport = () => {
-        if (timings.totalReplacements === 0) {
-            return '⏱️ No replacement timing data available yet.';
-        }
-
-        return `⏱️ PERFORMANCE STATS:\n` +
-               `   Total Replacements: ${timings.totalReplacements}\n` +
-               `   Avg Time: ${timings.avgTime.toFixed(2)}ms\n` +
-               `   Max Time: ${timings.maxTime.toFixed(2)}ms\n` +
-               `   Min Time: ${timings.minTime === Infinity ? 'N/A' : timings.minTime.toFixed(2) + 'ms'}\n` +
-               `   Last Time: ${timings.lastTime.toFixed(2)}ms`;
-    };
-
-    /**
-     * Reset all timing data
-     */
-    const reset = () => {
-        timings.totalReplacements = 0;
-        timings.totalTime = 0;
-        timings.avgTime = 0;
-        timings.maxTime = 0;
-        timings.minTime = Infinity;
-        timings.lastTime = 0;
-    };
-
-    return { start, end, getReport, reset, timings };
-})();
 
 // #endregion
 
