@@ -64,13 +64,12 @@ const modifier = (text) => {
     state.regenCount = state.regenCount || 0;
 
     // === NGO AUTHOR'S NOTE RESTORATION ===
-    // Restore author's note if AI Dungeon reset it (original NGO pattern lines 57-59)
+    // Restore author's note if AI Dungeon reset it
     // This ensures our layered author's note persists across turns
     if (CONFIG.ngo && CONFIG.ngo.enabled && state.memory && state.authorsNoteStorage) {
         // Check if author's note was cleared or reset
         if (!state.memory.authorsNote || state.memory.authorsNote !== state.authorsNoteStorage) {
             state.memory.authorsNote = state.authorsNoteStorage;
-            safeLog(`🔄 Author's note restored from storage`, 'info');
         }
     }
 
@@ -175,24 +174,9 @@ const modifier = (text) => {
     }
 
     // === NGO TURN PROCESSING ===
-    // Process NGO engine turn (timers, phase tracking, analytics)
+    // Process NGO engine turn (timers, phase tracking)
     if (CONFIG.ngo && CONFIG.ngo.enabled && state.ngo) {
         const turnResult = NGOEngine.processTurn();
-
-        if (turnResult.processed && CONFIG.ngo.logStateChanges) {
-            if (turnResult.overheat.completed) {
-                safeLog('🔥 Overheat completed, entering cooldown', 'info');
-            }
-
-            if (turnResult.cooldown.completed) {
-                safeLog('✅ Cooldown complete', 'success');
-            }
-        }
-
-        // Log current NGO status
-        if (CONFIG.ngo.debugLogging) {
-            safeLog(`📊 NGO: Heat=${state.ngo.heat.toFixed(1)}, Temp=${state.ngo.temperature}, Phase=${state.ngo.currentPhase}`, 'info');
-        }
     }
 
     // === NGO AI CONFLICT ANALYSIS ===
@@ -200,10 +184,6 @@ const modifier = (text) => {
     if (CONFIG.ngo && CONFIG.ngo.enabled && state.ngo) {
         const aiConflictData = NGOEngine.analyzeConflict(text);
         const aiHeatResult = NGOEngine.updateHeat(aiConflictData, 'ai');
-
-        if (CONFIG.ngo.logStateChanges && aiHeatResult.delta !== 0) {
-            safeLog(`🔥 AI heat: ${aiHeatResult.oldHeat.toFixed(1)} → ${aiHeatResult.newHeat.toFixed(1)} (conflicts: ${aiConflictData.conflicts}, calming: ${aiConflictData.calming})`, 'info');
-        }
     }
 
     // === BONEPOKE-NGO BIDIRECTIONAL INTEGRATION ===
@@ -214,16 +194,12 @@ const modifier = (text) => {
             const fatigueCount = Object.keys(analysis.composted.fatigue).length;
             if (fatigueCount >= CONFIG.ngo.fatigueThresholdForCooldown && state.ngo.temperature >= 8) {
                 NGOEngine.forceEarlyCooldown('fatigue');
-                safeLog(`⚠️ High fatigue (${fatigueCount} words) at temp ${state.ngo.temperature} - forcing cooldown`, 'warn');
             }
         }
 
         // Drift reduces heat
         if (CONFIG.ngo.driftReducesHeat && analysis.composted.drift.length > 0) {
             const driftResult = NGOEngine.reduceHeatFromDrift();
-            if (driftResult.reduction > 0) {
-                safeLog(`🌫️ Drift detected - heat reduced: ${driftResult.oldHeat.toFixed(1)} → ${driftResult.newHeat.toFixed(1)}`, 'info');
-            }
         }
 
         // Quality gates temperature increase
@@ -232,14 +208,10 @@ const modifier = (text) => {
             const tempResult = NGOEngine.applyTemperatureIncrease(qualityApproved);
 
             if (tempResult.applied) {
-                safeLog(`🌡️ Temperature: ${tempResult.oldTemp} → ${tempResult.newTemp} (quality: ${analysis.avgScore.toFixed(2)})`, 'warn');
-
                 // Check for overheat trigger
                 if (NGOEngine.shouldTriggerOverheat()) {
                     NGOEngine.enterOverheatMode();
                 }
-            } else if (tempResult.reason === 'quality_blocked') {
-                safeLog(`⛔ Temperature increase BLOCKED (quality: ${analysis.avgScore.toFixed(2)} < ${CONFIG.ngo.qualityThresholdForIncrease})`, 'warn');
             }
         }
     }
@@ -323,9 +295,6 @@ const modifier = (text) => {
             }
         });
 
-        if (handled.length > 0) {
-            safeLog(`🔄 Cross-output repeats: ${handled.join(', ')}`, 'info');
-        }
     }
 
     // USC-style word removal/replacement system (3 modes)
@@ -353,9 +322,6 @@ const modifier = (text) => {
             }
         }
 
-        if (foundPrecise.length > 0) {
-            safeLog(`⛔ PRECISE removed: ${foundPrecise.join(', ')}`, 'warn');
-        }
     }
 
     // === MODE 2: AGGRESSIVE removal (entire sentence) ===
@@ -381,10 +347,6 @@ const modifier = (text) => {
                 );
 
                 if (shouldDelete) {
-                    const matchedPhrase = aggressive.find(p =>
-                        sentence.toLowerCase().includes(p.toLowerCase())
-                    );
-                    safeLog(`⛔ AGGRESSIVE removed sentence with: "${matchedPhrase}"`, 'warn');
                     // Keep quotes if sentence had dialogue
                     filtered.push(sentence.includes('"') ? (sentence.match(/"/g) || []).join('') : '');
                 } else {
@@ -404,10 +366,6 @@ const modifier = (text) => {
         if (detectedPhrases.length > 0) {
             const phraseResult = applyPhraseReplacements(text, detectedPhrases, analysis);
             text = phraseResult.text;
-
-            if (phraseResult.replacements.length > 0) {
-                safeLog(`🔄 Phrases replaced: ${phraseResult.replacements.join(', ')}`, 'info');
-            }
         }
     }
 
@@ -517,16 +475,6 @@ const modifier = (text) => {
             }
         });
 
-        // Log what was done
-        if (replaced.length > 0) {
-            safeLog(`🔄 Replaced: ${replaced.join(', ')}`, 'info');
-        }
-        if (removed.length > 0) {
-            safeLog(`⚠️ Removed phrases (no synonym): ${removed.join(', ')}`, 'warn');
-        }
-        if (needsSynonym.length > 0) {
-            safeLog(`📝 Needs synonym: ${needsSynonym.join(', ')} (kept in text)`, 'warn');
-        }
     }
 
     // === MODE 4: User-defined REPLACER card (manual overrides) ===
@@ -554,9 +502,6 @@ const modifier = (text) => {
             }
         }
 
-        if (applied.length > 0) {
-            safeLog(`🔄 User REPLACER applied: ${applied.join(', ')}`, 'info');
-        }
     }
 
     // Minimum length warning (no regeneration - doesn't work reliably)
@@ -584,7 +529,6 @@ const modifier = (text) => {
             if (suffix && text.trim().startsWith(suffix)) {
                 // Found duplicate - remove it
                 text = text.trim().slice(suffix.length).trim();
-                safeLog(`Removed duplicate start: "${suffix.slice(0, 30)}..."`, 'info');
                 break;
             }
         }
@@ -595,42 +539,14 @@ const modifier = (text) => {
         text = ' ' + text;
     }
 
-    // Quality analysis and logging (no regeneration - doesn't work reliably)
+    // Quality tracking (for analytics)
     if (CONFIG.bonepoke.enabled && analysis) {
         const isBelowThreshold = analysis.avgScore < CONFIG.bonepoke.qualityThreshold;
 
         if (isBelowThreshold) {
-            safeLog(
-                `⚠️ Quality below threshold: ${analysis.avgScore.toFixed(2)} < ${CONFIG.bonepoke.qualityThreshold}`,
-                'warn'
-            );
-
-            // Log specific issues for user awareness
-            if (analysis.suggestions.length > 0) {
-                safeLog('⚠️ Issues detected (consider manual regeneration):', 'warn');
-                analysis.suggestions.slice(0, 3).forEach(s => safeLog(`  - ${s}`, 'warn'));
-            }
-
             // Track low quality occurrences
             state.regenCount = (state.regenCount || 0) + 1;
             Analytics.recordRegeneration();
-        }
-    }
-
-    // Log quality if enabled
-    if (analysis && (CONFIG.bonepoke.debugLogging || CONFIG.vs.debugLogging)) {
-        safeLog(`Output quality: ${analysis.quality} (${analysis.avgScore.toFixed(2)})`, 'success');
-
-        // Log scores breakdown
-        if (CONFIG.bonepoke.debugLogging) {
-            Object.entries(analysis.scores).forEach(([category, score]) => {
-                safeLog(`  ${category}: ${score}/5`, 'info');
-            });
-        }
-
-        // Log MARM status if active
-        if (analysis.composted.marm !== 'MARM: suppressed') {
-            safeLog(`  ${analysis.composted.marm}`, 'warn');
         }
     }
 
@@ -638,10 +554,6 @@ const modifier = (text) => {
     // Check if narrative request was fulfilled in this output
     if (CONFIG.commands && CONFIG.commands.enabled && state.commands) {
         const fulfillmentResult = NGOCommands.detectFulfillment(text);
-
-        if (fulfillmentResult.reason === 'pending') {
-            safeLog(`⏳ Request pending (score: ${fulfillmentResult.score.toFixed(2)}, TTL: ${state.commands.narrativeRequestTTL})`, 'info');
-        }
 
         // Cleanup expired parentheses memories
         NGOCommands.cleanupExpiredMemories();

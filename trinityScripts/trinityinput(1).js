@@ -10,9 +10,8 @@
  */
 
 const modifier = (text) => {
-    // Track input in state for analytics
+    // Track input type for processing
     state.lastInputType = history[history.length - 1]?.type || 'action';
-    state.lastInputTimestamp = Date.now();
 
     // === NGO COMMAND PROCESSING ===
     // Process @req, (...), @temp, @arc commands BEFORE anything else
@@ -20,16 +19,10 @@ const modifier = (text) => {
         const commandResult = NGOCommands.processAllCommands(text);
         text = commandResult.processed;
 
-        // Log commands found
-        if (Object.keys(commandResult.commands).length > 0) {
-            safeLog(`🎮 Commands: ${JSON.stringify(commandResult.commands)}`, 'info');
-        }
-
         // CRITICAL FIX: If commands consumed all text, provide minimal input
         // AI Dungeon crashes with empty input - use continue signal instead
         if (!text || text.trim() === '') {
             text = '.';  // Minimal continue command
-            safeLog(`⚠️ Commands consumed all input - using continue signal`, 'warn');
         }
 
         // === @REQ FRONT MEMORY INJECTION ===
@@ -39,7 +32,6 @@ const modifier = (text) => {
             const frontMemoryInjection = NGOCommands.buildFrontMemoryInjection();
             if (frontMemoryInjection && state.memory) {
                 state.memory.frontMemory = frontMemoryInjection;
-                safeLog(`💉 Front memory set with @req: "${state.commands.narrativeRequest}"`, 'info');
             }
         }
     }
@@ -100,15 +92,8 @@ const modifier = (text) => {
         const conflictData = NGOEngine.analyzeConflict(text);
         const heatResult = NGOEngine.updateHeat(conflictData, 'player');
 
-        if (CONFIG.ngo.logStateChanges && heatResult.delta !== 0) {
-            safeLog(`🔥 Player heat: ${heatResult.oldHeat.toFixed(1)} → ${heatResult.newHeat.toFixed(1)} (conflicts: ${conflictData.conflicts}, calming: ${conflictData.calming})`, 'info');
-        }
-
         // Check if temperature should increase
         const tempCheck = NGOEngine.checkTemperatureIncrease();
-        if (tempCheck.shouldIncrease) {
-            safeLog(`🌡️ Temperature increase pending (reason: ${tempCheck.reason})`, 'info');
-        }
     }
 
     // Store processed input in state for context analysis

@@ -33,11 +33,6 @@ const modifier = (text) => {
 
             // Apply corrections via dynamic story cards
             DynamicCorrection.applyCorrections(recentAnalysis);
-
-            // Log significant issues
-            if (recentAnalysis.quality === 'poor') {
-                safeLog(`Quality warning: ${recentAnalysis.quality} (score: ${recentAnalysis.avgScore.toFixed(2)})`, 'warn');
-            }
         }
     }
 
@@ -58,19 +53,13 @@ const modifier = (text) => {
                 const playerContent = PlayersAuthorsNoteCard.getPlayerContent();
                 if (playerContent) {
                     layers.push(playerContent);
-                    safeLog(`✅ Layer 1 (Player): "${playerContent.substring(0, 50)}..."`, 'success');
-                } else {
-                    safeLog(`⚠️ Layer 1 (Player): EMPTY`, 'warn');
                 }
 
                 // LAYER 2: NGO Phase Guidance
-                // Dynamic guidance based on current story phase (Introduction, Rising Action, etc.)
+                // Dynamic guidance based on current story phase (cultivation stages)
                 const currentPhase = getCurrentNGOPhase();
                 if (currentPhase && currentPhase.authorNoteGuidance) {
                     layers.push(currentPhase.authorNoteGuidance);
-                    safeLog(`✅ Layer 2 (NGO): "${currentPhase.authorNoteGuidance.substring(0, 60)}..."`, 'success');
-                } else {
-                    safeLog(`⚠️ Layer 2 (NGO): MISSING!`, 'warn');
                 }
 
                 // LAYER 3: Parentheses memory (gradual goals)
@@ -81,7 +70,6 @@ const modifier = (text) => {
                     // Layer 3: Parentheses () memory (gradual goals over 4 turns)
                     if (commandLayers.memoryGuidance) {
                         layers.push(commandLayers.memoryGuidance);
-                        safeLog(`✅ Layer 3 (Memory): "${commandLayers.memoryGuidance.substring(0, 50)}..."`, 'success');
                     }
                 }
             } catch (err) {
@@ -96,22 +84,16 @@ const modifier = (text) => {
 
             // CORRECT APPROACH: Set state.memory.authorsNote directly
             // AI Dungeon reads this property and injects it into context automatically
-            // Pattern from original NGO scripts (ngoInput Script lines 163-229)
             if (builtNote && state.memory) {
                 state.memory.authorsNote = builtNote;
 
-                // Store backup for output script restoration (original NGO pattern line 296)
+                // Store backup for output script restoration
                 state.authorsNoteStorage = builtNote;
-
-                const phase = getCurrentNGOPhase();
-                safeLog(`📝 Author's note set with phase: ${phase.name} (temp: ${state.ngo.temperature})`, 'info');
-                safeLog(`📝 Content (${builtNote.length} chars): "${builtNote.substring(0, 80)}..."`, 'info');
             } else if (!state.memory) {
                 safeLog(`⚠️ WARNING: state.memory not available, cannot set author's note`, 'warn');
             }
         } catch (err) {
             safeLog(`❌ Critical error in NGO author's note system: ${err.message}`, 'error');
-            safeLog(`❌ Error stack: ${err.stack}`, 'error');
         }
     }
 
@@ -124,17 +106,6 @@ const modifier = (text) => {
 
         // Update VS card with adapted parameters (no CONFIG mutation)
         VerbalizedSampling.updateCard(adaptedParams);
-
-        // Log adaptation with NGO phase info
-        if (CONFIG.ngo && CONFIG.ngo.enabled && state.ngo) {
-            const phase = getCurrentNGOPhase();
-            safeLog(`🎨 VS adapted: k=${adaptedParams.k}, tau=${adaptedParams.tau} (phase: ${phase.name})`, 'info');
-        } else {
-            safeLog(`VS adapted: k=${adaptedParams.k}, tau=${adaptedParams.tau}`, 'info');
-        }
-
-        // Store adapted params for reference if needed
-        state.vsAdaptedParams = adaptedParams;
     }
 
     // Custom Continue handling
@@ -160,12 +131,6 @@ const modifier = (text) => {
     // FIX: Use better formatting to prevent leakage
     if (CONFIG.vs.enabled) {
         text += '\n\n' + VerbalizedSampling.getInstruction();
-    }
-
-    // Track context size for debugging
-    if (CONFIG.system.enableAnalytics) {
-        state.lastContextSize = text.length;
-        state.lastContextWords = text.split(/\s+/).length;
     }
 
     return { text };

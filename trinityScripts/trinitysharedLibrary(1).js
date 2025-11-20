@@ -31,7 +31,7 @@ const CONFIG = {
         tau: 0.10,              // Probability threshold (research-recommended)
         seamless: true,         // Hide process from output
         adaptive: true,         // Auto-adjust based on context (NOW ENABLED for NGO)
-        debugLogging: true      // Console logging
+        debugLogging: false     // Console logging (DISABLED for production)
     },
 
     // Bonepoke Analysis
@@ -40,7 +40,7 @@ const CONFIG = {
         fatigueThreshold: 3,    // Word repetition threshold (lowered for better detection)
         qualityThreshold: 2.5,  // Minimum average score (for logging)
         enableDynamicCorrection: true,  // Create guidance cards to prevent future issues
-        debugLogging: true
+        debugLogging: false     // DISABLED for production
     },
 
     // NGO (Narrative Guidance Overhaul) - THE CENTRAL BRAIN
@@ -105,9 +105,9 @@ const CONFIG = {
         parenthesesIncreasesHeat: true,
         parenthesesHeatBonus: 1,
 
-        // DEBUG
-        debugLogging: true,
-        logStateChanges: true
+        // DEBUG (DISABLED for production)
+        debugLogging: false,
+        logStateChanges: false
     },
 
     // COMMAND SYSTEM (Player narrative pressure vectors)
@@ -134,7 +134,7 @@ const CONFIG = {
         detectFulfillment: true,
         fulfillmentThreshold: 0.4,
 
-        debugLogging: true
+        debugLogging: false     // DISABLED for production
     },
 
     // Smart Replacement (Bonepoke-Enhanced Synonym Selection)
@@ -188,17 +188,17 @@ const CONFIG = {
         preventFatigueIncrease: true,       // Block if increases word fatigue
         minScoreImprovement: 0.0,           // Minimum score delta to accept (0.0 = any improvement)
 
-        // Debug
-        debugLogging: true,
-        logReplacementReasons: true,  // Show WHY each replacement was chosen
-        logContextAnalysis: true,     // Show context matching details
-        logValidation: true           // Show validation decisions
+        // Debug (DISABLED for production)
+        debugLogging: false,
+        logReplacementReasons: false,  // Show WHY each replacement was chosen
+        logContextAnalysis: false,     // Show context matching details
+        logValidation: false           // Show validation decisions
     },
 
     // System
     system: {
         persistState: true,     // Save state between sessions
-        enableAnalytics: true   // Track metrics over time (NOW ENABLED for NGO)
+        enableAnalytics: false  // DISABLED for production (reduces overhead)
     }
 };
 
@@ -3362,7 +3362,7 @@ const generateReplacementReport = () => {
  * These drive the heat accumulation system
  */
 const NGO_WORD_LISTS = {
-    // Words that INCREASE heat (conflict, tension, action)
+    // Words that INCREASE heat (conflict, tension, action) - XIANXIA EDITION
     conflict: [
         // Violence
         'attack', 'fight', 'battle', 'war', 'kill', 'murder', 'destroy',
@@ -3393,10 +3393,28 @@ const NGO_WORD_LISTS = {
         'blood', 'fire', 'explosion', 'destruction', 'chaos',
         'invasion', 'siege', 'conquest', 'revolution',
         'sacrifice', 'doom', 'fate', 'destiny', 'prophecy',
-        'ultimate', 'final', 'last', 'end', 'apocalypse'
+        'ultimate', 'final', 'last', 'end', 'apocalypse',
+        // XianXia - Cultivation Combat
+        'tribulation', 'breakthrough', 'duel', 'combat', 'spar', 'compete',
+        'surpass', 'defeat', 'rival', 'bottleneck', 'deviation',
+        // XianXia - Hostile Actions
+        'provoke', 'insult', 'arrogant', 'disdain', 'sneer', 'mock',
+        'humiliate', 'disgrace', 'shame', 'offend', 'disrespect',
+        // XianXia - Dangerous Elements
+        'demonic', 'corrupt', 'forbidden', 'evil', 'sinister', 'vicious',
+        'ruthless', 'merciless', 'bloodthirsty', 'ferocious',
+        // XianXia - Sect Conflicts
+        'sect war', 'blood feud', 'revenge', 'vendetta', 'retaliation',
+        'annihilate', 'exterminate', 'obliterate', 'eradicate',
+        // XianXia - Power Manifestations
+        'killing intent', 'bloodlust', 'spiritual pressure', 'dao heart demon',
+        'inner demon', 'tribulation cloud', 'heavenly lightning',
+        // XianXia - Fatal Provocations
+        'courting death', 'seeking death', 'young master', 'cripple',
+        'waste', 'trash', 'useless', 'pathetic'
     ],
 
-    // Words that DECREASE heat (calm, resolution, rest)
+    // Words that DECREASE heat (calm, resolution, rest) - XIANXIA EDITION
     calming: [
         // Peace
         'peace', 'calm', 'quiet', 'still', 'serene', 'tranquil',
@@ -3426,100 +3444,138 @@ const NGO_WORD_LISTS = {
         'eat', 'drink', 'cook', 'clean', 'walk', 'talk', 'think',
         'observe', 'notice', 'examine', 'study', 'learn', 'remember',
         'write', 'read', 'listen', 'watch', 'see', 'look',
-        'ordinary', 'normal', 'usual', 'routine', 'daily'
+        'ordinary', 'normal', 'usual', 'routine', 'daily',
+        // XianXia - Cultivation Practice
+        'meditation', 'meditate', 'cultivate', 'enlightenment', 'comprehension',
+        'insight', 'wisdom', 'understanding', 'realization', 'epiphany',
+        // XianXia - Energy Circulation
+        'circulate', 'refine', 'consolidate', 'stabilize', 'condense',
+        'purify', 'absorb', 'gather', 'accumulate', 'nourish',
+        // XianXia - Dao Philosophy
+        'dao', 'path', 'way', 'natural', 'flow', 'cycle', 'yin', 'yang',
+        'heavenly', 'celestial', 'cosmic', 'eternal', 'timeless',
+        // XianXia - Peaceful Settings
+        'tranquil lake', 'ancient tree', 'spiritual mist', 'immortal crane',
+        'lotus pond', 'bamboo forest', 'mountain peak', 'sacred grove',
+        // XianXia - Positive Progress
+        'foundation', 'solid base', 'stable realm', 'pure energy',
+        'clear mind', 'dao heart', 'spiritual roots', 'meridians',
+        // XianXia - Resources & Healing
+        'spirit stone', 'spiritual energy', 'qi', 'medicinal pill',
+        'elixir', 'treasure', 'artifact', 'formation', 'array',
+        // XianXia - Mentorship & Sect
+        'master', 'teacher', 'elder', 'patriarch', 'sage', 'guidance',
+        'sect brother', 'dao companion', 'loyal', 'devoted', 'respectful',
+        // XianXia - Seclusion & Recovery
+        'seclusion', 'closed-door cultivation', 'retreat', 'sanctuary',
+        'inner peace', 'stillness', 'clarity', 'focus', 'center'
     ]
 };
 
 /**
- * NGO Story Phase Definitions
- * Each phase defines narrative tone and system behavior
+ * NGO Story Phase Definitions - XianXia Edition
+ * Each phase maps to cultivation progression stages
  */
 const NGO_PHASES = {
     introduction: {
         tempRange: [1, 3],
-        name: 'Introduction',
-        description: 'Establish characters, world, and hooks',
+        name: 'Mortal Awakening',
+        description: 'Discovery of cultivation path, humble beginnings',
         authorNoteGuidance:
-            'Story Phase: Introduction. Focus on character establishment, ' +
-            'world-building, and subtle foreshadowing. Keep conflicts minimal. ' +
-            'Let the story breathe and establish tone.',
+            'Story Phase: Mortal Awakening. The protagonist discovers their connection to cultivation. ' +
+            'Introduce the sect hierarchy, spiritual energy (qi), and cultivation concepts. ' +
+            'Show initial weakness but hint at hidden potential or special constitution. ' +
+            'Emphasize wonder and mystery of the immortal path.',
         vsAdjustment: { k: 4, tau: 0.15 },
         bonepokeStrictness: 'relaxed'
     },
     risingEarly: {
         tempRange: [4, 6],
-        name: 'Rising Action (Early)',
-        description: 'Introduce minor conflicts, build tension gradually',
+        name: 'Foundation Building',
+        description: 'Cultivation training, early breakthroughs, sect politics',
         authorNoteGuidance:
-            'Story Phase: Rising Action. Introduce obstacles and challenges. ' +
-            'Characters face minor setbacks. Hint at greater conflicts ahead. ' +
-            'Increase tension gradually but maintain hope.',
+            'Story Phase: Foundation Building. The protagonist undergoes rigorous cultivation training. ' +
+            'Show progress through minor breakthroughs and small victories. ' +
+            'Introduce cultivation techniques, spirit stones, and pill refinement. ' +
+            'Establish rivalries with arrogant young masters. Hint at deeper sect mysteries.',
         vsAdjustment: { k: 5, tau: 0.12 },
         bonepokeStrictness: 'normal'
     },
     risingLate: {
         tempRange: [7, 9],
-        name: 'Rising Action (Late)',
-        description: 'Major complications, stakes increase',
+        name: 'Core Formation Trials',
+        description: 'Life-death battles, secret realms, powerful enemies',
         authorNoteGuidance:
-            'Story Phase: Late Rising Action. Stakes are high. Characters face ' +
-            'serious challenges. Introduce plot twists and revelations. ' +
-            'Push characters toward difficult choices. The climax approaches.',
+            'Story Phase: Core Formation Trials. The protagonist faces life-threatening challenges. ' +
+            'Enter secret realms, ancient ruins, or forbidden territories. ' +
+            'Battle powerful enemies and demonic cultivators. ' +
+            'Discover heavenly treasures and lost cultivation techniques. ' +
+            'The path grows dangerous. Breakthrough requires facing death itself.',
         vsAdjustment: { k: 6, tau: 0.10 },
         bonepokeStrictness: 'strict'
     },
     climaxEntry: {
         tempRange: [10, 10],
-        name: 'Climax Entry',
-        description: 'Major conflict begins, point of no return',
+        name: 'Tribulation Descent',
+        description: 'Heavenly tribulation begins, breakthrough or death',
         authorNoteGuidance:
-            'Story Phase: CLIMAX. Maximum tension. The main conflict erupts. ' +
-            'Characters face their greatest challenge. Shocking developments occur. ' +
-            'Everything changes. No turning back.',
+            'Story Phase: TRIBULATION DESCENT. The heavens respond to cultivation advancement. ' +
+            'Dark clouds gather. Lightning tribulation descends. ' +
+            'Face inner demons and external enemies simultaneously. ' +
+            'This is the moment of breakthrough or death. ' +
+            'The protagonist must prove worthy of defying heaven\'s will.',
         vsAdjustment: { k: 7, tau: 0.08 },
         bonepokeStrictness: 'strict'
     },
     peakClimax: {
         tempRange: [11, 12],
-        name: 'Peak Climax',
-        description: 'Sustained maximum intensity',
+        name: 'Heavenly Tribulation',
+        description: 'Nine waves of tribulation, dao heart tested',
         authorNoteGuidance:
-            'Story Phase: PEAK CLIMAX. Consequences cascade. Every action matters. ' +
-            'Characters pushed to absolute limits. Life-changing decisions. ' +
-            'Outcome uncertain. Maximum emotional intensity.',
+            'Story Phase: HEAVENLY TRIBULATION. Nine waves of heavenly lightning descend. ' +
+            'Each wave stronger than the last. The protagonist\'s dao heart is tested. ' +
+            'Ancient powers observe from the shadows. The sect\'s fate hangs in balance. ' +
+            'Success means ascension. Failure means annihilation. ' +
+            'Reality trembles with the weight of cultivation\'s ultimate test.',
         vsAdjustment: { k: 8, tau: 0.07 },
         bonepokeStrictness: 'strict'
     },
     extremeClimax: {
         tempRange: [13, 15],
-        name: 'Extreme Climax',
-        description: 'Catastrophic intensity (use sparingly)',
+        name: 'Immortal Ascension',
+        description: 'Transcending mortality, world-shaking consequences',
         authorNoteGuidance:
-            'Story Phase: EXTREME CLIMAX. Reality bends. Cataclysmic events unfold. ' +
-            'Ultimate test. Death and destruction are real possibilities. ' +
-            'Nothing is safe. The world may never be the same.',
+            'Story Phase: IMMORTAL ASCENSION. The protagonist transcends mortal limits. ' +
+            'Immortals descend to prevent or enable ascension. Ancient seals break. ' +
+            'The fabric of reality tears. Continents crack. Sects crumble or rise. ' +
+            'This moment rewrites the cultivation world\'s history. ' +
+            'Nothing will ever be the same. The dao itself evolves.',
         vsAdjustment: { k: 9, tau: 0.06 },
         bonepokeStrictness: 'maximum'
     },
     overheat: {
         tempRange: null,
-        name: 'Overheat (Sustained Climax)',
-        description: 'Maintain peak intensity, begin resolution hints',
+        name: 'Dao Consolidation',
+        description: 'Stabilizing breakthrough, integrating power',
         authorNoteGuidance:
-            'Story Phase: SUSTAINED CLIMAX. Maintain intensity but introduce ' +
-            'hints of resolution. Characters find inner strength. The tide may ' +
-            'be turning. Keep tension high but show possible ways forward.',
+            'Story Phase: DAO CONSOLIDATION. The breakthrough succeeds but power must be stabilized. ' +
+            'The protagonist enters seclusion to consolidate their cultivation base. ' +
+            'New dao insights emerge. Spiritual energy circulates through meridians. ' +
+            'The path forward becomes clearer. ' +
+            'Maintain intensity but show the protagonist gaining control.',
         vsAdjustment: { k: 7, tau: 0.09 },
         bonepokeStrictness: 'strict'
     },
     cooldown: {
         tempRange: null,
-        name: 'Cooldown (Falling Action)',
-        description: 'Resolve conflicts, process events',
+        name: 'Sect Recovery',
+        description: 'Meditation, rewards, preparation for next journey',
         authorNoteGuidance:
-            'Story Phase: Falling Action. The crisis passes. Characters process ' +
-            'what happened. Resolve plot threads. Allow emotional moments. ' +
-            'Rest and recovery are possible. Reflect on consequences.',
+            'Story Phase: Sect Recovery. The storm passes. The protagonist meditates and recovers. ' +
+            'Allies celebrate. Rewards are distributed. Cultivation insights deepen. ' +
+            'Allow moments of peace and reflection. Show the fruits of victory. ' +
+            'Rest and prepare. The immortal path stretches onward. ' +
+            'Greater challenges await beyond the horizon.',
         vsAdjustment: { k: 4, tau: 0.14 },
         bonepokeStrictness: 'relaxed'
     }
