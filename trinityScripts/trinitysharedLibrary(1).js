@@ -3508,118 +3508,241 @@ const NGO_WORD_LISTS = {
 };
 
 /**
- * NGO Story Phase Definitions
- * Each phase defines narrative tone and system behavior
+ * HERO'S JOURNEY PHASE DEFINITIONS (12 Stages) v3.0
+ * Genre-agnostic adventure storytelling based on Joseph Campbell's Monomyth
+ * Temperature-driven progression through classic adventure story structure
  */
-const NGO_PHASES = {
-    introduction: {
-        tempRange: [1, 3],
-        name: 'Introduction',
-        description: 'Establish characters, world, and hooks',
+const HEROES_JOURNEY_PHASES = {
+    // === ACT I: DEPARTURE (Temperature 1-4) ===
+
+    ordinaryWorld: {
+        tempRange: [1, 1],
+        name: 'Ordinary World',
+        description: 'Establish hero\'s normal life before adventure',
         authorNoteGuidance:
-            'Story Phase: Introduction. Focus on character establishment, ' +
-            'world-building, and subtle foreshadowing. Keep conflicts minimal. ' +
-            'Let the story breathe and establish tone.',
-        vsAdjustment: { k: 4, tau: 0.15 },
+            'Hero\'s Journey: ORDINARY WORLD. Establish the hero\'s normal life, daily routine, relationships, and world. ' +
+            'Show what is comfortable and familiar. Build character and setting. Minimal conflict.',
+        vsAdjustment: { k: 3, tau: 0.15 },
         bonepokeStrictness: 'relaxed'
     },
-    risingEarly: {
-        tempRange: [4, 6],
-        name: 'Rising Action (Early)',
-        description: 'Introduce minor conflicts, build tension gradually',
+
+    callToAdventure: {
+        tempRange: [1, 2],
+        name: 'Call to Adventure',
+        description: 'Disruption presents challenge or quest',
         authorNoteGuidance:
-            'Story Phase: Rising Action. Introduce obstacles and challenges. ' +
-            'Characters face minor setbacks. Hint at greater conflicts ahead. ' +
-            'Increase tension gradually but maintain hope.',
+            'Hero\'s Journey: CALL TO ADVENTURE. Introduce a disruption, challenge, or quest that pulls the hero from their ordinary world. ' +
+            'Present a mystery, problem, or opportunity that demands attention.',
+        vsAdjustment: { k: 4, tau: 0.12 },
+        bonepokeStrictness: 'normal'
+    },
+
+    refusalOfCall: {
+        tempRange: [2, 2],
+        name: 'Refusal of the Call',
+        description: 'Hero hesitates or shows fear',
+        authorNoteGuidance:
+            'Hero\'s Journey: REFUSAL OF THE CALL. Show the hero\'s hesitation, fear, or reluctance. ' +
+            'Highlight what they might lose or why they\'re afraid. Build internal conflict and vulnerability.',
+        vsAdjustment: { k: 4, tau: 0.12 },
+        bonepokeStrictness: 'normal'
+    },
+
+    meetingMentor: {
+        tempRange: [2, 3],
+        name: 'Meeting the Mentor',
+        description: 'Guide provides wisdom, training, or aid',
+        authorNoteGuidance:
+            'Hero\'s Journey: MEETING THE MENTOR. Introduce a mentor, guide, or helper who provides wisdom, training, or necessary items. ' +
+            'Build the relationship and prepare the hero for the journey ahead.',
+        vsAdjustment: { k: 4, tau: 0.10 },
+        bonepokeStrictness: 'normal'
+    },
+
+    crossingThreshold: {
+        tempRange: [3, 4],
+        name: 'Crossing the Threshold',
+        description: 'Hero commits and enters unknown',
+        authorNoteGuidance:
+            'Hero\'s Journey: CROSSING THE THRESHOLD. The hero commits to the journey and crosses into the unknown world. ' +
+            'This is the point of no return. Show the transition from ordinary to special world.',
+        vsAdjustment: { k: 5, tau: 0.10 },
+        bonepokeStrictness: 'normal'
+    },
+
+    // === ACT II: INITIATION (Temperature 4-12) ===
+
+    testsAlliesEnemies: {
+        tempRange: [4, 6],
+        name: 'Tests, Allies, and Enemies',
+        description: 'Hero faces challenges, builds relationships',
+        authorNoteGuidance:
+            'Hero\'s Journey: TESTS, ALLIES, AND ENEMIES. The hero encounters tests, makes allies, and identifies enemies. ' +
+            'Show the hero learning the rules of this new world and building relationships through action.',
+        vsAdjustment: { k: 5, tau: 0.10 },
+        bonepokeStrictness: 'normal'
+    },
+
+    approachCave: {
+        tempRange: [7, 8],
+        name: 'Approach to the Inmost Cave',
+        description: 'Hero prepares for major challenge',
+        authorNoteGuidance:
+            'Hero\'s Journey: APPROACH TO THE INMOST CAVE. The hero approaches the place of greatest danger. ' +
+            'Build anticipation and tension. Show final preparations and growing dread. The ordeal looms.',
+        vsAdjustment: { k: 5, tau: 0.10 },
+        bonepokeStrictness: 'strict'
+    },
+
+    ordeal: {
+        tempRange: [9, 12],
+        name: 'The Ordeal',
+        description: 'Central crisis - greatest challenge',
+        authorNoteGuidance:
+            'Hero\'s Journey: THE ORDEAL. The hero faces their greatest challenge, darkest moment, or most dangerous enemy. ' +
+            'Life and death stakes. This is the central crisis and transformation moment. Maximum tension and drama.',
+        vsAdjustment: { k: 6, tau: 0.06 },
+        bonepokeStrictness: 'strict'
+    },
+
+    reward: {
+        tempRange: [10, 8],
+        name: 'Reward (Seizing the Sword)',
+        description: 'Hero survives and gains prize',
+        authorNoteGuidance:
+            'Hero\'s Journey: REWARD. The hero survives the ordeal and claims their reward: treasure, knowledge, victory, or reconciliation. ' +
+            'Show the fruits of their struggle and moment of relief after the crisis.',
+        vsAdjustment: { k: 5, tau: 0.10 },
+        bonepokeStrictness: 'normal'
+    },
+
+    // === ACT III: RETURN (Temperature 7-1) ===
+
+    roadBack: {
+        tempRange: [7, 5],
+        name: 'The Road Back',
+        description: 'Journey home with complications',
+        authorNoteGuidance:
+            'Hero\'s Journey: THE ROAD BACK. The hero begins the journey back to the ordinary world. ' +
+            'Show complications, pursuits, or challenges on the return path. Not over yet.',
         vsAdjustment: { k: 5, tau: 0.12 },
         bonepokeStrictness: 'normal'
     },
-    risingLate: {
-        tempRange: [7, 9],
-        name: 'Rising Action (Late)',
-        description: 'Major complications, stakes increase',
+
+    resurrection: {
+        tempRange: [4, 2],
+        name: 'Resurrection',
+        description: 'Final test proves transformation',
         authorNoteGuidance:
-            'Story Phase: Late Rising Action. Stakes are high. Characters face ' +
-            'serious challenges. Introduce plot twists and revelations. ' +
-            'Push characters toward difficult choices. The climax approaches.',
-        vsAdjustment: { k: 6, tau: 0.10 },
-        bonepokeStrictness: 'strict'
+            'Hero\'s Journey: RESURRECTION. The hero faces one final test that proves their transformation. ' +
+            'They must demonstrate they\'ve truly changed and learned from the journey. Purification moment.',
+        vsAdjustment: { k: 5, tau: 0.10 },
+        bonepokeStrictness: 'normal'
     },
-    climaxEntry: {
-        tempRange: [10, 10],
-        name: 'Climax Entry',
-        description: 'Major conflict begins, point of no return',
+
+    returnElixir: {
+        tempRange: [1, 1],
+        name: 'Return with the Elixir',
+        description: 'Hero returns transformed with gift',
         authorNoteGuidance:
-            'Story Phase: CLIMAX. Maximum tension. The main conflict erupts. ' +
-            'Characters face their greatest challenge. Shocking developments occur. ' +
-            'Everything changes. No turning back.',
-        vsAdjustment: { k: 7, tau: 0.08 },
-        bonepokeStrictness: 'strict'
+            'Hero\'s Journey: RETURN WITH THE ELIXIR. The hero returns home transformed, bringing a gift, knowledge, or benefit to their community. ' +
+            'Show how the journey changed them and improved their world. Resolution and new balance.',
+        vsAdjustment: { k: 4, tau: 0.15 },
+        bonepokeStrictness: 'relaxed'
     },
-    peakClimax: {
-        tempRange: [11, 12],
-        name: 'Peak Climax',
-        description: 'Sustained maximum intensity',
-        authorNoteGuidance:
-            'Story Phase: PEAK CLIMAX. Consequences cascade. Every action matters. ' +
-            'Characters pushed to absolute limits. Life-changing decisions. ' +
-            'Outcome uncertain. Maximum emotional intensity.',
-        vsAdjustment: { k: 8, tau: 0.07 },
-        bonepokeStrictness: 'strict'
-    },
-    extremeClimax: {
-        tempRange: [13, 15],
-        name: 'Extreme Climax',
-        description: 'Catastrophic intensity (use sparingly)',
-        authorNoteGuidance:
-            'Story Phase: EXTREME CLIMAX. Reality bends. Cataclysmic events unfold. ' +
-            'Ultimate test. Death and destruction are real possibilities. ' +
-            'Nothing is safe. The world may never be the same.',
-        vsAdjustment: { k: 9, tau: 0.06 },
-        bonepokeStrictness: 'maximum'
-    },
+
+    // === SPECIAL MODES (Preserved from original NGO) ===
+
     overheat: {
         tempRange: null,
-        name: 'Overheat (Sustained Climax)',
-        description: 'Maintain peak intensity, begin resolution hints',
+        name: 'Overheat (Sustained Ordeal)',
+        description: 'Maintain peak intensity during extended climax',
         authorNoteGuidance:
-            'Story Phase: SUSTAINED CLIMAX. Maintain intensity but introduce ' +
-            'hints of resolution. Characters find inner strength. The tide may ' +
-            'be turning. Keep tension high but show possible ways forward.',
+            'Hero\'s Journey: SUSTAINED ORDEAL. Maintain intensity but introduce hints of resolution. ' +
+            'The hero finds inner strength. The tide may be turning. Keep tension high but show possible ways forward.',
         vsAdjustment: { k: 7, tau: 0.09 },
         bonepokeStrictness: 'strict'
     },
+
     cooldown: {
         tempRange: null,
-        name: 'Cooldown (Falling Action)',
-        description: 'Resolve conflicts, process events',
+        name: 'Cooldown (Road Back)',
+        description: 'Resolve conflicts and process events',
         authorNoteGuidance:
-            'Story Phase: Falling Action. The crisis passes. Characters process ' +
-            'what happened. Resolve plot threads. Allow emotional moments. ' +
-            'Rest and recovery are possible. Reflect on consequences.',
+            'Hero\'s Journey: FALLING ACTION. The crisis passes. The hero processes what happened. ' +
+            'Resolve plot threads. Allow emotional moments. Rest and recovery. Reflect on the journey.',
         vsAdjustment: { k: 4, tau: 0.14 },
         bonepokeStrictness: 'relaxed'
     }
 };
 
+// Backward compatibility alias
+const NGO_PHASES = HEROES_JOURNEY_PHASES;
+
 /**
- * Get current NGO phase based on temperature and mode
+ * Get current Hero's Journey phase based on temperature and mode
+ * Temperature-driven progression through the 12-stage adventure structure
  * @returns {Object} Phase definition
  */
 const getCurrentNGOPhase = () => {
-    if (!CONFIG.ngo.enabled || !state.ngo) return NGO_PHASES.introduction;
+    if (!CONFIG.ngo.enabled || !state.ngo) return HEROES_JOURNEY_PHASES.ordinaryWorld;
 
-    if (state.ngo.overheatMode) return NGO_PHASES.overheat;
-    if (state.ngo.cooldownMode) return NGO_PHASES.cooldown;
+    // Special modes override temperature-based selection
+    if (state.ngo.overheatMode) return HEROES_JOURNEY_PHASES.overheat;
+    if (state.ngo.cooldownMode) return HEROES_JOURNEY_PHASES.cooldown;
 
     const temp = state.ngo.temperature || 1;
 
-    if (temp <= 3) return NGO_PHASES.introduction;
-    if (temp <= 6) return NGO_PHASES.risingEarly;
-    if (temp <= 9) return NGO_PHASES.risingLate;
-    if (temp === 10) return NGO_PHASES.climaxEntry;
-    if (temp <= 12) return NGO_PHASES.peakClimax;
-    return NGO_PHASES.extremeClimax;
+    // ACT I: DEPARTURE (Temp 1-4)
+    if (temp === 1) {
+        // Start at Ordinary World, but check if we're returning from journey
+        if (state.ngo.lastTemperature > 5) {
+            return HEROES_JOURNEY_PHASES.returnElixir;  // Returning home after adventure
+        }
+        return HEROES_JOURNEY_PHASES.ordinaryWorld;  // Beginning of story
+    }
+    if (temp === 2) return HEROES_JOURNEY_PHASES.callToAdventure;
+    if (temp === 3) return HEROES_JOURNEY_PHASES.crossingThreshold;
+    if (temp === 4) {
+        // Check if descending (resurrection) or ascending (threshold/tests)
+        if (state.ngo.lastTemperature > 4) {
+            return HEROES_JOURNEY_PHASES.resurrection;  // Descending from climax
+        }
+        return HEROES_JOURNEY_PHASES.testsAlliesEnemies;  // Beginning tests
+    }
+
+    // ACT II: INITIATION (Temp 5-12)
+    if (temp >= 5 && temp <= 6) {
+        // Check if ascending (tests) or descending (road back)
+        if (state.ngo.lastTemperature >= 7) {
+            return HEROES_JOURNEY_PHASES.roadBack;  // Returning from ordeal
+        }
+        return HEROES_JOURNEY_PHASES.testsAlliesEnemies;
+    }
+    if (temp >= 7 && temp <= 8) {
+        // Check if ascending (approach) or descending (road back)
+        if (state.ngo.lastTemperature >= 9) {
+            return HEROES_JOURNEY_PHASES.roadBack;  // Returning from ordeal
+        }
+        return HEROES_JOURNEY_PHASES.approachCave;  // Approaching climax
+    }
+    if (temp >= 9 && temp <= 12) {
+        // THE ORDEAL - Central crisis
+        // Check if we just passed peak (reward phase)
+        if (temp === 10 && state.ngo.lastTemperature >= 11) {
+            return HEROES_JOURNEY_PHASES.reward;  // Post-ordeal reward
+        }
+        if (temp < state.ngo.lastTemperature && temp >= 8) {
+            return HEROES_JOURNEY_PHASES.reward;  // Descending from peak
+        }
+        return HEROES_JOURNEY_PHASES.ordeal;  // The climax
+    }
+
+    // Extreme temperatures (13-15) stay at ordeal
+    if (temp >= 13) return HEROES_JOURNEY_PHASES.ordeal;
+
+    // Default fallback
+    return HEROES_JOURNEY_PHASES.ordinaryWorld;
 };
 
 // #endregion
@@ -4541,6 +4664,9 @@ const NGOEngine = (() => {
             safeLog('💥 RANDOM EXPLOSION! Narrative pressure spike!', 'warn');
         }
 
+        // Track previous temperature for Hero's Journey phase progression
+        state.ngo.lastTemperature = state.ngo.temperature;
+
         state.ngo.temperature = Math.min(
             state.ngo.temperature + increase,
             CONFIG.ngo.trueMaxTemperature
@@ -4609,6 +4735,10 @@ const NGOEngine = (() => {
         state.ngo.cooldownTurnsLeft--;
 
         const oldTemp = state.ngo.temperature;
+
+        // Track previous temperature for Hero's Journey phase progression
+        state.ngo.lastTemperature = state.ngo.temperature;
+
         state.ngo.temperature = Math.max(
             CONFIG.ngo.cooldownMinTemperature,
             state.ngo.temperature - CONFIG.ngo.cooldownTempDecreaseRate
