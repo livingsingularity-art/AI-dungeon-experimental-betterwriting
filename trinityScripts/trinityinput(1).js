@@ -114,6 +114,10 @@ const modifier = (text) => {
     // Store processed input in state for context analysis
     state.lastProcessedInput = text;
 
+    // === AUTO-CARDS INTEGRATION ===
+    // Process input through Auto-Cards for automatic story card generation
+    text = AutoCards("input", text);
+
     return { text };
 };
 
