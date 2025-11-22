@@ -595,15 +595,17 @@ Instructions:
 - Change preset to: conservative, balanced, or aggressive
 - Save card and refresh story to apply changes`;
 
-        // addStoryCard signature: addStoryCard(keys, entry, type)
-        // keys can be a string with comma-separated values
-        const keys = `${CARD_KEY}, smart_replacement, config`;
-        const index = addStoryCard(keys, defaultConfig, 'Custom');
-        if (index === false) {
-            // Card already exists
-            return storyCards.find(c => c.keys && c.keys.includes(CARD_KEY));
-        }
-        return storyCards[index];
+        const card = buildCard(
+            'Configure Auto-Cards',  // User-friendly title
+            defaultConfig,           // Entry content
+            'Custom',                // Type
+            'smart_replacement_config', // Keys
+            'Configure Trinity smart replacement features and strictness',
+            50  // Insert after word banks but before PlayersAuthorsNote
+        );
+
+        safeLog('📝 Created Configure Auto-Cards story card', 'success');
+        return card;
     };
 
     /**
