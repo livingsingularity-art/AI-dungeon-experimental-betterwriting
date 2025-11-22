@@ -23,16 +23,34 @@ const modifier = (text) => {
     const voglerState = VoglerEngine.init();
 
     // Restore author's note if needed (same pattern as Trinity/NGO)
-    if (VOGLER_CONFIG.enabled && state.memory && state.voglerAuthorsNoteStorage) {
-        // Check if author's note was cleared or reset
-        if (!state.memory.authorsNote || !state.memory.authorsNote.includes(state.voglerAuthorsNoteStorage)) {
-            // Restore it
-            const existingNote = state.memory.authorsNote || '';
-            const separator = existingNote ? ' ' : '';
-            state.memory.authorsNote = existingNote + separator + state.voglerAuthorsNoteStorage;
+    if (VOGLER_CONFIG.enabled && state.memory) {
+        const voglerNote = state.voglerAuthorsNoteStorage || '';
+        const playersNote = state.playersAuthorsNoteStorage || '';
 
-            if (VOGLER_CONFIG.debugLogging) {
-                console.log(`🔄 Vogler author's note restored`);
+        // Check if author's note was cleared or reset
+        if (!state.memory.authorsNote ||
+            (!state.memory.authorsNote.includes(voglerNote) && voglerNote) ||
+            (!state.memory.authorsNote.includes(playersNote) && playersNote)) {
+
+            // Rebuild combined author's note
+            const noteParts = [];
+
+            // Add player's note first
+            if (playersNote && playersNote.trim() !== '') {
+                noteParts.push(playersNote.trim());
+            }
+
+            // Add Vogler system guidance
+            if (voglerNote && voglerNote.trim() !== '') {
+                noteParts.push(voglerNote.trim());
+            }
+
+            if (noteParts.length > 0) {
+                state.memory.authorsNote = noteParts.join(' | ');
+
+                if (VOGLER_CONFIG.debugLogging) {
+                    log(`🔄 Author's note restored (Player + Vogler)`);
+                }
             }
         }
     }

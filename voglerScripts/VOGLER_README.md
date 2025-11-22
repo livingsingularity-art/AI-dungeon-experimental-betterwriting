@@ -34,12 +34,48 @@ The Hero's Journey (or monomyth) is a universal story pattern found in myths, le
 
 ```
 voglerScripts/
-├── voglerSharedLibrary.js  - Core system, configuration, all 12 stages
-├── voglerContext.js        - Injects stage guidance into AI context
+├── voglerSharedLibrary.js  - Core system, word banks, synonyms, config cards
+├── voglerContext.js        - Injects stage guidance + player's note into AI context
 ├── voglerInput.js          - Processes player input and commands
-├── voglerOutput.js         - Detects beats, advances stages
+├── voglerOutput.js         - Detects beats, advances stages, restores notes
 └── VOGLER_README.md        - This file
 ```
+
+## 🆕 New Features (Latest Update)
+
+### Configuration Story Cards
+All non-automatic features now have configuration story cards for easy control:
+
+1. **Configure Vogler System** - Hero's Journey settings
+2. **Configure Auto-Cards** - NGO temperature/heat tension system
+3. **Configure Smart Synonyms** - Emotion/precision-based word replacement
+4. **Player's Author's Note** - Your custom writing instructions (preserved)
+5. **Configure Word Banks** - Stop words and quality filters
+
+All cards stay under 1500 characters for AI Dungeon compatibility.
+
+### Smart Synonym Replacement
+Enhanced synonym database with emotion & precision metadata:
+- **Emotion scores** (1-5): Emotional strength of replacement
+- **Precision scores** (1-5): Character clarity/specificity
+- **Context tags**: Genre-agnostic tags for smart matching
+- **Dialogue flags**: Special handling for dialogue verbs
+
+Example: "walked" → "trudged" (emotion: 4, precision: 4, tags: ['weary', 'slow'])
+
+### Word Banks & Stop Words
+Comprehensive lists for better prose quality:
+- **Conflict words**: Increase narrative tension (battle, danger, urgent)
+- **Calming words**: Decrease tension (peace, rest, content)
+- **Stop words**: Weak prose to avoid (very, really, suddenly)
+- **Filter words**: "Show don't tell" improvements
+
+### Player's Author's Note
+Separate storage for player's custom instructions:
+- Preserved across all turns
+- Combined with system guidance automatically
+- Highest priority in author's note
+- Won't be overwritten by Vogler system
 
 ---
 
@@ -123,21 +159,28 @@ autoAdvance: false      // Manual control only
 
 ## 🎮 Player Commands
 
-### `@stage <number>`
-Manually jump to a specific stage (1-12)
+### Vogler Commands
 
-**Examples:**
+**`@stage <number>`** - Manually jump to a specific stage (1-12)
 - `@stage 5` - Jump to "Crossing the First Threshold"
 - `@stage 8` - Jump to "The Ordeal" (climax)
 - `@stage 12` - Jump to "Return with the Elixir" (ending)
 
-### `@beat <description>`
-Mark a story beat as completed
-
-**Examples:**
+**`@beat <description>`** - Mark a story beat as completed
 - `@beat Introduced mentor character`
 - `@beat Hero refuses the call`
 - `@beat Crossed into the special world`
+
+### NGO Commands (if enabled)
+
+**`@temp <number>`** - Set temperature directly (1-15)
+- `@temp 5` - Moderate tension
+- `@temp 10` - High tension (overheat threshold)
+- `@temp 1` - Reset to minimum
+
+**`@arc <phase>`** - Force narrative phase
+- `@arc climax` - Jump to climax phase
+- `@arc resolution` - Jump to resolution
 
 **Note:** Commands are invisible - they're processed and removed from the story text.
 

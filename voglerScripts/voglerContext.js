@@ -29,26 +29,43 @@ const modifier = (text) => {
         try {
             const voglerGuidance = VoglerEngine.buildAuthorsNote();
 
+            // Get player's custom author's note (separate from system notes)
+            const playersNote = VoglerEngine.config.playersNote.getPlayersNote();
+
             // Inject into author's note system
             // This works alongside NGO or as standalone
             if (state.memory) {
-                // If there's existing author's note, append Vogler guidance
-                const existingNote = state.memory.authorsNote || '';
-                const separator = existingNote ? ' ' : '';
+                // Build combined author's note: Player's note + System guidance
+                const noteParts = [];
 
-                state.memory.authorsNote = existingNote + separator + voglerGuidance;
+                // Add player's custom note first (highest priority)
+                if (playersNote && playersNote.trim() !== '') {
+                    noteParts.push(playersNote.trim());
+                }
+
+                // Add Vogler system guidance
+                if (voglerGuidance && voglerGuidance.trim() !== '') {
+                    noteParts.push(voglerGuidance.trim());
+                }
+
+                // Combine with separator
+                state.memory.authorsNote = noteParts.join(' | ');
 
                 // Store for restoration in output script
                 state.voglerAuthorsNoteStorage = voglerGuidance;
+                state.playersAuthorsNoteStorage = playersNote;
 
                 if (VOGLER_CONFIG.debugLogging) {
-                    console.log(`🎬 Vogler guidance injected: ${currentStage.name}`);
-                    console.log(`   ${voglerGuidance.substring(0, 100)}...`);
+                    log(`🎬 Vogler guidance injected: ${currentStage.name}`);
+                    log(`   System: ${voglerGuidance.substring(0, 80)}...`);
+                    if (playersNote) {
+                        log(`   Player: ${playersNote.substring(0, 80)}...`);
+                    }
                 }
             }
         } catch (err) {
             if (VOGLER_CONFIG.debugLogging) {
-                console.error(`❌ Error injecting Vogler guidance: ${err.message}`);
+                log(`❌ Error injecting Vogler guidance: ${err.message}`);
             }
         }
     }

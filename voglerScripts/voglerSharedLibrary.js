@@ -648,6 +648,840 @@ const logVoglerStatus = () => {
 
 // #endregion
 
+// #region Word Banks - Genre Agnostic
+
+/**
+ * NGO-style conflict/calming word lists adapted for Hero's Journey stages
+ * These drive tension detection and are genre-agnostic
+ */
+const VOGLER_WORD_LISTS = {
+    // Words that increase narrative tension (conflict, action, danger)
+    conflict: [
+        // Violence & Combat
+        'attack', 'fight', 'battle', 'war', 'kill', 'murder', 'destroy',
+        'strike', 'punch', 'kick', 'stab', 'slash', 'shoot', 'blast',
+        'crush', 'smash', 'break', 'shatter', 'explode', 'detonate',
+        'wound', 'injure', 'hurt', 'harm', 'damage', 'wreck', 'ruin',
+
+        // Danger & Threat
+        'danger', 'threat', 'enemy', 'foe', 'villain', 'monster',
+        'demon', 'beast', 'creature', 'predator', 'hunter',
+        'trap', 'ambush', 'poison', 'curse', 'plague',
+        'death', 'dying', 'dead', 'corpse', 'doom',
+
+        // Urgency & Crisis
+        'run', 'flee', 'escape', 'chase', 'pursue', 'hurry', 'rush',
+        'urgent', 'emergency', 'crisis', 'disaster', 'catastrophe',
+        'collapse', 'crash', 'fall', 'fail', 'lose', 'lost',
+        'now', 'quickly', 'immediately', 'fast',
+
+        // Negative Emotion
+        'rage', 'fury', 'anger', 'hate', 'fear', 'terror', 'panic',
+        'scream', 'shout', 'yell', 'cry', 'sob', 'wail', 'shriek',
+        'despair', 'agony', 'torment', 'suffer', 'pain', 'anguish',
+        'dread', 'horror', 'nightmare', 'trauma', 'shock',
+
+        // Confrontation
+        'confront', 'challenge', 'oppose', 'resist', 'defy', 'betray',
+        'deceive', 'lie', 'steal', 'rob', 'threaten', 'demand',
+        'argue', 'conflict', 'dispute', 'clash',
+        'accuse', 'blame', 'condemn', 'judge', 'punish',
+
+        // High Stakes
+        'blood', 'fire', 'explosion', 'destruction', 'chaos',
+        'invasion', 'siege', 'conquest', 'revolution',
+        'sacrifice', 'fate', 'destiny', 'prophecy',
+        'ultimate', 'final', 'last', 'end', 'apocalypse'
+    ],
+
+    // Words that decrease tension (calm, resolution, rest)
+    calming: [
+        // Peace & Tranquility
+        'peace', 'calm', 'quiet', 'still', 'serene', 'tranquil',
+        'gentle', 'soft', 'warm', 'safe', 'secure', 'protected',
+        'harmony', 'balance', 'stable', 'steady', 'settled',
+
+        // Rest & Relaxation
+        'rest', 'sleep', 'relax', 'breathe', 'sigh', 'exhale',
+        'settle', 'sit', 'lie', 'lean', 'recline', 'pause',
+        'wait', 'linger', 'stay', 'remain', 'stop',
+        'dream', 'slumber', 'doze', 'nap',
+
+        // Positive Emotion
+        'happy', 'joy', 'love', 'care', 'comfort', 'soothe',
+        'smile', 'laugh', 'giggle', 'chuckle', 'grin',
+        'hug', 'embrace', 'hold', 'cuddle', 'caress',
+        'content', 'satisfied', 'pleased', 'delighted',
+
+        // Resolution & Healing
+        'resolve', 'solve', 'fix', 'heal', 'recover', 'mend',
+        'forgive', 'apologize', 'reconcile', 'understand', 'agree',
+        'accept', 'approve', 'allow', 'permit', 'grant',
+        'complete', 'finish', 'accomplish', 'achieve', 'succeed',
+
+        // Connection & Support
+        'friend', 'ally', 'companion', 'partner', 'family', 'home',
+        'trust', 'believe', 'hope', 'faith', 'together', 'united',
+        'bond', 'connection', 'relationship', 'friendship',
+        'support', 'help', 'aid', 'assist', 'guide',
+
+        // Mundane & Everyday
+        'eat', 'drink', 'cook', 'clean', 'walk', 'talk', 'think',
+        'observe', 'notice', 'examine', 'study', 'learn', 'remember',
+        'write', 'read', 'listen', 'watch', 'see', 'look',
+        'ordinary', 'normal', 'usual', 'routine', 'daily'
+    ]
+};
+
+/**
+ * Stop words - common words to avoid for quality writing
+ * These create weak prose and should be avoided where possible
+ */
+const STOP_WORDS = [
+    // Weak adverbs
+    'very', 'really', 'quite', 'just', 'rather', 'somewhat',
+    'fairly', 'pretty', 'basically', 'actually', 'literally',
+    'totally', 'absolutely', 'completely', 'entirely',
+
+    // Overused transitions
+    'suddenly', 'meanwhile', 'however', 'therefore', 'thus',
+    'nevertheless', 'nonetheless', 'moreover', 'furthermore',
+
+    // Telling phrases (show don't tell)
+    'realized', 'noticed', 'seemed', 'appeared', 'felt like',
+    'thought to herself', 'thought to himself',
+    'could see', 'could hear', 'could feel',
+
+    // Weak verbs
+    'was', 'were', 'is', 'are', 'been', 'being',
+    'have', 'has', 'had', 'do', 'does', 'did',
+
+    // Filter words
+    'saw', 'heard', 'felt', 'thought', 'wondered', 'seemed',
+    'noticed', 'watched', 'looked', 'realized',
+
+    // Crutch phrases
+    'a bit', 'a little', 'kind of', 'sort of', 'in a way',
+    'for some reason', 'somehow', 'somewhat',
+
+    // Redundant modifiers
+    'still remained', 'completely destroyed', 'final end',
+    'advance planning', 'past history', 'close proximity'
+];
+
+// #endregion
+
+// #region Enhanced Synonym Database with Emotion & Precision Metadata
+
+/**
+ * Comprehensive synonym database with emotion and precision scoring
+ * Designed to work with Bonepoke's multidimensional analysis
+ *
+ * Structure:
+ * - word: synonym replacement
+ * - emotion: 1-5 (Emotional Strength score)
+ * - precision: 1-5 (Character Clarity score)
+ * - tags: context/genre tags for smart matching
+ * - dialogue: true for dialogue-specific verbs
+ */
+const ENHANCED_SYNONYM_MAP = {
+    // === HIGH-FREQUENCY VERBS ===
+
+    'walked': {
+        synonyms: [
+            { word: 'strolled', emotion: 2, precision: 3, tags: ['casual', 'slow', 'relaxed'] },
+            { word: 'marched', emotion: 4, precision: 4, tags: ['purposeful', 'strong', 'determined'] },
+            { word: 'trudged', emotion: 4, precision: 4, tags: ['weary', 'slow', 'difficult'] },
+            { word: 'strode', emotion: 3, precision: 4, tags: ['confident', 'fast', 'purposeful'] },
+            { word: 'shuffled', emotion: 3, precision: 4, tags: ['tired', 'slow', 'reluctant'] },
+            { word: 'sauntered', emotion: 3, precision: 4, tags: ['casual', 'relaxed', 'leisurely'] },
+            { word: 'paced', emotion: 3, precision: 3, tags: ['nervous', 'repetitive', 'anxious'] },
+            { word: 'wandered', emotion: 2, precision: 3, tags: ['aimless', 'exploring', 'lost'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'said': {
+        synonyms: [
+            { word: 'murmured', emotion: 3, precision: 4, tags: ['quiet', 'intimate', 'soft'], dialogue: true },
+            { word: 'whispered', emotion: 4, precision: 4, tags: ['quiet', 'secretive', 'intimate'], dialogue: true },
+            { word: 'shouted', emotion: 5, precision: 4, tags: ['loud', 'intense', 'angry'], dialogue: true },
+            { word: 'declared', emotion: 3, precision: 4, tags: ['formal', 'firm', 'official'], dialogue: true },
+            { word: 'muttered', emotion: 3, precision: 4, tags: ['quiet', 'annoyed', 'grumbling'], dialogue: true },
+            { word: 'replied', emotion: 2, precision: 3, tags: ['neutral', 'responsive', 'answer'], dialogue: true },
+            { word: 'stated', emotion: 2, precision: 3, tags: ['neutral', 'formal', 'factual'], dialogue: true },
+            { word: 'exclaimed', emotion: 4, precision: 3, tags: ['surprised', 'sudden', 'emphatic'], dialogue: true },
+            { word: 'announced', emotion: 3, precision: 3, tags: ['public', 'formal', 'important'], dialogue: true }
+        ],
+        baseEmotion: 1, basePrecision: 2, dialogueVerb: true
+    },
+
+    'looked': {
+        synonyms: [
+            { word: 'glanced', emotion: 2, precision: 4, tags: ['quick', 'brief', 'casual'] },
+            { word: 'stared', emotion: 3, precision: 4, tags: ['intense', 'prolonged', 'fixed'] },
+            { word: 'gazed', emotion: 3, precision: 4, tags: ['soft', 'prolonged', 'admiring'] },
+            { word: 'peered', emotion: 3, precision: 4, tags: ['careful', 'scrutinizing', 'close'] },
+            { word: 'glared', emotion: 4, precision: 4, tags: ['angry', 'intense', 'hostile'] },
+            { word: 'observed', emotion: 2, precision: 3, tags: ['neutral', 'watchful', 'analytical'] },
+            { word: 'scanned', emotion: 2, precision: 4, tags: ['quick', 'searching', 'comprehensive'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'went': {
+        synonyms: [
+            { word: 'traveled', emotion: 2, precision: 3, tags: ['journey', 'distance', 'movement'] },
+            { word: 'proceeded', emotion: 2, precision: 3, tags: ['formal', 'continued', 'forward'] },
+            { word: 'moved', emotion: 1, precision: 2, tags: ['neutral', 'basic', 'general'] },
+            { word: 'ventured', emotion: 3, precision: 4, tags: ['brave', 'risky', 'uncertain'] },
+            { word: 'headed', emotion: 2, precision: 3, tags: ['directional', 'purposeful', 'toward'] },
+            { word: 'journeyed', emotion: 3, precision: 4, tags: ['long', 'quest', 'epic'] }
+        ],
+        baseEmotion: 1, basePrecision: 1
+    },
+
+    'turned': {
+        synonyms: [
+            { word: 'spun', emotion: 3, precision: 4, tags: ['fast', 'complete', 'sudden'] },
+            { word: 'pivoted', emotion: 3, precision: 4, tags: ['quick', 'precise', 'athletic'] },
+            { word: 'rotated', emotion: 2, precision: 3, tags: ['mechanical', 'slow', 'deliberate'] },
+            { word: 'wheeled', emotion: 3, precision: 4, tags: ['sudden', 'complete', 'dramatic'] },
+            { word: 'twisted', emotion: 3, precision: 4, tags: ['forceful', 'strained', 'difficult'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    // === EMOTION VERBS ===
+
+    'smiled': {
+        synonyms: [
+            { word: 'grinned', emotion: 4, precision: 4, tags: ['wide', 'happy', 'pleased'] },
+            { word: 'beamed', emotion: 4, precision: 4, tags: ['bright', 'joyful', 'radiant'] },
+            { word: 'smirked', emotion: 4, precision: 4, tags: ['smug', 'knowing', 'sly'] }
+        ],
+        baseEmotion: 2, basePrecision: 3
+    },
+
+    'laughed': {
+        synonyms: [
+            { word: 'chuckled', emotion: 3, precision: 4, tags: ['soft', 'amused', 'gentle'] },
+            { word: 'giggled', emotion: 4, precision: 4, tags: ['light', 'playful', 'nervous'] },
+            { word: 'guffawed', emotion: 5, precision: 4, tags: ['loud', 'hearty', 'boisterous'] },
+            { word: 'cackled', emotion: 5, precision: 4, tags: ['wild', 'manic', 'evil'] },
+            { word: 'snickered', emotion: 3, precision: 4, tags: ['quiet', 'sly', 'mocking'] }
+        ],
+        baseEmotion: 3, basePrecision: 3
+    },
+
+    // === MOVEMENT & ACTION ===
+
+    'moved': {
+        synonyms: [
+            { word: 'shifted', emotion: 2, precision: 3, tags: ['slight', 'adjustment', 'subtle'] },
+            { word: 'stirred', emotion: 2, precision: 3, tags: ['awakening', 'slow', 'beginning'] },
+            { word: 'relocated', emotion: 2, precision: 4, tags: ['complete', 'distant', 'permanent'] },
+            { word: 'transitioned', emotion: 2, precision: 4, tags: ['smooth', 'gradual', 'change'] },
+            { word: 'glided', emotion: 3, precision: 4, tags: ['smooth', 'effortless', 'graceful'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'took': {
+        synonyms: [
+            { word: 'grabbed', emotion: 3, precision: 3, tags: ['quick', 'forceful', 'urgent'] },
+            { word: 'seized', emotion: 4, precision: 4, tags: ['aggressive', 'sudden', 'forceful'] },
+            { word: 'grasped', emotion: 3, precision: 3, tags: ['firm', 'deliberate', 'controlled'] },
+            { word: 'snatched', emotion: 4, precision: 4, tags: ['quick', 'aggressive', 'theft'] },
+            { word: 'clutched', emotion: 4, precision: 4, tags: ['desperate', 'tight', 'fearful'] },
+            { word: 'claimed', emotion: 3, precision: 4, tags: ['ownership', 'assertive', 'rightful'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'gave': {
+        synonyms: [
+            { word: 'offered', emotion: 3, precision: 3, tags: ['polite', 'willing', 'generous'] },
+            { word: 'handed', emotion: 2, precision: 3, tags: ['direct', 'simple', 'physical'] },
+            { word: 'presented', emotion: 3, precision: 4, tags: ['formal', 'ceremonial', 'official'] },
+            { word: 'provided', emotion: 2, precision: 3, tags: ['neutral', 'supplied', 'furnished'] },
+            { word: 'extended', emotion: 3, precision: 4, tags: ['reaching', 'offering', 'generous'] },
+            { word: 'bestowed', emotion: 4, precision: 5, tags: ['formal', 'generous', 'honor'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    // === PERCEPTION VERBS ===
+
+    'saw': {
+        synonyms: [
+            { word: 'spotted', emotion: 2, precision: 4, tags: ['noticed', 'found', 'discovered'] },
+            { word: 'noticed', emotion: 2, precision: 3, tags: ['aware', 'observed', 'detected'] },
+            { word: 'observed', emotion: 2, precision: 3, tags: ['watched', 'studied', 'careful'] },
+            { word: 'glimpsed', emotion: 3, precision: 4, tags: ['brief', 'partial', 'fleeting'] },
+            { word: 'beheld', emotion: 4, precision: 5, tags: ['formal', 'literary', 'wonder'] },
+            { word: 'witnessed', emotion: 3, precision: 4, tags: ['event', 'important', 'testimony'] },
+            { word: 'perceived', emotion: 3, precision: 4, tags: ['understood', 'sensed', 'intuited'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'heard': {
+        synonyms: [
+            { word: 'detected', emotion: 2, precision: 4, tags: ['aware', 'noticed', 'sensed'] },
+            { word: 'caught', emotion: 2, precision: 3, tags: ['brief', 'partial', 'fleeting'] },
+            { word: 'perceived', emotion: 3, precision: 4, tags: ['sensed', 'aware', 'intuited'] },
+            { word: 'discerned', emotion: 3, precision: 5, tags: ['distinguished', 'careful', 'analytical'] },
+            { word: 'overheard', emotion: 3, precision: 4, tags: ['accidental', 'secret', 'eavesdrop'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'felt': {
+        synonyms: [
+            { word: 'sensed', emotion: 3, precision: 4, tags: ['intuitive', 'aware', 'perceptive'] },
+            { word: 'experienced', emotion: 2, precision: 3, tags: ['neutral', 'direct', 'underwent'] },
+            { word: 'perceived', emotion: 3, precision: 4, tags: ['intellectual', 'aware', 'understood'] },
+            { word: 'detected', emotion: 2, precision: 4, tags: ['subtle', 'noticed', 'discovered'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    // === ADJECTIVES ===
+
+    'big': {
+        synonyms: [
+            { word: 'large', emotion: 1, precision: 2, tags: ['neutral', 'size', 'general'] },
+            { word: 'sizeable', emotion: 2, precision: 3, tags: ['notable', 'measured', 'considerable'] },
+            { word: 'substantial', emotion: 2, precision: 4, tags: ['important', 'considerable', 'significant'] },
+            { word: 'massive', emotion: 3, precision: 4, tags: ['huge', 'impressive', 'overwhelming'] },
+            { word: 'immense', emotion: 3, precision: 4, tags: ['vast', 'enormous', 'impressive'] }
+        ],
+        baseEmotion: 1, basePrecision: 1
+    },
+
+    'small': {
+        synonyms: [
+            { word: 'little', emotion: 1, precision: 2, tags: ['neutral', 'diminutive', 'tiny'] },
+            { word: 'compact', emotion: 2, precision: 3, tags: ['efficient', 'dense', 'concentrated'] },
+            { word: 'diminutive', emotion: 3, precision: 4, tags: ['tiny', 'delicate', 'petite'] },
+            { word: 'miniscule', emotion: 3, precision: 4, tags: ['extremely-small', 'tiny', 'minute'] }
+        ],
+        baseEmotion: 1, basePrecision: 1
+    },
+
+    // === EMOTION ADJECTIVES ===
+
+    'happy': {
+        synonyms: [
+            { word: 'cheerful', emotion: 4, precision: 4, tags: ['bright', 'positive', 'upbeat'] },
+            { word: 'joyful', emotion: 5, precision: 4, tags: ['intense', 'celebratory', 'ecstatic'] },
+            { word: 'content', emotion: 3, precision: 3, tags: ['peaceful', 'satisfied', 'calm'] },
+            { word: 'elated', emotion: 5, precision: 4, tags: ['euphoric', 'ecstatic', 'thrilled'] },
+            { word: 'delighted', emotion: 4, precision: 4, tags: ['pleased', 'charmed', 'gratified'] }
+        ],
+        baseEmotion: 3, basePrecision: 2
+    },
+
+    'sad': {
+        synonyms: [
+            { word: 'sorrowful', emotion: 4, precision: 4, tags: ['grief', 'deep', 'mournful'] },
+            { word: 'melancholy', emotion: 4, precision: 5, tags: ['pensive', 'wistful', 'reflective'] },
+            { word: 'dejected', emotion: 4, precision: 4, tags: ['downcast', 'defeated', 'discouraged'] },
+            { word: 'despondent', emotion: 5, precision: 4, tags: ['hopeless', 'despair', 'depressed'] },
+            { word: 'mournful', emotion: 4, precision: 4, tags: ['grieving', 'lamenting', 'bereaved'] }
+        ],
+        baseEmotion: 3, basePrecision: 2
+    },
+
+    'angry': {
+        synonyms: [
+            { word: 'furious', emotion: 5, precision: 4, tags: ['intense', 'rage', 'violent'] },
+            { word: 'irate', emotion: 4, precision: 4, tags: ['formal', 'indignant', 'offended'] },
+            { word: 'incensed', emotion: 5, precision: 4, tags: ['outraged', 'inflamed', 'provoked'] },
+            { word: 'wrathful', emotion: 5, precision: 5, tags: ['righteous', 'vengeful', 'punitive'] },
+            { word: 'livid', emotion: 5, precision: 4, tags: ['extreme', 'visible', 'intense'] }
+        ],
+        baseEmotion: 3, basePrecision: 2
+    },
+
+    'scared': {
+        synonyms: [
+            { word: 'frightened', emotion: 4, precision: 3, tags: ['alarmed', 'startled', 'fearful'] },
+            { word: 'terrified', emotion: 5, precision: 4, tags: ['extreme', 'panicked', 'horrified'] },
+            { word: 'apprehensive', emotion: 3, precision: 4, tags: ['worried', 'uneasy', 'anxious'] },
+            { word: 'petrified', emotion: 5, precision: 4, tags: ['paralyzed', 'frozen', 'extreme'] },
+            { word: 'alarmed', emotion: 4, precision: 3, tags: ['sudden', 'worried', 'concerned'] }
+        ],
+        baseEmotion: 3, basePrecision: 2
+    }
+};
+
+// #endregion
+
+// #region Configuration Story Cards for NGO & Vogler Features
+
+/**
+ * Configuration cards for user-facing control of all non-automatic features
+ * All cards kept under 1500 characters for AI Dungeon compatibility
+ */
+
+/**
+ * Vogler Configuration Card - Control Hero's Journey system
+ */
+const VoglerConfigCard = (() => {
+    const CARD_KEY = 'vogler_config';
+
+    const createDefaultCard = () => {
+        const defaultConfig = `VOGLER HERO'S JOURNEY CONFIGURATION
+Control the 12-stage narrative arc system
+
+SYSTEM:
+enabled: true
+debugLogging: false
+logStageChanges: true
+
+AUTO-ADVANCEMENT:
+autoAdvance: true
+turnsPerStage: 8
+minTurnsPerStage: 4
+maxTurnsPerStage: 15
+requireKeyBeats: true
+flexiblePacing: true
+
+INTEGRATION:
+integrateWithBonepoke: true
+integrateWithVS: true
+
+COMMANDS:
+stageCommand: @stage
+beatCommand: @beat
+
+Usage:
+@stage 5 - Jump to stage 5 (Crossing Threshold)
+@beat mentor appeared - Mark story beat complete
+
+Stages: 1=Ordinary World, 2=Call, 3=Refusal, 4=Mentor, 5=Threshold, 6=Tests, 7=Approach, 8=Ordeal, 9=Reward, 10=Road Back, 11=Resurrection, 12=Return
+
+Save and refresh to apply changes.`;
+
+        return buildCard(
+            'Configure Vogler System',
+            defaultConfig.length > 1500 ? defaultConfig.substring(0, 1497) + '...' : defaultConfig,
+            'Custom',
+            CARD_KEY,
+            'Control Hero\'s Journey 12-stage narrative arc',
+            50
+        );
+    };
+
+    const ensureCard = () => {
+        let card = storyCards.find(c => c.keys && c.keys.includes(CARD_KEY));
+        if (!card) {
+            card = createDefaultCard();
+            if (VOGLER_CONFIG.debugLogging) {
+                log('📖 Created Vogler Configuration story card');
+            }
+        }
+        return card;
+    };
+
+    const parseConfig = (entry) => {
+        if (!entry) return null;
+        const config = {};
+        const lines = entry.split('\n');
+
+        lines.forEach(line => {
+            const match = line.match(/^(\w+):\s*(.+)$/);
+            if (match) {
+                const [, key, value] = match;
+                const trimmedValue = value.trim().toLowerCase();
+
+                if (trimmedValue === 'true' || trimmedValue === 'false') {
+                    config[key] = trimmedValue === 'true';
+                } else if (!isNaN(trimmedValue)) {
+                    config[key] = parseFloat(trimmedValue);
+                } else {
+                    config[key] = value.trim();
+                }
+            }
+        });
+
+        return config;
+    };
+
+    const applyConfig = (userConfig) => {
+        if (!userConfig) return;
+
+        Object.keys(userConfig).forEach(key => {
+            if (VOGLER_CONFIG.hasOwnProperty(key)) {
+                VOGLER_CONFIG[key] = userConfig[key];
+            }
+        });
+
+        if (VOGLER_CONFIG.debugLogging) {
+            log('✅ Applied Vogler config from story card');
+        }
+    };
+
+    const loadAndApply = () => {
+        const card = ensureCard();
+        if (!card) return;
+
+        const userConfig = parseConfig(card.entry);
+        applyConfig(userConfig);
+    };
+
+    return { ensureCard, parseConfig, applyConfig, loadAndApply };
+})();
+
+/**
+ * NGO Temperature/Heat Configuration Card
+ */
+const NGOConfigCard = (() => {
+    const CARD_KEY = 'ngo_config';
+
+    const createDefaultCard = () => {
+        const defaultConfig = `NGO NARRATIVE TENSION SYSTEM
+Dynamic temperature & heat for pacing
+
+HEAT (Short-term tension):
+heatDecayRate: 1
+heatIncreasePerConflict: 1
+playerHeatMultiplier: 2
+maxHeat: 50
+
+TEMPERATURE (Long-term arc):
+initialTemperature: 1
+minTemperature: 1
+maxTemperature: 12
+trueMaxTemperature: 15
+
+INCREASE TRIGGERS:
+heatThresholdForTempIncrease: 10
+tempIncreaseChance: 15
+tempIncreaseOnConsecutiveConflicts: 3
+
+DECREASE TRIGGERS:
+calmingTurnsForDecrease: 5
+tempDecreaseAmount: 1
+
+OVERHEAT (Sustained climax):
+overheatTriggerTemp: 10
+overheatDuration: 4
+overheatHeatReduction: 10
+
+COOLDOWN (Falling action):
+cooldownDuration: 5
+cooldownTempDecreaseRate: 2
+cooldownMinTemperature: 3
+
+COMMANDS:
+@temp 5 - Set temperature
+@arc climax - Force narrative phase
+
+Save and refresh to apply.`;
+
+        return buildCard(
+            'Configure Auto-Cards',
+            defaultConfig.length > 1500 ? defaultConfig.substring(0, 1497) + '...' : defaultConfig,
+            'Custom',
+            CARD_KEY,
+            'NGO temperature/heat tension system',
+            51
+        );
+    };
+
+    const ensureCard = () => {
+        let card = storyCards.find(c => c.keys && c.keys.includes(CARD_KEY));
+        if (!card) {
+            card = createDefaultCard();
+            if (VOGLER_CONFIG.debugLogging) {
+                log('🌡️ Created NGO Configuration story card');
+            }
+        }
+        return card;
+    };
+
+    return { ensureCard };
+})();
+
+/**
+ * Smart Synonym Replacement Configuration Card
+ */
+const SynonymConfigCard = (() => {
+    const CARD_KEY = 'synonym_config';
+
+    const createDefaultCard = () => {
+        const defaultConfig = `SMART SYNONYM REPLACEMENT
+Bonepoke-driven word enhancement
+
+SYSTEM:
+enabled: true
+debugLogging: false
+
+THRESHOLDS (Replace when score below):
+Emotional Strength: 2
+Character Clarity: 2
+Story Flow: 2
+Dialogue Weight: 2
+Word Variety: 1
+
+VALIDATION:
+preventQualityDegradation: true
+preventNewContradictions: true
+preventFatigueIncrease: true
+requireImprovement: false
+minScoreImprovement: 0.0
+
+ADVANCED:
+enableContextMatching: true
+enableAdaptiveLearning: true
+contextRadius: 50
+tagMatchBonus: 2
+
+STRICTNESS PRESETS:
+conservative - Only replace weak words, require improvement
+balanced - Normal (recommended)
+aggressive - Replace more often, lenient
+
+Usage: Set scores 1-5. Lower = more replacements
+Save and refresh to apply.`;
+
+        return buildCard(
+            'Configure Smart Synonyms',
+            defaultConfig.length > 1500 ? defaultConfig.substring(0, 1497) + '...' : defaultConfig,
+            'Custom',
+            CARD_KEY,
+            'Smart synonym replacement with emotion/precision scoring',
+            52
+        );
+    };
+
+    const ensureCard = () => {
+        let card = storyCards.find(c => c.keys && c.keys.includes(CARD_KEY));
+        if (!card) {
+            card = createDefaultCard();
+            if (VOGLER_CONFIG.debugLogging) {
+                log('📝 Created Synonym Configuration story card');
+            }
+        }
+        return card;
+    };
+
+    return { ensureCard };
+})();
+
+/**
+ * Player's Author's Note Configuration Card
+ * Separates player notes from system-generated notes
+ */
+const PlayersAuthorsNoteCard = (() => {
+    const CARD_KEY = 'players_note';
+
+    const createDefaultCard = () => {
+        const defaultConfig = `PLAYER'S AUTHOR'S NOTE
+Your personal writing instructions for the AI
+
+Add your custom writing guidance here. This will be preserved and combined with system guidance (Vogler stages, NGO settings, etc.)
+
+Example instructions:
+- Write in third person past tense
+- Focus on dialogue and character interaction
+- Avoid graphic violence
+- Keep tone light and adventurous
+- Emphasize humor
+
+This note persists across turns. Edit freely.
+System notes appear separately and don't override this.`;
+
+        return buildCard(
+            'Player\'s Author\'s Note',
+            defaultConfig.length > 1500 ? defaultConfig.substring(0, 1497) + '...' : defaultConfig,
+            'Custom',
+            CARD_KEY,
+            'Your personal author\'s note - preserved across turns',
+            1 // High priority
+        );
+    };
+
+    const ensureCard = () => {
+        let card = storyCards.find(c => c.keys && c.keys.includes(CARD_KEY));
+        if (!card) {
+            card = createDefaultCard();
+            if (VOGLER_CONFIG.debugLogging) {
+                log('✍️ Created Player\'s Author\'s Note story card');
+            }
+        }
+        return card;
+    };
+
+    const getPlayersNote = () => {
+        const card = ensureCard();
+        if (!card || !card.entry) return '';
+
+        // Extract only the custom part (after the template header)
+        const lines = card.entry.split('\n');
+        const startIndex = lines.findIndex(line => line.includes('Example instructions:'));
+
+        if (startIndex === -1 || startIndex >= lines.length - 1) {
+            // User hasn't customized yet, return empty
+            return '';
+        }
+
+        // Get everything after the examples
+        const customStart = lines.findIndex((line, idx) =>
+            idx > startIndex && line.trim() !== '' && !line.includes('-') && !line.includes('Example')
+        );
+
+        if (customStart === -1) return '';
+
+        return lines.slice(customStart).join('\n').trim();
+    };
+
+    return { ensureCard, getPlayersNote };
+})();
+
+/**
+ * Word Banks Configuration Card
+ */
+const WordBanksCard = (() => {
+    const CARD_KEY = 'word_banks';
+
+    const createDefaultCard = () => {
+        const defaultConfig = `WORD BANKS - STOP WORDS & FILTERS
+Words to avoid or replace for better prose
+
+WEAK ADVERBS (avoid):
+very, really, quite, just, rather, somewhat, fairly, pretty, basically, actually, literally, totally, absolutely
+
+OVERUSED TRANSITIONS (avoid):
+suddenly, meanwhile, however, therefore, nevertheless, moreover, furthermore
+
+FILTER WORDS (show don't tell):
+realized, noticed, seemed, appeared, felt like, thought to, could see, could hear, could feel
+
+TELLING PHRASES (avoid):
+a bit, a little, kind of, sort of, in a way, for some reason, somehow
+
+REDUNDANT PAIRS (avoid):
+still remained, completely destroyed, final end, advance planning, past history, close proximity
+
+USAGE: Edit this card to customize your word filters. System will try to avoid or replace these words when possible.
+
+Save and refresh to apply.`;
+
+        return buildCard(
+            'Configure Word Banks',
+            defaultConfig.length > 1500 ? defaultConfig.substring(0, 1497) + '...' : defaultConfig,
+            'Custom',
+            CARD_KEY,
+            'Stop words and quality filters for better prose',
+            53
+        );
+    };
+
+    const ensureCard = () => {
+        let card = storyCards.find(c => c.keys && c.keys.includes(CARD_KEY));
+        if (!card) {
+            card = createDefaultCard();
+            if (VOGLER_CONFIG.debugLogging) {
+                log('🚫 Created Word Banks Configuration story card');
+            }
+        }
+        return card;
+    };
+
+    return { ensureCard };
+})();
+
+// #endregion
+
+// #region Story Card Management
+
+/**
+ * Build or update a story card (modern API, not worldinfo)
+ * Ensures value stays under 1500 characters
+ */
+const buildCard = (title = "", entry = "", type = "Custom",
+    keys = "", description = "", insertionIndex = 0) => {
+
+    // Validate inputs
+    if (![type, title, keys, entry, description].every(arg => typeof arg === "string")) {
+        throw new Error("buildCard requires string parameters");
+    }
+    if (!Number.isInteger(insertionIndex)) {
+        throw new Error("insertionIndex must be an integer");
+    }
+
+    // Enforce 1500 character limit on entry
+    if (entry.length > 1500) {
+        entry = entry.substring(0, 1497) + '...';
+        if (VOGLER_CONFIG.debugLogging) {
+            log(`⚠️ Card entry truncated to 1500 chars: ${title}`);
+        }
+    }
+
+    // Clamp insertion index
+    insertionIndex = Math.min(Math.max(0, insertionIndex), storyCards.length);
+
+    // Create card with temporary title
+    addStoryCard("%TEMP%");
+
+    // Find and configure the new card
+    for (const [index, card] of storyCards.entries()) {
+        if (card.title !== "%TEMP%") continue;
+
+        card.type = type;
+        card.title = title;
+        card.keys = keys;
+        card.entry = entry;
+        card.description = description;
+
+        // Move to correct position if needed
+        if (index !== insertionIndex) {
+            storyCards.splice(index, 1);
+            storyCards.splice(insertionIndex, 0, card);
+        }
+
+        return Object.seal(card);
+    }
+
+    throw new Error("Failed to create story card");
+};
+
+// #endregion
+
+// #region Initialization
+
+/**
+ * Initialize all Vogler systems and create configuration cards
+ */
+const initVoglerSystems = () => {
+    if (state.voglerSystemsInit) return;
+
+    // Create all configuration story cards
+    VoglerConfigCard.ensureCard();
+    NGOConfigCard.ensureCard();
+    SynonymConfigCard.ensureCard();
+    PlayersAuthorsNoteCard.ensureCard();
+    WordBanksCard.ensureCard();
+
+    // Load configuration from cards
+    VoglerConfigCard.loadAndApply();
+
+    state.voglerSystemsInit = true;
+
+    if (VOGLER_CONFIG.debugLogging) {
+        log('✅ Vogler systems initialized with all configuration cards');
+    }
+};
+
+// Initialize on load
+initVoglerSystems();
+
+// #endregion
+
 // Export for use in other scripts
 const VoglerEngine = {
     // State
@@ -673,7 +1507,21 @@ const VoglerEngine = {
 
     // Analytics
     getProgress: getVoglerProgress,
-    logStatus: logVoglerStatus
+    logStatus: logVoglerStatus,
+
+    // Configuration Cards
+    config: {
+        vogler: VoglerConfigCard,
+        ngo: NGOConfigCard,
+        synonyms: SynonymConfigCard,
+        playersNote: PlayersAuthorsNoteCard,
+        wordBanks: WordBanksCard
+    },
+
+    // Word Lists & Databases
+    wordLists: VOGLER_WORD_LISTS,
+    stopWords: STOP_WORDS,
+    synonyms: ENHANCED_SYNONYM_MAP
 };
 
 // Make available globally
