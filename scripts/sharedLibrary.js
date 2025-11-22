@@ -3008,6 +3008,891 @@ const ENHANCED_SYNONYM_MAP = {
             { word: 'swift glance', emotion: 2, precision: 4, tags: ['quick', 'fast'] }
         ],
         baseEmotion: 1, basePrecision: 2
+    },
+
+    'long sigh': {
+        synonyms: [
+            { word: 'deep exhale', emotion: 3, precision: 4, tags: ['weary', 'emotional'] },
+            { word: 'heavy breath', emotion: 3, precision: 3, tags: ['tired', 'burdened'] },
+            { word: 'weary sigh', emotion: 4, precision: 4, tags: ['exhausted', 'troubled'] },
+            { word: 'prolonged exhale', emotion: 2, precision: 4, tags: ['slow', 'deliberate'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'nervous laugh': {
+        synonyms: [
+            { word: 'awkward chuckle', emotion: 3, precision: 4, tags: ['uncomfortable', 'tense'] },
+            { word: 'uneasy giggle', emotion: 3, precision: 4, tags: ['anxious', 'nervous'] },
+            { word: 'tense laugh', emotion: 3, precision: 3, tags: ['stressed', 'uncomfortable'] },
+            { word: 'forced chuckle', emotion: 3, precision: 4, tags: ['artificial', 'strained'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'emerald eyes': {
+        synonyms: [
+            { word: 'green eyes', emotion: 2, precision: 3, tags: ['color', 'basic'] },
+            { word: 'jade gaze', emotion: 3, precision: 4, tags: ['poetic', 'precious'] },
+            { word: 'verdant eyes', emotion: 3, precision: 4, tags: ['literary', 'lush'] },
+            { word: 'forest-green eyes', emotion: 3, precision: 4, tags: ['natural', 'deep'] }
+        ],
+        baseEmotion: 2, basePrecision: 3
+    },
+
+    'combat boots': {
+        synonyms: [
+            { word: 'military footwear', emotion: 2, precision: 4, tags: ['formal', 'military'] },
+            { word: 'tactical boots', emotion: 2, precision: 4, tags: ['professional', 'military'] },
+            { word: 'heavy boots', emotion: 2, precision: 3, tags: ['weight', 'sturdy'] },
+            { word: 'steel-toed boots', emotion: 2, precision: 5, tags: ['specific', 'protective'] }
+        ],
+        baseEmotion: 1, basePrecision: 3
+    },
+
+    // === ADDITIONAL VERBS ===
+
+    'stood': {
+        synonyms: [
+            { word: 'rose', emotion: 2, precision: 3, tags: ['upward', 'movement'] },
+            { word: 'remained upright', emotion: 1, precision: 3, tags: ['static', 'posture'] },
+            { word: 'positioned herself', emotion: 2, precision: 3, tags: ['feminine', 'deliberate'] },
+            { word: 'positioned himself', emotion: 2, precision: 3, tags: ['masculine', 'deliberate'] },
+            { word: 'erected himself', emotion: 2, precision: 4, tags: ['masculine', 'formal'] },
+            { word: 'erected herself', emotion: 2, precision: 4, tags: ['feminine', 'formal'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'sat': {
+        synonyms: [
+            { word: 'settled', emotion: 2, precision: 3, tags: ['comfortable', 'relaxed'] },
+            { word: 'perched', emotion: 3, precision: 4, tags: ['delicate', 'balanced'] },
+            { word: 'rested', emotion: 2, precision: 2, tags: ['relaxed', 'calm'] },
+            { word: 'seated herself', emotion: 2, precision: 3, tags: ['feminine', 'deliberate'] },
+            { word: 'seated himself', emotion: 2, precision: 3, tags: ['masculine', 'deliberate'] },
+            { word: 'reclined', emotion: 2, precision: 4, tags: ['relaxed', 'leaning'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'died': {
+        synonyms: [
+            { word: 'perished', emotion: 4, precision: 4, tags: ['formal', 'tragic'] },
+            { word: 'expired', emotion: 3, precision: 4, tags: ['clinical', 'formal'] },
+            { word: 'succumbed', emotion: 4, precision: 4, tags: ['defeated', 'yielded'] },
+            { word: 'passed away', emotion: 3, precision: 3, tags: ['euphemistic', 'gentle'] }
+        ],
+        baseEmotion: 4, basePrecision: 3
+    },
+
+    'lived': {
+        synonyms: [
+            { word: 'existed', emotion: 2, precision: 3, tags: ['philosophical', 'being'] },
+            { word: 'resided', emotion: 2, precision: 4, tags: ['location', 'dwelling'] },
+            { word: 'dwelled', emotion: 2, precision: 4, tags: ['literary', 'habitation'] },
+            { word: 'inhabited', emotion: 2, precision: 4, tags: ['occupying', 'residing'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'grew': {
+        synonyms: [
+            { word: 'expanded', emotion: 2, precision: 3, tags: ['size', 'increase'] },
+            { word: 'increased', emotion: 2, precision: 3, tags: ['quantity', 'growth'] },
+            { word: 'developed', emotion: 2, precision: 4, tags: ['maturation', 'evolution'] },
+            { word: 'flourished', emotion: 4, precision: 4, tags: ['thriving', 'prosperity'] },
+            { word: 'burgeoned', emotion: 3, precision: 5, tags: ['rapid-growth', 'blooming'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'changed': {
+        synonyms: [
+            { word: 'altered', emotion: 2, precision: 3, tags: ['modification', 'shift'] },
+            { word: 'modified', emotion: 2, precision: 3, tags: ['adjustment', 'technical'] },
+            { word: 'transformed', emotion: 3, precision: 4, tags: ['dramatic', 'complete'] },
+            { word: 'converted', emotion: 2, precision: 4, tags: ['conversion', 'shift'] },
+            { word: 'metamorphosed', emotion: 4, precision: 5, tags: ['dramatic', 'magical'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'helped': {
+        synonyms: [
+            { word: 'assisted', emotion: 2, precision: 3, tags: ['supportive', 'cooperative'] },
+            { word: 'aided', emotion: 2, precision: 3, tags: ['helpful', 'supportive'] },
+            { word: 'supported', emotion: 3, precision: 3, tags: ['caring', 'backing'] },
+            { word: 'facilitated', emotion: 2, precision: 4, tags: ['enabling', 'formal'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'hurt': {
+        synonyms: [
+            { word: 'injured', emotion: 3, precision: 4, tags: ['physical', 'damage'] },
+            { word: 'harmed', emotion: 3, precision: 3, tags: ['damage', 'pain'] },
+            { word: 'wounded', emotion: 4, precision: 4, tags: ['serious', 'bleeding'] },
+            { word: 'damaged', emotion: 2, precision: 3, tags: ['impaired', 'broken'] }
+        ],
+        baseEmotion: 3, basePrecision: 2
+    },
+
+    'broke': {
+        synonyms: [
+            { word: 'shattered', emotion: 4, precision: 4, tags: ['violent', 'fragments'] },
+            { word: 'fractured', emotion: 3, precision: 4, tags: ['cracked', 'split'] },
+            { word: 'splintered', emotion: 4, precision: 4, tags: ['wood', 'sharp'] },
+            { word: 'ruptured', emotion: 4, precision: 4, tags: ['violent', 'burst'] }
+        ],
+        baseEmotion: 3, basePrecision: 3
+    },
+
+    'built': {
+        synonyms: [
+            { word: 'constructed', emotion: 2, precision: 4, tags: ['methodical', 'created'] },
+            { word: 'erected', emotion: 2, precision: 4, tags: ['upward', 'raised'] },
+            { word: 'assembled', emotion: 2, precision: 4, tags: ['parts', 'joined'] },
+            { word: 'fabricated', emotion: 2, precision: 4, tags: ['manufactured', 'crafted'] }
+        ],
+        baseEmotion: 1, basePrecision: 3
+    },
+
+    'wrote': {
+        synonyms: [
+            { word: 'penned', emotion: 2, precision: 4, tags: ['literary', 'authored'] },
+            { word: 'composed', emotion: 2, precision: 4, tags: ['creative', 'crafted'] },
+            { word: 'authored', emotion: 2, precision: 4, tags: ['creator', 'writing'] },
+            { word: 'inscribed', emotion: 3, precision: 4, tags: ['formal', 'carved'] },
+            { word: 'transcribed', emotion: 2, precision: 4, tags: ['copying', 'recording'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'read': {
+        synonyms: [
+            { word: 'perused', emotion: 2, precision: 4, tags: ['careful', 'thorough'] },
+            { word: 'scanned', emotion: 2, precision: 3, tags: ['quick', 'surface'] },
+            { word: 'examined', emotion: 2, precision: 4, tags: ['careful', 'analytical'] },
+            { word: 'studied', emotion: 3, precision: 4, tags: ['intense', 'learning'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'get': {
+        synonyms: [
+            { word: 'obtain', emotion: 2, precision: 3, tags: ['acquire', 'formal'] },
+            { word: 'receive', emotion: 2, precision: 3, tags: ['passive', 'given'] },
+            { word: 'acquire', emotion: 2, precision: 4, tags: ['gain', 'possession'] },
+            { word: 'gain', emotion: 2, precision: 3, tags: ['earn', 'increase'] },
+            { word: 'secure', emotion: 3, precision: 4, tags: ['effort', 'protect'] },
+            { word: 'procure', emotion: 2, precision: 4, tags: ['formal', 'obtain'] }
+        ],
+        baseEmotion: 1, basePrecision: 1
+    },
+
+    // === ADDITIONAL ADJECTIVES ===
+
+    'awful': {
+        synonyms: [
+            { word: 'terrible', emotion: 4, precision: 3, tags: ['bad', 'severe'] },
+            { word: 'dreadful', emotion: 4, precision: 4, tags: ['frightening', 'horrible'] },
+            { word: 'abysmal', emotion: 5, precision: 4, tags: ['extremely-bad', 'depth'] },
+            { word: 'atrocious', emotion: 5, precision: 4, tags: ['shocking', 'appalling'] },
+            { word: 'deplorable', emotion: 4, precision: 4, tags: ['shameful', 'lamentable'] }
+        ],
+        baseEmotion: 3, basePrecision: 2
+    },
+
+    'excellent': {
+        synonyms: [
+            { word: 'superb', emotion: 4, precision: 4, tags: ['outstanding', 'superior'] },
+            { word: 'outstanding', emotion: 4, precision: 4, tags: ['exceptional', 'remarkable'] },
+            { word: 'exemplary', emotion: 4, precision: 5, tags: ['model', 'ideal'] },
+            { word: 'exceptional', emotion: 4, precision: 4, tags: ['rare', 'superior'] },
+            { word: 'superlative', emotion: 4, precision: 5, tags: ['highest', 'supreme'] }
+        ],
+        baseEmotion: 3, basePrecision: 3
+    },
+
+    'gorgeous': {
+        synonyms: [
+            { word: 'stunning', emotion: 5, precision: 4, tags: ['breathtaking', 'striking'] },
+            { word: 'magnificent', emotion: 4, precision: 4, tags: ['grand', 'impressive'] },
+            { word: 'splendid', emotion: 4, precision: 4, tags: ['excellent', 'impressive'] }
+        ],
+        baseEmotion: 4, basePrecision: 3
+    },
+
+    'huge': {
+        synonyms: [
+            { word: 'enormous', emotion: 3, precision: 4, tags: ['very-large', 'immense'] },
+            { word: 'massive', emotion: 3, precision: 4, tags: ['heavy', 'solid'] },
+            { word: 'colossal', emotion: 4, precision: 5, tags: ['gigantic', 'monumental'] },
+            { word: 'immense', emotion: 3, precision: 4, tags: ['vast', 'enormous'] },
+            { word: 'prodigious', emotion: 4, precision: 5, tags: ['extraordinary', 'impressive'] },
+            { word: 'gargantuan', emotion: 4, precision: 5, tags: ['mythical', 'enormous'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'tiny': {
+        synonyms: [
+            { word: 'minuscule', emotion: 3, precision: 5, tags: ['extremely-small', 'minute'] },
+            { word: 'infinitesimal', emotion: 3, precision: 5, tags: ['mathematical', 'negligible'] },
+            { word: 'microscopic', emotion: 3, precision: 5, tags: ['scientific', 'invisible'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'rare': {
+        synonyms: [
+            { word: 'uncommon', emotion: 2, precision: 3, tags: ['infrequent', 'unusual'] },
+            { word: 'scarce', emotion: 3, precision: 4, tags: ['limited', 'shortage'] },
+            { word: 'infrequent', emotion: 2, precision: 4, tags: ['seldom', 'occasional'] },
+            { word: 'anomalous', emotion: 3, precision: 5, tags: ['abnormal', 'irregular'] }
+        ],
+        baseEmotion: 2, basePrecision: 3
+    },
+
+    'common': {
+        synonyms: [
+            { word: 'usual', emotion: 1, precision: 2, tags: ['normal', 'typical'] },
+            { word: 'ordinary', emotion: 1, precision: 3, tags: ['average', 'standard'] },
+            { word: 'prevalent', emotion: 2, precision: 4, tags: ['widespread', 'dominant'] },
+            { word: 'ubiquitous', emotion: 2, precision: 5, tags: ['everywhere', 'pervasive'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'easy': {
+        synonyms: [
+            { word: 'simple', emotion: 1, precision: 3, tags: ['straightforward', 'uncomplicated'] },
+            { word: 'effortless', emotion: 2, precision: 4, tags: ['smooth', 'natural'] },
+            { word: 'uncomplicated', emotion: 2, precision: 4, tags: ['clear', 'basic'] },
+            { word: 'facile', emotion: 2, precision: 5, tags: ['superficial', 'quick'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'crazy': {
+        synonyms: [
+            { word: 'insane', emotion: 4, precision: 3, tags: ['mental', 'irrational'] },
+            { word: 'mad', emotion: 4, precision: 3, tags: ['angry', 'irrational'] },
+            { word: 'deranged', emotion: 5, precision: 4, tags: ['disturbed', 'unhinged'] },
+            { word: 'demented', emotion: 5, precision: 4, tags: ['mentally-ill', 'insane'] },
+            { word: 'lunatic', emotion: 4, precision: 4, tags: ['wild', 'moon-struck'] }
+        ],
+        baseEmotion: 3, basePrecision: 2
+    },
+
+    'cool': {
+        synonyms: [
+            { word: 'chilly', emotion: 2, precision: 3, tags: ['cold', 'temperature'] },
+            { word: 'refreshing', emotion: 3, precision: 3, tags: ['pleasant', 'reviving'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'burning': {
+        synonyms: [
+            { word: 'scorching', emotion: 4, precision: 4, tags: ['intense-heat', 'blistering'] },
+            { word: 'searing', emotion: 5, precision: 4, tags: ['painful', 'burning'] },
+            { word: 'blazing', emotion: 4, precision: 4, tags: ['flames', 'bright'] }
+        ],
+        baseEmotion: 3, basePrecision: 3
+    },
+
+    'soaked': {
+        synonyms: [
+            { word: 'drenched', emotion: 3, precision: 4, tags: ['wet', 'saturated'] },
+            { word: 'saturated', emotion: 3, precision: 4, tags: ['completely-wet', 'full'] },
+            { word: 'waterlogged', emotion: 3, precision: 5, tags: ['heavy', 'sodden'] }
+        ],
+        baseEmotion: 2, basePrecision: 3
+    },
+
+    'deafening': {
+        synonyms: [
+            { word: 'thunderous', emotion: 4, precision: 4, tags: ['loud', 'booming'] },
+            { word: 'earsplitting', emotion: 5, precision: 5, tags: ['painful', 'piercing'] }
+        ],
+        baseEmotion: 4, basePrecision: 4
+    },
+
+    'dull': {
+        synonyms: [
+            { word: 'blunt', emotion: 2, precision: 4, tags: ['not-sharp', 'rounded'] },
+            { word: 'obtuse', emotion: 2, precision: 5, tags: ['angle', 'slow'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    // === COLOR ADJECTIVES ===
+
+    'red': {
+        synonyms: [
+            { word: 'crimson', emotion: 3, precision: 4, tags: ['deep-red', 'blood'] },
+            { word: 'scarlet', emotion: 3, precision: 4, tags: ['bright-red', 'vivid'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'blue': {
+        synonyms: [
+            { word: 'azure', emotion: 3, precision: 4, tags: ['sky-blue', 'bright'] },
+            { word: 'cobalt', emotion: 3, precision: 4, tags: ['deep-blue', 'rich'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'green': {
+        synonyms: [
+            { word: 'emerald', emotion: 3, precision: 4, tags: ['bright-green', 'jewel'] },
+            { word: 'jade', emotion: 3, precision: 4, tags: ['stone', 'precious'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'white': {
+        synonyms: [
+            { word: 'pale', emotion: 2, precision: 3, tags: ['light', 'washed-out'] },
+            { word: 'ivory', emotion: 3, precision: 4, tags: ['cream', 'warm-white'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'black': {
+        synonyms: [
+            { word: 'ebony', emotion: 3, precision: 4, tags: ['deep-black', 'wood'] },
+            { word: 'obsidian', emotion: 3, precision: 4, tags: ['stone', 'glossy'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'gray': {
+        synonyms: [
+            { word: 'grey', emotion: 1, precision: 2, tags: ['spelling-variant', 'neutral'] },
+            { word: 'silver', emotion: 2, precision: 3, tags: ['metallic', 'shiny'] },
+            { word: 'ashen', emotion: 3, precision: 4, tags: ['pale', 'death'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    // === BODY PARTS AND PHYSICAL ===
+
+    'eyes': {
+        synonyms: [
+            { word: 'gaze', emotion: 2, precision: 4, tags: ['look', 'stare'] },
+            { word: 'stare', emotion: 3, precision: 4, tags: ['intense', 'fixed'] },
+            { word: 'glance', emotion: 2, precision: 4, tags: ['quick', 'brief'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'fingers': {
+        synonyms: [
+            { word: 'digits', emotion: 1, precision: 5, tags: ['anatomical', 'technical'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'face': {
+        synonyms: [
+            { word: 'visage', emotion: 2, precision: 4, tags: ['literary', 'formal'] },
+            { word: 'features', emotion: 2, precision: 3, tags: ['characteristics', 'appearance'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'hair': {
+        synonyms: [
+            { word: 'locks', emotion: 3, precision: 4, tags: ['poetic', 'romantic'] },
+            { word: 'tresses', emotion: 3, precision: 4, tags: ['poetic', 'feminine'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'lips': {
+        synonyms: [
+            { word: 'mouth', emotion: 1, precision: 2, tags: ['basic', 'anatomical'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'noggin': {
+        synonyms: [
+            { word: 'head', emotion: 1, precision: 2, tags: ['anatomical', 'proper'] }
+        ],
+        baseEmotion: 1, basePrecision: 1
+    },
+
+    'ticker': {
+        synonyms: [
+            { word: 'heart', emotion: 2, precision: 3, tags: ['anatomical', 'proper'] }
+        ],
+        baseEmotion: 1, basePrecision: 1
+    },
+
+    'breath': {
+        synonyms: [
+            { word: 'exhale', emotion: 2, precision: 4, tags: ['outward', 'breathing'] },
+            { word: 'inhale', emotion: 2, precision: 4, tags: ['inward', 'breathing'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    // === COMMON NOUNS ===
+
+    'stuff': {
+        synonyms: [
+            { word: 'things', emotion: 1, precision: 2, tags: ['general', 'vague'] },
+            { word: 'items', emotion: 1, precision: 3, tags: ['objects', 'possessions'] },
+            { word: 'possessions', emotion: 2, precision: 4, tags: ['belongings', 'property'] },
+            { word: 'belongings', emotion: 2, precision: 4, tags: ['personal', 'property'] }
+        ],
+        baseEmotion: 1, basePrecision: 1
+    },
+
+    'way': {
+        synonyms: [
+            { word: 'manner', emotion: 2, precision: 4, tags: ['style', 'method'] },
+            { word: 'method', emotion: 2, precision: 4, tags: ['process', 'approach'] },
+            { word: 'approach', emotion: 2, precision: 4, tags: ['strategy', 'technique'] },
+            { word: 'mode', emotion: 2, precision: 5, tags: ['formal', 'manner'] }
+        ],
+        baseEmotion: 1, basePrecision: 1
+    },
+
+    'room': {
+        synonyms: [
+            { word: 'chamber', emotion: 2, precision: 4, tags: ['formal', 'enclosed'] },
+            { word: 'quarters', emotion: 2, precision: 4, tags: ['living-space', 'military'] },
+            { word: 'compartment', emotion: 2, precision: 4, tags: ['section', 'divided'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'door': {
+        synonyms: [
+            { word: 'doorway', emotion: 1, precision: 3, tags: ['opening', 'passage'] },
+            { word: 'portal', emotion: 3, precision: 4, tags: ['magical', 'grand'] },
+            { word: 'threshold', emotion: 3, precision: 4, tags: ['boundary', 'entrance'] },
+            { word: 'entrance', emotion: 2, precision: 3, tags: ['entry', 'access'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'wall': {
+        synonyms: [
+            { word: 'partition', emotion: 2, precision: 4, tags: ['divider', 'separator'] },
+            { word: 'barrier', emotion: 2, precision: 3, tags: ['obstacle', 'block'] },
+            { word: 'barricade', emotion: 3, precision: 4, tags: ['defensive', 'protective'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'window': {
+        synonyms: [
+            { word: 'pane', emotion: 1, precision: 4, tags: ['glass', 'section'] },
+            { word: 'aperture', emotion: 2, precision: 5, tags: ['opening', 'technical'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'fire': {
+        synonyms: [
+            { word: 'flame', emotion: 3, precision: 4, tags: ['burning', 'light'] },
+            { word: 'blaze', emotion: 4, precision: 4, tags: ['intense', 'bright'] },
+            { word: 'conflagration', emotion: 5, precision: 5, tags: ['massive', 'destructive'] },
+            { word: 'inferno', emotion: 5, precision: 5, tags: ['hell', 'intense'] }
+        ],
+        baseEmotion: 3, basePrecision: 2
+    },
+
+    'sound': {
+        synonyms: [
+            { word: 'noise', emotion: 2, precision: 2, tags: ['audible', 'disturbance'] },
+            { word: 'resonance', emotion: 3, precision: 4, tags: ['echoing', 'vibration'] },
+            { word: 'reverberation', emotion: 3, precision: 5, tags: ['echo', 'reflection'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'smell': {
+        synonyms: [
+            { word: 'scent', emotion: 2, precision: 3, tags: ['pleasant', 'subtle'] },
+            { word: 'odor', emotion: 2, precision: 3, tags: ['neutral', 'detectable'] },
+            { word: 'aroma', emotion: 3, precision: 4, tags: ['pleasant', 'food'] },
+            { word: 'fragrance', emotion: 3, precision: 4, tags: ['pleasant', 'perfume'] },
+            { word: 'redolence', emotion: 3, precision: 5, tags: ['literary', 'evocative'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'noise': {
+        synonyms: [
+            { word: 'sound', emotion: 1, precision: 2, tags: ['neutral', 'audible'] },
+            { word: 'racket', emotion: 3, precision: 4, tags: ['loud', 'annoying'] },
+            { word: 'clamor', emotion: 4, precision: 4, tags: ['loud', 'insistent'] },
+            { word: 'din', emotion: 4, precision: 4, tags: ['loud', 'continuous'] },
+            { word: 'cacophony', emotion: 4, precision: 5, tags: ['discordant', 'chaotic'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'street': {
+        synonyms: [
+            { word: 'road', emotion: 1, precision: 2, tags: ['pathway', 'basic'] },
+            { word: 'avenue', emotion: 2, precision: 3, tags: ['wide', 'urban'] },
+            { word: 'thoroughfare', emotion: 2, precision: 4, tags: ['main', 'passage'] },
+            { word: 'boulevard', emotion: 3, precision: 4, tags: ['wide', 'tree-lined'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'house': {
+        synonyms: [
+            { word: 'home', emotion: 3, precision: 2, tags: ['warm', 'personal'] },
+            { word: 'dwelling', emotion: 2, precision: 4, tags: ['residence', 'formal'] },
+            { word: 'residence', emotion: 2, precision: 4, tags: ['formal', 'official'] },
+            { word: 'abode', emotion: 2, precision: 4, tags: ['literary', 'dwelling'] },
+            { word: 'domicile', emotion: 2, precision: 5, tags: ['legal', 'formal'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'building': {
+        synonyms: [
+            { word: 'structure', emotion: 1, precision: 3, tags: ['construction', 'physical'] },
+            { word: 'edifice', emotion: 2, precision: 5, tags: ['grand', 'impressive'] },
+            { word: 'construction', emotion: 1, precision: 3, tags: ['built', 'assembled'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'city': {
+        synonyms: [
+            { word: 'town', emotion: 1, precision: 2, tags: ['smaller', 'settlement'] },
+            { word: 'metropolis', emotion: 3, precision: 4, tags: ['large', 'important'] },
+            { word: 'municipality', emotion: 2, precision: 5, tags: ['administrative', 'formal'] },
+            { word: 'urban center', emotion: 2, precision: 4, tags: ['populated', 'developed'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'world': {
+        synonyms: [
+            { word: 'globe', emotion: 2, precision: 4, tags: ['spherical', 'planet'] },
+            { word: 'planet', emotion: 2, precision: 4, tags: ['celestial', 'earth'] },
+            { word: 'earth', emotion: 2, precision: 3, tags: ['home', 'ground'] },
+            { word: 'sphere', emotion: 2, precision: 4, tags: ['round', 'domain'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'person': {
+        synonyms: [
+            { word: 'individual', emotion: 2, precision: 4, tags: ['single', 'unique'] },
+            { word: 'human', emotion: 1, precision: 3, tags: ['species', 'being'] },
+            { word: 'being', emotion: 2, precision: 3, tags: ['entity', 'existence'] },
+            { word: 'soul', emotion: 3, precision: 4, tags: ['spiritual', 'essence'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'man': {
+        synonyms: [
+            { word: 'guy', emotion: 1, precision: 2, tags: ['informal', 'casual'] },
+            { word: 'fellow', emotion: 2, precision: 3, tags: ['friendly', 'companion'] },
+            { word: 'gentleman', emotion: 3, precision: 4, tags: ['polite', 'formal'] },
+            { word: 'male', emotion: 1, precision: 3, tags: ['gender', 'technical'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'woman': {
+        synonyms: [
+            { word: 'lady', emotion: 2, precision: 3, tags: ['polite', 'refined'] },
+            { word: 'gal', emotion: 1, precision: 2, tags: ['informal', 'casual'] },
+            { word: 'female', emotion: 1, precision: 3, tags: ['gender', 'technical'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'child': {
+        synonyms: [
+            { word: 'kid', emotion: 2, precision: 2, tags: ['informal', 'young'] },
+            { word: 'youngster', emotion: 2, precision: 3, tags: ['youthful', 'energetic'] },
+            { word: 'youth', emotion: 2, precision: 3, tags: ['adolescent', 'young'] },
+            { word: 'juvenile', emotion: 2, precision: 4, tags: ['legal', 'formal'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'friend': {
+        synonyms: [
+            { word: 'companion', emotion: 3, precision: 4, tags: ['close', 'together'] },
+            { word: 'pal', emotion: 2, precision: 2, tags: ['informal', 'buddy'] },
+            { word: 'buddy', emotion: 2, precision: 2, tags: ['casual', 'friend'] },
+            { word: 'comrade', emotion: 3, precision: 4, tags: ['military', 'ally'] },
+            { word: 'confidant', emotion: 3, precision: 5, tags: ['trusted', 'intimate'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'enemy': {
+        synonyms: [
+            { word: 'foe', emotion: 3, precision: 4, tags: ['adversary', 'literary'] },
+            { word: 'adversary', emotion: 3, precision: 4, tags: ['opponent', 'rival'] },
+            { word: 'antagonist', emotion: 3, precision: 5, tags: ['opposing', 'conflict'] },
+            { word: 'nemesis', emotion: 4, precision: 5, tags: ['arch-enemy', 'fate'] }
+        ],
+        baseEmotion: 3, basePrecision: 2
+    },
+
+    'word': {
+        synonyms: [
+            { word: 'term', emotion: 1, precision: 3, tags: ['technical', 'specific'] },
+            { word: 'expression', emotion: 2, precision: 3, tags: ['phrase', 'saying'] },
+            { word: 'utterance', emotion: 2, precision: 4, tags: ['spoken', 'vocalized'] },
+            { word: 'vocable', emotion: 2, precision: 5, tags: ['linguistic', 'technical'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'question': {
+        synonyms: [
+            { word: 'query', emotion: 2, precision: 4, tags: ['inquiry', 'formal'] },
+            { word: 'inquiry', emotion: 2, precision: 4, tags: ['investigation', 'asking'] },
+            { word: 'interrogation', emotion: 3, precision: 4, tags: ['intense', 'formal'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'answer': {
+        synonyms: [
+            { word: 'response', emotion: 2, precision: 3, tags: ['reply', 'reaction'] },
+            { word: 'reply', emotion: 2, precision: 3, tags: ['answer', 'respond'] },
+            { word: 'retort', emotion: 3, precision: 4, tags: ['sharp', 'quick'] },
+            { word: 'rejoinder', emotion: 3, precision: 5, tags: ['witty', 'quick-reply'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'problem': {
+        synonyms: [
+            { word: 'issue', emotion: 2, precision: 3, tags: ['matter', 'concern'] },
+            { word: 'difficulty', emotion: 3, precision: 3, tags: ['challenge', 'hard'] },
+            { word: 'dilemma', emotion: 3, precision: 4, tags: ['choice', 'difficult'] },
+            { word: 'predicament', emotion: 3, precision: 4, tags: ['difficult', 'trapped'] },
+            { word: 'quandary', emotion: 3, precision: 5, tags: ['confusion', 'perplexed'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'idea': {
+        synonyms: [
+            { word: 'thought', emotion: 2, precision: 2, tags: ['mental', 'concept'] },
+            { word: 'notion', emotion: 2, precision: 3, tags: ['belief', 'impression'] },
+            { word: 'concept', emotion: 2, precision: 4, tags: ['abstract', 'theory'] },
+            { word: 'conception', emotion: 2, precision: 4, tags: ['understanding', 'mental'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'feeling': {
+        synonyms: [
+            { word: 'emotion', emotion: 3, precision: 4, tags: ['psychological', 'affective'] },
+            { word: 'sentiment', emotion: 3, precision: 4, tags: ['opinion', 'emotional'] },
+            { word: 'sensation', emotion: 2, precision: 3, tags: ['physical', 'perceived'] },
+            { word: 'affect', emotion: 2, precision: 5, tags: ['psychological', 'technical'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'pleasure': {
+        synonyms: [
+            { word: 'delight', emotion: 4, precision: 4, tags: ['joy', 'happiness'] },
+            { word: 'enjoyment', emotion: 3, precision: 3, tags: ['fun', 'satisfaction'] },
+            { word: 'gratification', emotion: 3, precision: 4, tags: ['satisfaction', 'fulfillment'] },
+            { word: 'satisfaction', emotion: 3, precision: 3, tags: ['contentment', 'pleased'] }
+        ],
+        baseEmotion: 3, basePrecision: 2
+    },
+
+    'hope': {
+        synonyms: [
+            { word: 'optimism', emotion: 3, precision: 4, tags: ['positive', 'expectation'] },
+            { word: 'expectation', emotion: 2, precision: 3, tags: ['anticipation', 'waiting'] },
+            { word: 'aspiration', emotion: 3, precision: 4, tags: ['ambition', 'desire'] }
+        ],
+        baseEmotion: 3, basePrecision: 2
+    },
+
+    'love': {
+        synonyms: [
+            { word: 'affection', emotion: 4, precision: 4, tags: ['caring', 'fondness'] },
+            { word: 'adoration', emotion: 5, precision: 4, tags: ['worship', 'devotion'] },
+            { word: 'devotion', emotion: 4, precision: 4, tags: ['loyalty', 'dedication'] },
+            { word: 'fondness', emotion: 3, precision: 3, tags: ['liking', 'affection'] }
+        ],
+        baseEmotion: 4, basePrecision: 2
+    },
+
+    'hate': {
+        synonyms: [
+            { word: 'loathing', emotion: 5, precision: 4, tags: ['disgust', 'intense'] },
+            { word: 'abhorrence', emotion: 5, precision: 5, tags: ['repulsion', 'horror'] },
+            { word: 'detestation', emotion: 5, precision: 5, tags: ['intense-hatred', 'aversion'] },
+            { word: 'animosity', emotion: 4, precision: 4, tags: ['hostility', 'enmity'] }
+        ],
+        baseEmotion: 4, basePrecision: 2
+    },
+
+    'truth': {
+        synonyms: [
+            { word: 'fact', emotion: 2, precision: 3, tags: ['reality', 'proven'] },
+            { word: 'reality', emotion: 2, precision: 3, tags: ['actual', 'existence'] },
+            { word: 'veracity', emotion: 2, precision: 5, tags: ['truthfulness', 'accuracy'] },
+            { word: 'verity', emotion: 2, precision: 5, tags: ['truth', 'principle'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'lie': {
+        synonyms: [
+            { word: 'falsehood', emotion: 3, precision: 4, tags: ['untruth', 'deception'] },
+            { word: 'untruth', emotion: 3, precision: 3, tags: ['false', 'dishonest'] },
+            { word: 'fabrication', emotion: 3, precision: 4, tags: ['invention', 'made-up'] },
+            { word: 'prevarication', emotion: 3, precision: 5, tags: ['evasion', 'formal'] }
+        ],
+        baseEmotion: 3, basePrecision: 2
+    },
+
+    'power': {
+        synonyms: [
+            { word: 'strength', emotion: 3, precision: 3, tags: ['force', 'might'] },
+            { word: 'force', emotion: 3, precision: 3, tags: ['power', 'energy'] },
+            { word: 'might', emotion: 3, precision: 4, tags: ['strength', 'power'] },
+            { word: 'potency', emotion: 3, precision: 4, tags: ['effectiveness', 'strength'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'weakness': {
+        synonyms: [
+            { word: 'frailty', emotion: 3, precision: 4, tags: ['fragility', 'delicate'] },
+            { word: 'feebleness', emotion: 3, precision: 4, tags: ['weak', 'inadequate'] },
+            { word: 'vulnerability', emotion: 3, precision: 4, tags: ['exposed', 'susceptible'] },
+            { word: 'infirmity', emotion: 3, precision: 5, tags: ['illness', 'disability'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'victory': {
+        synonyms: [
+            { word: 'triumph', emotion: 5, precision: 4, tags: ['success', 'glorious'] },
+            { word: 'conquest', emotion: 4, precision: 4, tags: ['domination', 'winning'] },
+            { word: 'success', emotion: 3, precision: 3, tags: ['achievement', 'accomplishment'] }
+        ],
+        baseEmotion: 4, basePrecision: 3
+    },
+
+    'defeat': {
+        synonyms: [
+            { word: 'loss', emotion: 3, precision: 2, tags: ['failure', 'beaten'] },
+            { word: 'failure', emotion: 3, precision: 3, tags: ['unsuccessful', 'lost'] },
+            { word: 'rout', emotion: 4, precision: 5, tags: ['crushing-defeat', 'scattered'] }
+        ],
+        baseEmotion: 3, basePrecision: 2
+    },
+
+    'war': {
+        synonyms: [
+            { word: 'conflict', emotion: 3, precision: 3, tags: ['fighting', 'struggle'] },
+            { word: 'battle', emotion: 4, precision: 3, tags: ['combat', 'fight'] },
+            { word: 'combat', emotion: 4, precision: 4, tags: ['fighting', 'military'] },
+            { word: 'warfare', emotion: 4, precision: 4, tags: ['military', 'organized'] },
+            { word: 'hostilities', emotion: 3, precision: 5, tags: ['formal', 'conflict'] }
+        ],
+        baseEmotion: 4, basePrecision: 3
+    },
+
+    'peace': {
+        synonyms: [
+            { word: 'tranquility', emotion: 3, precision: 4, tags: ['calm', 'serene'] },
+            { word: 'serenity', emotion: 4, precision: 4, tags: ['peaceful', 'calm'] },
+            { word: 'harmony', emotion: 3, precision: 4, tags: ['agreement', 'balanced'] },
+            { word: 'concord', emotion: 3, precision: 5, tags: ['agreement', 'unity'] }
+        ],
+        baseEmotion: 3, basePrecision: 2
+    },
+
+    'journey': {
+        synonyms: [
+            { word: 'trip', emotion: 2, precision: 2, tags: ['travel', 'casual'] },
+            { word: 'voyage', emotion: 3, precision: 4, tags: ['sea', 'long'] },
+            { word: 'expedition', emotion: 3, precision: 4, tags: ['organized', 'exploration'] },
+            { word: 'trek', emotion: 3, precision: 4, tags: ['difficult', 'walking'] },
+            { word: 'sojourn', emotion: 3, precision: 5, tags: ['temporary', 'stay'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'end': {
+        synonyms: [
+            { word: 'conclusion', emotion: 2, precision: 4, tags: ['finish', 'final'] },
+            { word: 'termination', emotion: 2, precision: 4, tags: ['ending', 'stop'] },
+            { word: 'finale', emotion: 3, precision: 4, tags: ['dramatic', 'final'] },
+            { word: 'cessation', emotion: 2, precision: 5, tags: ['stopping', 'formal'] },
+            { word: 'denouement', emotion: 3, precision: 5, tags: ['story', 'resolution'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    'beginning': {
+        synonyms: [
+            { word: 'start', emotion: 2, precision: 2, tags: ['commence', 'initial'] },
+            { word: 'commencement', emotion: 2, precision: 4, tags: ['formal', 'beginning'] },
+            { word: 'inception', emotion: 3, precision: 5, tags: ['origin', 'start'] },
+            { word: 'genesis', emotion: 3, precision: 5, tags: ['origin', 'creation'] },
+            { word: 'origin', emotion: 2, precision: 4, tags: ['source', 'beginning'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
+    },
+
+    // === ADVERBS ===
+
+    'literally': {
+        synonyms: [
+            { word: 'actually', emotion: 2, precision: 3, tags: ['truly', 'really'] },
+            { word: 'truly', emotion: 2, precision: 3, tags: ['genuine', 'real'] },
+            { word: 'genuinely', emotion: 2, precision: 4, tags: ['authentic', 'sincere'] },
+            { word: 'precisely', emotion: 2, precision: 4, tags: ['exactly', 'accurate'] },
+            { word: 'exactly', emotion: 2, precision: 3, tags: ['precise', 'accurate'] }
+        ],
+        baseEmotion: 1, basePrecision: 2
+    },
+
+    'just': {
+        synonyms: [
+            { word: 'merely', emotion: 1, precision: 3, tags: ['only', 'simple'] },
+            { word: 'only', emotion: 1, precision: 2, tags: ['sole', 'single'] },
+            { word: 'simply', emotion: 1, precision: 3, tags: ['merely', 'basic'] },
+            { word: 'barely', emotion: 2, precision: 3, tags: ['scarcely', 'hardly'] }
+        ],
+        baseEmotion: 1, basePrecision: 1
+    },
+
+    'finally': {
+        synonyms: [
+            { word: 'eventually', emotion: 2, precision: 3, tags: ['at-last', 'ultimately'] },
+            { word: 'ultimately', emotion: 2, precision: 4, tags: ['finally', 'end'] },
+            { word: 'lastly', emotion: 1, precision: 3, tags: ['final', 'last'] },
+            { word: 'at last', emotion: 3, precision: 3, tags: ['relief', 'waited'] }
+        ],
+        baseEmotion: 2, basePrecision: 2
     }
 };
 
