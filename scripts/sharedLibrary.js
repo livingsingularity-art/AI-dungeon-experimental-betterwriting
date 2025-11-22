@@ -682,6 +682,456 @@ Instructions:
 
 // #endregion
 
+// #region NGO Configuration Card
+
+/**
+ * NGO Configuration - Control narrative arc temperature and heat mechanics
+ * All features controllable via story card (max 1500 characters)
+ */
+const NGOConfig = (() => {
+    const CARD_KEY = 'ngo_config';
+
+    const createDefaultCard = () => {
+        const defaultConfig = `NGO CONFIGURATION - Narrative Arc Engine
+Toggle features on/off (true/false):
+
+enabled: true
+debugLogging: false
+
+HEAT (short-term tension):
+heatDecayRate: 1
+heatIncreasePerConflict: 1
+playerHeatMultiplier: 2
+maxHeat: 50
+
+TEMPERATURE (long-term arc):
+maxTemperature: 12
+trueMaxTemperature: 15
+heatThresholdForTempIncrease: 10
+tempIncreaseChance: 15
+tempIncreaseOnConsecutiveConflicts: 3
+
+OVERHEAT (sustained climax):
+overheatTriggerTemp: 10
+overheatDuration: 4
+overheatLocksTemperature: true
+
+COOLDOWN (falling action):
+cooldownDuration: 5
+cooldownTempDecreaseRate: 2
+cooldownBlocksHeatGain: true
+
+EXPLOSIONS (random spikes):
+explosionEnabled: true
+explosionChanceBase: 3
+
+INTEGRATIONS:
+temperatureAffectsVS: true
+reqIncreasesHeat: true
+qualityGatesTemperatureIncrease: true
+
+Instructions:
+- true/false to toggle features
+- Numbers adjust intensity
+- Save and refresh to apply`;
+
+        const card = buildCard(
+            'Configure NGO',
+            defaultConfig,
+            'Custom',
+            'ngo_config',
+            'Control narrative temperature, heat, and arc progression',
+            51
+        );
+
+        safeLog('🔥 Created NGO Configuration story card', 'success');
+        return card;
+    };
+
+    const ensureCard = () => {
+        let card = storyCards.find(c => c.keys && c.keys.includes(CARD_KEY));
+        if (!card) {
+            card = createDefaultCard();
+        }
+        return card;
+    };
+
+    const parseConfig = (entry) => {
+        if (!entry) return null;
+
+        const config = {};
+        const lines = entry.split('\n');
+
+        lines.forEach(line => {
+            const match = line.match(/^(\w+):\s*(.+)$/);
+            if (match) {
+                const [, key, value] = match;
+                const trimmedValue = value.trim().toLowerCase();
+
+                if (trimmedValue === 'true' || trimmedValue === 'false') {
+                    config[key] = trimmedValue === 'true';
+                } else if (!isNaN(trimmedValue)) {
+                    config[key] = parseFloat(trimmedValue);
+                }
+            }
+        });
+
+        return config;
+    };
+
+    const applyConfig = (userConfig) => {
+        if (!userConfig) return;
+
+        Object.keys(userConfig).forEach(key => {
+            if (CONFIG.ngo.hasOwnProperty(key)) {
+                CONFIG.ngo[key] = userConfig[key];
+            }
+        });
+
+        if (CONFIG.ngo.debugLogging) {
+            safeLog('🔥 Applied NGO config from story card', 'info');
+        }
+    };
+
+    const loadAndApply = () => {
+        const card = ensureCard();
+        if (!card) return;
+
+        const userConfig = parseConfig(card.entry);
+        applyConfig(userConfig);
+    };
+
+    return { ensureCard, parseConfig, applyConfig, loadAndApply };
+})();
+
+// #endregion
+
+// #region Bonepoke Configuration Card
+
+/**
+ * Bonepoke Configuration - Control quality analysis thresholds
+ */
+const BonepokeConfig = (() => {
+    const CARD_KEY = 'bonepoke_config';
+
+    const createDefaultCard = () => {
+        const defaultConfig = `BONEPOKE CONFIGURATION - Quality Analysis
+Toggle features on/off (true/false):
+
+enabled: true
+enableDynamicCorrection: true
+debugLogging: false
+
+THRESHOLDS:
+fatigueThreshold: 3
+qualityThreshold: 2.5
+
+Dimension Thresholds (1-5 scale):
+EmotionalStrength: 2
+CharacterClarity: 2
+StoryFlow: 2
+DialogueWeight: 2
+WordVariety: 1
+
+Instructions:
+- fatigueThreshold: word repetition limit
+- qualityThreshold: minimum average score
+- Dimension thresholds: boost if below value
+- Higher values = more aggressive replacement
+- Save and refresh to apply`;
+
+        const card = buildCard(
+            'Configure Bonepoke',
+            defaultConfig,
+            'Custom',
+            'bonepoke_config',
+            'Control quality analysis and repetition detection',
+            52
+        );
+
+        safeLog('🦴 Created Bonepoke Configuration story card', 'success');
+        return card;
+    };
+
+    const ensureCard = () => {
+        let card = storyCards.find(c => c.keys && c.keys.includes(CARD_KEY));
+        if (!card) {
+            card = createDefaultCard();
+        }
+        return card;
+    };
+
+    const parseConfig = (entry) => {
+        if (!entry) return null;
+
+        const config = {};
+        const lines = entry.split('\n');
+
+        lines.forEach(line => {
+            const match = line.match(/^(\w+):\s*(.+)$/);
+            if (match) {
+                const [, key, value] = match;
+                const trimmedValue = value.trim().toLowerCase();
+
+                if (trimmedValue === 'true' || trimmedValue === 'false') {
+                    config[key] = trimmedValue === 'true';
+                } else if (!isNaN(trimmedValue)) {
+                    config[key] = parseFloat(trimmedValue);
+                }
+            }
+        });
+
+        return config;
+    };
+
+    const applyConfig = (userConfig) => {
+        if (!userConfig) return;
+
+        Object.keys(userConfig).forEach(key => {
+            if (CONFIG.bonepoke.hasOwnProperty(key)) {
+                CONFIG.bonepoke[key] = userConfig[key];
+            }
+
+            // Map dimension threshold names to smartReplacement.thresholds
+            const dimensionMap = {
+                'EmotionalStrength': 'Emotional Strength',
+                'CharacterClarity': 'Character Clarity',
+                'StoryFlow': 'Story Flow',
+                'DialogueWeight': 'Dialogue Weight',
+                'WordVariety': 'Word Variety'
+            };
+
+            if (dimensionMap[key]) {
+                CONFIG.smartReplacement.thresholds[dimensionMap[key]] = userConfig[key];
+            }
+        });
+
+        if (CONFIG.bonepoke.debugLogging) {
+            safeLog('🦴 Applied Bonepoke config from story card', 'info');
+        }
+    };
+
+    const loadAndApply = () => {
+        const card = ensureCard();
+        if (!card) return;
+
+        const userConfig = parseConfig(card.entry);
+        applyConfig(userConfig);
+    };
+
+    return { ensureCard, parseConfig, applyConfig, loadAndApply };
+})();
+
+// #endregion
+
+// #region VS Configuration Card
+
+/**
+ * VS (Verbalized Sampling) Configuration - Control candidate selection
+ */
+const VSConfig = (() => {
+    const CARD_KEY = 'vs_config';
+
+    const createDefaultCard = () => {
+        const defaultConfig = `VS CONFIGURATION - Verbalized Sampling
+Toggle features on/off (true/false):
+
+enabled: true
+adaptive: true
+seamless: true
+debugLogging: false
+
+PARAMETERS:
+k: 5
+tau: 0.10
+
+Instructions:
+- k: number of candidates (3-10 recommended)
+- tau: probability threshold (0.05-0.20)
+- adaptive: auto-adjust based on story tension
+- seamless: hide VS process from output
+- Research-recommended: k=5, tau=0.10
+- Save and refresh to apply`;
+
+        const card = buildCard(
+            'Configure VS',
+            defaultConfig,
+            'Custom',
+            'vs_config',
+            'Control Verbalized Sampling candidate selection',
+            53
+        );
+
+        safeLog('🎲 Created VS Configuration story card', 'success');
+        return card;
+    };
+
+    const ensureCard = () => {
+        let card = storyCards.find(c => c.keys && c.keys.includes(CARD_KEY));
+        if (!card) {
+            card = createDefaultCard();
+        }
+        return card;
+    };
+
+    const parseConfig = (entry) => {
+        if (!entry) return null;
+
+        const config = {};
+        const lines = entry.split('\n');
+
+        lines.forEach(line => {
+            const match = line.match(/^(\w+):\s*(.+)$/);
+            if (match) {
+                const [, key, value] = match;
+                const trimmedValue = value.trim().toLowerCase();
+
+                if (trimmedValue === 'true' || trimmedValue === 'false') {
+                    config[key] = trimmedValue === 'true';
+                } else if (!isNaN(trimmedValue)) {
+                    config[key] = parseFloat(trimmedValue);
+                }
+            }
+        });
+
+        return config;
+    };
+
+    const applyConfig = (userConfig) => {
+        if (!userConfig) return;
+
+        Object.keys(userConfig).forEach(key => {
+            if (CONFIG.vs.hasOwnProperty(key)) {
+                CONFIG.vs[key] = userConfig[key];
+            }
+        });
+
+        if (CONFIG.vs.debugLogging) {
+            safeLog('🎲 Applied VS config from story card', 'info');
+        }
+    };
+
+    const loadAndApply = () => {
+        const card = ensureCard();
+        if (!card) return;
+
+        const userConfig = parseConfig(card.entry);
+        applyConfig(userConfig);
+    };
+
+    return { ensureCard, parseConfig, applyConfig, loadAndApply };
+})();
+
+// #endregion
+
+// #region Command System Configuration Card
+
+/**
+ * Command Configuration - Control @req, parentheses, and player commands
+ */
+const CommandConfig = (() => {
+    const CARD_KEY = 'command_config';
+
+    const createDefaultCard = () => {
+        const defaultConfig = `COMMAND CONFIGURATION - Player Controls
+Toggle features on/off (true/false):
+
+enabled: true
+debugLogging: false
+
+@REQ COMMANDS:
+reqDualInjection: true
+reqFrontMemoryTTL: 1
+reqAuthorsNoteTTL: 2
+
+PARENTHESES MEMORY:
+parenthesesEnabled: true
+parenthesesMaxSlots: 3
+parenthesesDefaultTTL: 4
+parenthesesPriority: true
+
+FULFILLMENT DETECTION:
+detectFulfillment: true
+fulfillmentThreshold: 0.4
+
+Instructions:
+- @req: narrative requests like @req(kiss scene)
+- (...): persistent memory slots
+- TTL: turns to live in memory
+- fulfillmentThreshold: 0-1 detection sensitivity
+- Save and refresh to apply`;
+
+        const card = buildCard(
+            'Configure Commands',
+            defaultConfig,
+            'Custom',
+            'command_config',
+            'Control @req commands and parentheses memory system',
+            54
+        );
+
+        safeLog('⚡ Created Command Configuration story card', 'success');
+        return card;
+    };
+
+    const ensureCard = () => {
+        let card = storyCards.find(c => c.keys && c.keys.includes(CARD_KEY));
+        if (!card) {
+            card = createDefaultCard();
+        }
+        return card;
+    };
+
+    const parseConfig = (entry) => {
+        if (!entry) return null;
+
+        const config = {};
+        const lines = entry.split('\n');
+
+        lines.forEach(line => {
+            const match = line.match(/^(\w+):\s*(.+)$/);
+            if (match) {
+                const [, key, value] = match;
+                const trimmedValue = value.trim().toLowerCase();
+
+                if (trimmedValue === 'true' || trimmedValue === 'false') {
+                    config[key] = trimmedValue === 'true';
+                } else if (!isNaN(trimmedValue)) {
+                    config[key] = parseFloat(trimmedValue);
+                }
+            }
+        });
+
+        return config;
+    };
+
+    const applyConfig = (userConfig) => {
+        if (!userConfig) return;
+
+        Object.keys(userConfig).forEach(key => {
+            if (CONFIG.commands.hasOwnProperty(key)) {
+                CONFIG.commands[key] = userConfig[key];
+            }
+        });
+
+        if (CONFIG.commands.debugLogging) {
+            safeLog('⚡ Applied Command config from story card', 'info');
+        }
+    };
+
+    const loadAndApply = () => {
+        const card = ensureCard();
+        if (!card) return;
+
+        const userConfig = parseConfig(card.entry);
+        applyConfig(userConfig);
+    };
+
+    return { ensureCard, parseConfig, applyConfig, loadAndApply };
+})();
+
+// #endregion
+
 /**
  * Initialize state with default values
  */
@@ -796,11 +1246,15 @@ const initState = () => {
             state.originalAuthorsNote = '';
         }
 
-        // PHASE 7: Load user configuration from story card
+        // PHASE 7: Load user configuration from story cards
         SmartReplacementConfig.loadAndApply();
+        NGOConfig.loadAndApply();
+        BonepokeConfig.loadAndApply();
+        VSConfig.loadAndApply();
+        CommandConfig.loadAndApply();
 
         state.initialized = true;
-        safeLog('State initialized with NGO engine', 'success');
+        safeLog('State initialized with NGO engine and all configuration cards', 'success');
     }
 };
 
