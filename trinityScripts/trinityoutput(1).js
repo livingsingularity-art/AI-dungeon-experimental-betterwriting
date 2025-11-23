@@ -74,6 +74,11 @@ const modifier = (text) => {
         }
     }
 
+    // === AUTO-CARDS INTEGRATION ===
+    // Process output through Auto-Cards FIRST for automatic story card generation
+    // This should happen before any other analysis to capture the raw AI output
+    text = AutoCards("output", text);
+
     // CRITICAL FIX: Clean output FIRST before analysis
     // This prevents VS instructions from being analyzed as part of the story
     const cleanOutput = (output) => {

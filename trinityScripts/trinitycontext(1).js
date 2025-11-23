@@ -168,6 +168,17 @@ const modifier = (text) => {
         state.lastContextWords = text.split(/\s+/).length;
     }
 
+    // === AUTO-CARDS INTEGRATION ===
+    // Process context through Auto-Cards for automatic story card generation and management
+    // Auto-Cards will inject relevant story card content into the context
+    const autoCardsResult = AutoCards("context", text, stop);
+
+    // AutoCards returns { text, stop } - extract both values
+    if (autoCardsResult && typeof autoCardsResult === 'object') {
+        text = autoCardsResult.text || text;
+        // Note: stop parameter is read-only in AI Dungeon context modifier, but AutoCards may set it
+    }
+
     return { text };
 };
 
