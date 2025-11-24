@@ -27,7 +27,7 @@ const VOGLER_CONFIG = {
     // System control
     enabled: true,
     debugLogging: false,
-    logStageChanges: true,
+    logStageChanges: false,
 
     // Auto-advancement settings
     autoAdvance: true,
