@@ -62,6 +62,9 @@ const modifier = (text) => {
             const playerContent = PlayersAuthorsNoteCard.getPlayerContent();
             if (playerContent) {
                 layers.push(playerContent);
+                if (CONFIG.ngo.debugLogging) {
+                    safeLog(`📝 Player's author's note added: "${playerContent.substring(0, 80)}${playerContent.length > 80 ? '...' : ''}"`, 'info');
+                }
             }
 
             // LAYER 3 & 4: Command system layers

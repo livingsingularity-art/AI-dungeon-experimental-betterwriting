@@ -5629,9 +5629,15 @@ const PlayersAuthorsNoteCard = (() => {
         return storyCards.findIndex(card => card.title === CARD_TITLE) >= 0;
     };
 
+    // Alias for compatibility with Vogler scripts
+    const getPlayersNote = () => {
+        return getPlayerContent();
+    };
+
     return {
         ensureCard,
         getPlayerContent,
+        getPlayersNote,
         exists,
         CARD_TITLE
     };

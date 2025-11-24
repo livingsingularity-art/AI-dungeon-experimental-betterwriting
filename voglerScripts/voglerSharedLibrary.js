@@ -1280,28 +1280,14 @@ const PlayersAuthorsNoteCard = (() => {
     const CARD_KEY = 'players_note';
 
     const createDefaultCard = () => {
-        const defaultConfig = `PLAYER'S AUTHOR'S NOTE
-Your personal writing instructions for the AI
-
-Add your custom writing guidance here. This will be preserved and combined with system guidance (Vogler stages, NGO settings, etc.)
-
-Example instructions:
-- Write in third person past tense
-- Focus on dialogue and character interaction
-- Avoid graphic violence
-- Keep tone light and adventurous
-- Emphasize humor
-
-This note persists across turns. Edit freely.
-System notes appear separately and don't override this.`;
-
+        // Create empty card - player adds their own content
         return buildCard(
-            'Player\'s Author\'s Note',
-            defaultConfig.length > 1500 ? defaultConfig.substring(0, 1497) + '...' : defaultConfig,
+            'PlayersAuthorsNote',
+            '', // Empty - player fills this in
             'Custom',
             CARD_KEY,
-            'Your personal author\'s note - preserved across turns',
-            1 // High priority
+            'Your custom narrative guidance - automatically added to author\'s note every turn',
+            0 // Insert at top for easy access
         );
     };
 
@@ -1317,29 +1303,21 @@ System notes appear separately and don't override this.`;
     };
 
     const getPlayersNote = () => {
-        const card = ensureCard();
-        if (!card || !card.entry) return '';
+        const card = storyCards.find(c => c.keys && c.keys.includes(CARD_KEY));
 
-        // Extract only the custom part (after the template header)
-        const lines = card.entry.split('\n');
-        const startIndex = lines.findIndex(line => line.includes('Example instructions:'));
-
-        if (startIndex === -1 || startIndex >= lines.length - 1) {
-            // User hasn't customized yet, return empty
-            return '';
+        if (card && card.entry) {
+            return card.entry.trim();
         }
 
-        // Get everything after the examples
-        const customStart = lines.findIndex((line, idx) =>
-            idx > startIndex && line.trim() !== '' && !line.includes('-') && !line.includes('Example')
-        );
-
-        if (customStart === -1) return '';
-
-        return lines.slice(customStart).join('\n').trim();
+        return '';
     };
 
-    return { ensureCard, getPlayersNote };
+    // Alias for compatibility with NGO context script
+    const getPlayerContent = () => {
+        return getPlayersNote();
+    };
+
+    return { ensureCard, getPlayersNote, getPlayerContent };
 })();
 
 /**
