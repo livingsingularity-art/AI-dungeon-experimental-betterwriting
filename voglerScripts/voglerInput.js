@@ -36,14 +36,14 @@ const modifier = (text) => {
 
         // Log commands found
         if (Object.keys(commandResult.commands).length > 0 && VOGLER_CONFIG.debugLogging) {
-            console.log(`🎬 Vogler commands: ${JSON.stringify(commandResult.commands)}`);
+            log(`🎬 Vogler commands: ${JSON.stringify(commandResult.commands)}`);
         }
 
         // CRITICAL: If commands consumed all text, provide minimal input
         if (!text || text.trim() === '') {
             text = '.';  // Minimal continue command
             if (VOGLER_CONFIG.debugLogging) {
-                console.log(`⚠️ Commands consumed all input - using continue signal`);
+                log(`⚠️ Commands consumed all input - using continue signal`);
             }
         }
     }
@@ -53,7 +53,7 @@ const modifier = (text) => {
         const detectedBeats = VoglerEngine.detectBeats(text);
 
         if (detectedBeats.length > 0 && VOGLER_CONFIG.debugLogging) {
-            console.log(`✅ Player beats detected: ${detectedBeats.join(', ')}`);
+            log(`✅ Player beats detected: ${detectedBeats.join(', ')}`);
         }
     }
 
@@ -123,11 +123,11 @@ const modifier = (text) => {
             };
 
             if (VOGLER_CONFIG.debugLogging) {
-                console.log(`🎬 Stage advancement pending: ${advanceCheck.reason}`);
+                log(`🎬 Stage advancement pending: ${advanceCheck.reason}`);
             }
         } else if (VOGLER_CONFIG.debugLogging && voglerState.turnsInStage % 3 === 0) {
             // Log progress every 3 turns
-            console.log(`🎬 Not ready to advance: ${advanceCheck.reason}`);
+            log(`🎬 Not ready to advance: ${advanceCheck.reason}`);
         }
     }
 

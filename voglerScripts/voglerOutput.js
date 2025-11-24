@@ -84,14 +84,14 @@ const modifier = (text) => {
 
         if (detectedBeats.length > 0) {
             if (VOGLER_CONFIG.debugLogging) {
-                console.log(`✅ AI beats detected: ${detectedBeats.join(', ')}`);
+                log(`✅ AI beats detected: ${detectedBeats.join(', ')}`);
             }
 
             // Log beat completion
             if (VOGLER_CONFIG.logStageChanges) {
                 const currentStage = VoglerEngine.getCurrentStage();
                 const progress = VoglerEngine.getProgress();
-                console.log(`📖 ${currentStage.name}: ${progress.completedBeats}/${progress.totalBeats} beats completed`);
+                log(`📖 ${currentStage.name}: ${progress.completedBeats}/${progress.totalBeats} beats completed`);
             }
         }
     }
@@ -114,9 +114,9 @@ const modifier = (text) => {
 
                     // Display stage transition to player
                     if (VOGLER_CONFIG.logStageChanges) {
-                        console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-                        console.log(`🎬 HERO'S JOURNEY: ${oldStage.name} → ${newStage.name}`);
-                        console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+                        log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+                        log(`🎬 HERO'S JOURNEY: ${oldStage.name} → ${newStage.name}`);
+                        log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
 
                         // Add a narrative transition note to output (optional)
                         // Uncomment if you want visible stage transitions
@@ -177,7 +177,7 @@ const modifier = (text) => {
                 // Found duplicate - remove it
                 text = text.trim().slice(suffix.length).trim();
                 if (VOGLER_CONFIG.debugLogging) {
-                    console.log(`Removed duplicate start: "${suffix.slice(0, 30)}..."`);
+                    log(`Removed duplicate start: "${suffix.slice(0, 30)}..."`);
                 }
                 break;
             }
@@ -196,7 +196,7 @@ const modifier = (text) => {
         // Log stage info at start of each stage
         const currentStage = VoglerEngine.getCurrentStage();
         const progress = VoglerEngine.getProgress();
-        console.log(`🎬 ${currentStage.name} (Stage ${progress.currentStage}/12) - ${progress.turnsInStage} turns`);
+        log(`🎬 ${currentStage.name} (Stage ${progress.currentStage}/12) - ${progress.turnsInStage} turns`);
     }
 
     // Periodic progress reminder (every 5 turns)
@@ -204,19 +204,19 @@ const modifier = (text) => {
         const progress = VoglerEngine.getProgress();
         const currentStage = VoglerEngine.getCurrentStage();
 
-        console.log(`📊 Journey Progress: ${progress.percentComplete}% (${currentStage.name}, Turn ${voglerState.turnsInStage})`);
+        log(`📊 Journey Progress: ${progress.percentComplete}% (${currentStage.name}, Turn ${voglerState.turnsInStage})`);
 
         // Show remaining beats if close to advancement
         const remaining = currentStage.keyBeats.length - progress.completedBeats;
         if (remaining > 0 && voglerState.turnsInStage >= VOGLER_CONFIG.minTurnsPerStage) {
-            console.log(`   Beats remaining: ${remaining}`);
+            log(`   Beats remaining: ${remaining}`);
         }
     }
 
     // Safety check: If text is empty after cleaning, don't return nothing
     if (!text || text.trim() === '') {
         if (VOGLER_CONFIG.debugLogging) {
-            console.log('⚠️ Warning: Output was empty after cleaning, returning space');
+            log('⚠️ Warning: Output was empty after cleaning, returning space');
         }
         return { text: ' ' };
     }

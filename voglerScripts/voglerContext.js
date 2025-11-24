@@ -78,7 +78,7 @@ const modifier = (text) => {
             VerbalizedSampling.updateCard(vsParams);
 
             if (VOGLER_CONFIG.debugLogging) {
-                console.log(`🎨 VS adapted for ${currentStage.name}: k=${vsParams.k}, tau=${vsParams.tau}`);
+                log(`🎨 VS adapted for ${currentStage.name}: k=${vsParams.k}, tau=${vsParams.tau}`);
             }
         }
     }
@@ -95,7 +95,7 @@ const modifier = (text) => {
             state.vogler.suggestedHeat = voglerHeat;
 
             if (VOGLER_CONFIG.debugLogging) {
-                console.log(`🌡️ Vogler suggests: temp=${voglerTemp}, heat=${voglerHeat}`);
+                log(`🌡️ Vogler suggests: temp=${voglerTemp}, heat=${voglerHeat}`);
             }
         }
     }
