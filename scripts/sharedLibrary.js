@@ -6409,8 +6409,8 @@ const PlayersAuthorsNoteCard = (() => {
     const getPlayerContent = () => {
         const existingIndex = storyCards.findIndex(card => card.title === CARD_TITLE);
 
-        if (existingIndex >= 0 && storyCards[existingIndex].entry) {
-            return storyCards[existingIndex].entry.trim();
+        if (existingIndex >= 0 && storyCards[existingIndex].value) {
+            return storyCards[existingIndex].value.trim();
         }
 
         return '';
