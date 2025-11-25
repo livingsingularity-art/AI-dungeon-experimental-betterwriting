@@ -1592,8 +1592,8 @@ const PlayersAuthorsNoteCard = (() => {
     const getPlayersNote = () => {
         const card = storyCards.find(c => c.keys && c.keys.includes(CARD_KEY));
 
-        if (card && card.value) {
-            return card.value.trim();
+        if (card && card.entry) {
+            return card.entry.trim();
         }
 
         return '';

@@ -33,6 +33,7 @@ const modifier = (text) => {
         const voglerNote = state.voglerAuthorsNoteStorage || '';
         const playersNote = state.playersAuthorsNoteStorage || '';
         const memoryGuidance = state.memoryGuidanceStorage || '';
+        const ngoNote = state.ngoAuthorsNoteStorage || ''; // CRITICAL: Restore NGO content!
 
         // Check if author's note was cleared or reset
         if (!state.memory.authorsNote ||
@@ -57,12 +58,23 @@ const modifier = (text) => {
                 noteParts.push(voglerNote.trim());
             }
 
-            if (noteParts.length > 0) {
-                state.memory.authorsNote = noteParts.join(' | ');
+            // Combine Vogler parts
+            const voglerCombined = noteParts.join(' | ');
 
-                if (VOGLER_CONFIG.debugLogging) {
-                    log(`🔄 Author's note restored (Player + Memory + Vogler)`);
-                }
+            // CRITICAL: Restore with NGO content preserved!
+            if (ngoNote && voglerCombined) {
+                // Both NGO and Vogler content - append
+                state.memory.authorsNote = ngoNote + ' | ' + voglerCombined;
+            } else if (ngoNote) {
+                // Only NGO content
+                state.memory.authorsNote = ngoNote;
+            } else if (voglerCombined) {
+                // Only Vogler content
+                state.memory.authorsNote = voglerCombined;
+            }
+
+            if (VOGLER_CONFIG.debugLogging) {
+                log(`🔄 Author's note restored (NGO + Player + Memory + Vogler)`);
             }
         }
     }

@@ -55,6 +55,9 @@ const modifier = (text) => {
             // Inject into author's note system
             // This works alongside NGO or as standalone
             if (state.memory) {
+                // CRITICAL: Preserve existing author's note from NGO or other systems
+                const existingNote = state.memory.authorsNote || '';
+
                 // Build combined author's note: Player's note + Parentheses + Vogler system
                 const noteParts = [];
 
@@ -73,13 +76,26 @@ const modifier = (text) => {
                     noteParts.push(voglerGuidance.trim());
                 }
 
-                // Combine with separator
-                state.memory.authorsNote = noteParts.join(' | ');
+                // Combine Vogler parts with separator
+                const voglerNote = noteParts.join(' | ');
+
+                // CRITICAL: Append to existing note, don't overwrite!
+                if (voglerNote && voglerNote.trim() !== '') {
+                    if (existingNote && !existingNote.includes(voglerNote)) {
+                        // Append to existing NGO/other content
+                        state.memory.authorsNote = existingNote + ' | ' + voglerNote;
+                    } else if (!existingNote) {
+                        // No existing note, use Vogler only
+                        state.memory.authorsNote = voglerNote;
+                    }
+                    // If voglerNote already in existingNote, don't duplicate
+                }
 
                 // Store for restoration in output script
                 state.voglerAuthorsNoteStorage = voglerGuidance;
                 state.playersAuthorsNoteStorage = playersNote;
                 state.memoryGuidanceStorage = memoryGuidance;
+                state.ngoAuthorsNoteStorage = existingNote; // CRITICAL: Store NGO note for restoration!
 
                 if (VOGLER_CONFIG.debugLogging) {
                     log(`🎬 Vogler guidance injected: ${currentStage.name}`);
