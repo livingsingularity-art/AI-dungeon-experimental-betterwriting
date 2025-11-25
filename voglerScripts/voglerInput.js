@@ -29,7 +29,41 @@ const modifier = (text) => {
     voglerState.turnsInStage++;
     voglerState.totalTurns++;
 
-    // Process Vogler commands (@stage, @beat)
+    // === @REQ COMMAND PROCESSING (Original Simple Version) ===
+    // CRITICAL: Process @req FIRST and set frontMemory DIRECTLY in input script
+    // This is where we have access to the current text, unlike context script
+    if (text.toLowerCase().includes("@req")) {
+        const requestText = text.replace(/^[\s\S]*@req(?:uest)?\s*/i, "").trim();
+
+        if (requestText) {
+            const systemPrompt = `<SYSTEM>
+# Narrative shaping:
+Weave the following concept into the next output in a subtle, immersive way:
+${requestText}
+</SYSTEM>`;
+
+            // Set frontMemory directly (overwrites any previous frontMemory)
+            state.memory = state.memory || {};
+            state.memory.frontMemory = systemPrompt;
+
+            if (VOGLER_CONFIG.debugLogging) {
+                log(`🎯 @req processed: "${requestText}"`);
+                log(`   frontMemory set directly in input script`);
+            }
+
+            // Remove @req from input text
+            text = text.replace(/@req(?:uest)?\s+[^\n]*/gi, "").trim();
+
+            // If all text was consumed, provide minimal input
+            if (!text) {
+                text = ".";
+            }
+
+            state.message = "Request acknowledged.";
+        }
+    }
+
+    // Process Vogler commands (@stage, @beat, parentheses)
     if (VOGLER_CONFIG.enabled) {
         const commandResult = VoglerEngine.processCommands(text);
         text = commandResult.processed;

@@ -24,32 +24,9 @@ const modifier = (text) => {
     const currentStage = VoglerEngine.getCurrentStage();
     const progress = VoglerEngine.getProgress();
 
-    // CRITICAL: Process commands FIRST before trying to inject them!
-    // Context script runs BEFORE input script, so we need to process commands here
-    // Get the player's ACTUAL input from history (last entry)
-    const lastEntry = history[history.length - 1];
-    const playerInput = lastEntry ? (lastEntry.text || '') : '';
-    if (VOGLER_CONFIG.enabled && playerInput.trim()) {
-        // Process commands from the player input (extracts @req, parentheses, etc.)
-        VoglerEngine.processCommands(playerInput);
-    }
-
-    // Inject @req into frontMemory (single turn only!)
-    if (VOGLER_CONFIG.enabled && state.memory) {
-        const frontMemoryInjection = VoglerEngine.buildFrontMemory();
-        if (frontMemoryInjection && frontMemoryInjection.trim() !== '') {
-            state.memory.frontMemory = (state.memory.frontMemory || '') + '\n\n' + frontMemoryInjection;
-
-            // Clear first-turn flag so it doesn't inject again next turn
-            if (state.commands && state.commands.narrativeRequestFirstTurn) {
-                state.commands.narrativeRequestFirstTurn = false;
-            }
-
-            if (VOGLER_CONFIG.debugLogging) {
-                log(`🎯 @req injected to frontMemory (SINGLE TURN): ${frontMemoryInjection.substring(0, 60)}...`);
-            }
-        }
-    }
+    // NOTE: @req command is processed in INPUT script, which runs BEFORE context
+    // Input script sets state.memory.frontMemory directly with the @req content
+    // This context script just needs to preserve it (don't overwrite)
 
     // Build and inject Vogler author's note
     if (VOGLER_CONFIG.enabled) {
