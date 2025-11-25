@@ -6142,6 +6142,47 @@ const NGOCommands = (() => {
     };
 
     /**
+     * Process @report command (Phase 5) - Shows replacement performance stats
+     * @param {string} text - Input text
+     * @returns {Object} { processed, found, shouldDisplay }
+     */
+    const processReport = (text) => {
+        const reportRegex = /@report|\/report/i;
+        const match = text.match(reportRegex);
+
+        if (!match) return { processed: text, found: false, shouldDisplay: false };
+
+        // Generate and log the report
+        const report = generateReplacementReport();
+        log(report);
+
+        // Remove the command from text
+        const processed = text.replace(reportRegex, '').trim();
+
+        return { processed, found: true, shouldDisplay: true };
+    };
+
+    /**
+     * Process @strictness command (Phase 6 - MEDIUM #8) - Set replacement strictness level
+     * @param {string} text - Input text
+     * @returns {Object} { processed, found, level }
+     */
+    const processStrictness = (text) => {
+        const strictnessRegex = /@strictness\s+(conservative|balanced|aggressive)/i;
+        const match = text.match(strictnessRegex);
+
+        if (!match) return { processed: text, found: false };
+
+        const level = match[1].toLowerCase();
+        const success = applyStrictnessPreset(level);
+
+        // Remove the command from text
+        const processed = text.replace(strictnessRegex, '').trim();
+
+        return { processed, found: true, level, success };
+    };
+
+    /**
      * Process all commands in input text
      * @param {string} text - Input text
      * @returns {Object} { processed, commands }
@@ -6269,47 +6310,6 @@ ${state.commands.narrativeRequest}
 
             return { fulfilled: false, score: fulfillmentScore, reason: 'pending' };
         }
-    };
-
-    /**
-     * Process @report command (Phase 5) - Shows replacement performance stats
-     * @param {string} text - Input text
-     * @returns {Object} { processed, found, shouldDisplay }
-     */
-    const processReport = (text) => {
-        const reportRegex = /@report|\/report/i;
-        const match = text.match(reportRegex);
-
-        if (!match) return { processed: text, found: false, shouldDisplay: false };
-
-        // Generate and log the report
-        const report = generateReplacementReport();
-        log(report);
-
-        // Remove the command from text
-        const processed = text.replace(reportRegex, '').trim();
-
-        return { processed, found: true, shouldDisplay: true };
-    };
-
-    /**
-     * Process @strictness command (Phase 6 - MEDIUM #8) - Set replacement strictness level
-     * @param {string} text - Input text
-     * @returns {Object} { processed, found, level }
-     */
-    const processStrictness = (text) => {
-        const strictnessRegex = /@strictness\s+(conservative|balanced|aggressive)/i;
-        const match = text.match(strictnessRegex);
-
-        if (!match) return { processed: text, found: false };
-
-        const level = match[1].toLowerCase();
-        const success = applyStrictnessPreset(level);
-
-        // Remove the command from text
-        const processed = text.replace(strictnessRegex, '').trim();
-
-        return { processed, found: true, level, success };
     };
 
     /**
