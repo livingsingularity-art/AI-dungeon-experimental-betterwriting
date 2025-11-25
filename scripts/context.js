@@ -10,12 +10,6 @@
  */
 
 const modifier = (text) => {
-    // ========================================================================
-    // DISABLED: This NGO context script conflicts with voglerContext.js
-    // Both scripts try to manage authorsNote and frontMemory, causing overwrites
-    // Use voglerScripts/voglerContext.js instead (includes all NGO features)
-    // ========================================================================
-
     // Analyze recent history for problems
     const analyzeRecentHistory = () => {
         const recentOutputs = history
@@ -47,10 +41,12 @@ const modifier = (text) => {
         }
     }
 
-    // === DISABLED: NGO LAYERED AUTHOR'S NOTE SYSTEM ===
-    // This conflicts with voglerContext.js which handles the same thing
-    // Use voglerScripts/voglerContext.js instead
-    /*
+    // === NGO LAYERED AUTHOR'S NOTE SYSTEM ===
+    // Build author's note with priority layers:
+    // 1. Original user note (base)
+    // 2. PlayersAuthorsNote card content (player's custom guidance)
+    // 3. Parentheses memory (gradual goals)
+    // 4. @req immediate request (urgent player intent)
     if (CONFIG.ngo && CONFIG.ngo.enabled && state.ngo) {
         const buildLayeredAuthorsNote = () => {
             const layers = [];
@@ -97,8 +93,8 @@ const modifier = (text) => {
         }
     }
 
-    // === DISABLED: NGO FRONT MEMORY INJECTION (@req dual injection) ===
-    // This conflicts with voglerContext.js which handles the same thing
+    // === NGO FRONT MEMORY INJECTION (@req dual injection) ===
+    // Inject @req into front memory for immediate, high-priority narrative shaping
     if (CONFIG.commands && CONFIG.commands.enabled && CONFIG.commands.reqDualInjection && state.commands) {
         const frontMemoryInjection = NGOCommands.buildFrontMemoryInjection();
         if (frontMemoryInjection) {
@@ -109,7 +105,6 @@ const modifier = (text) => {
             }
         }
     }
-    */
 
     // Adaptive VS configuration based on context (NOW NGO-AWARE)
     if (CONFIG.vs.enabled && CONFIG.vs.adaptive) {
