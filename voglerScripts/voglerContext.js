@@ -32,18 +32,31 @@ const modifier = (text) => {
             // Get player's custom author's note (separate from system notes)
             const playersNote = VoglerEngine.config.playersNote.getPlayersNote();
 
+            // Get command guidance (@req and parentheses)
+            const commandGuidance = VoglerEngine.buildCommandsAuthorsNote();
+
             // Inject into author's note system
             // This works alongside NGO or as standalone
             if (state.memory) {
-                // Build combined author's note: Player's note + System guidance
+                // Build combined author's note: Commands + Player's note + Vogler system
                 const noteParts = [];
 
-                // Add player's custom note first (highest priority)
+                // Add @req guidance FIRST (highest priority - immediate action)
+                if (commandGuidance.reqGuidance && commandGuidance.reqGuidance.trim() !== '') {
+                    noteParts.push(commandGuidance.reqGuidance.trim());
+                }
+
+                // Add player's custom note
                 if (playersNote && playersNote.trim() !== '') {
                     noteParts.push(playersNote.trim());
                 }
 
-                // Add Vogler system guidance
+                // Add parentheses memory guidance (gradual goals)
+                if (commandGuidance.memoryGuidance && commandGuidance.memoryGuidance.trim() !== '') {
+                    noteParts.push(commandGuidance.memoryGuidance.trim());
+                }
+
+                // Add Vogler system guidance (structure)
                 if (voglerGuidance && voglerGuidance.trim() !== '') {
                     noteParts.push(voglerGuidance.trim());
                 }
@@ -54,12 +67,19 @@ const modifier = (text) => {
                 // Store for restoration in output script
                 state.voglerAuthorsNoteStorage = voglerGuidance;
                 state.playersAuthorsNoteStorage = playersNote;
+                state.commandsAuthorsNoteStorage = commandGuidance;
 
                 if (VOGLER_CONFIG.debugLogging) {
                     log(`🎬 Vogler guidance injected: ${currentStage.name}`);
-                    log(`   System: ${voglerGuidance.substring(0, 80)}...`);
+                    if (commandGuidance.reqGuidance) {
+                        log(`   @req: ${commandGuidance.reqGuidance.substring(0, 60)}...`);
+                    }
+                    if (commandGuidance.memoryGuidance) {
+                        log(`   Memory: ${commandGuidance.memoryGuidance.substring(0, 60)}...`);
+                    }
+                    log(`   System: ${voglerGuidance.substring(0, 60)}...`);
                     if (playersNote) {
-                        log(`   Player: ${playersNote.substring(0, 80)}...`);
+                        log(`   Player: ${playersNote.substring(0, 60)}...`);
                     }
                 }
             }

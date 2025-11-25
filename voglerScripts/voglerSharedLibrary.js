@@ -569,6 +569,174 @@ const buildVoglerAuthorsNote = () => {
 // #region Command Processing
 
 /**
+ * Initialize commands state
+ */
+const initCommandsState = () => {
+    if (!state.commands) {
+        state.commands = {
+            // @req command
+            narrativeRequest: null,
+            narrativeRequestTTL: 0,
+            narrativeRequestFulfilled: false,
+            lastRequestTime: 0,
+            requestHistory: [],
+
+            // Parentheses memory (FIFO queue)
+            memory1: '',
+            expiration1: null,
+            memory2: '',
+            expiration2: null,
+            memory3: '',
+            expiration3: null
+        };
+    }
+    return state.commands;
+};
+
+/**
+ * Process @req command - Immediate narrative request
+ * @param {string} text - Input text
+ * @returns {Object} { processed, found, request }
+ */
+const processReqCommand = (text) => {
+    const commandState = initCommandsState();
+    const voglerState = initVoglerState();
+
+    // Match @req followed by text until end, parenthesis, or another command
+    const reqRegex = /@req\s+(.+?)(?=$|\(|@)/i;
+    const match = text.match(reqRegex);
+
+    if (!match) {
+        return { processed: text, found: false, request: null };
+    }
+
+    const request = match[1].trim();
+
+    // Store request with TTL (default 3 turns)
+    commandState.narrativeRequest = request;
+    commandState.narrativeRequestTTL = 3;
+    commandState.narrativeRequestFulfilled = false;
+    commandState.lastRequestTime = Date.now();
+
+    // Track history
+    commandState.requestHistory.push({
+        request: request,
+        turn: voglerState.totalTurns,
+        timestamp: Date.now()
+    });
+
+    // Trim history to last 20
+    if (commandState.requestHistory.length > 20) {
+        commandState.requestHistory = commandState.requestHistory.slice(-20);
+    }
+
+    // Remove command from text
+    const processed = text.replace(reqRegex, '').trim();
+
+    if (VOGLER_CONFIG.logStageChanges) {
+        console.log(`🎯 @req: "${request}"`);
+    }
+
+    return { processed, found: true, request };
+};
+
+/**
+ * Process (...) parentheses memory - Gradual narrative goals
+ * @param {string} text - Input text
+ * @returns {Object} { processed, found, memories }
+ */
+const processParenthesesCommand = (text) => {
+    const commandState = initCommandsState();
+    const voglerState = initVoglerState();
+
+    const parenRegex = /\(([^)]+)\)/g;
+    let match;
+    const memories = [];
+
+    while ((match = parenRegex.exec(text)) !== null) {
+        memories.push(match[1].trim());
+    }
+
+    if (memories.length === 0) {
+        return { processed: text, found: false, memories: [] };
+    }
+
+    // Shift memories down (FIFO queue)
+    commandState.memory3 = commandState.memory2;
+    commandState.expiration3 = commandState.expiration2;
+    commandState.memory2 = commandState.memory1;
+    commandState.expiration2 = commandState.expiration1;
+
+    // Store newest in slot 1 (highest priority)
+    const newestMemory = memories[memories.length - 1];
+    commandState.memory1 = newestMemory;
+    commandState.expiration1 = voglerState.totalTurns + 5; // 5 turn TTL
+
+    // Remove parentheses from text
+    const processed = text.replace(parenRegex, '').trim();
+
+    if (VOGLER_CONFIG.logStageChanges) {
+        console.log(`📝 Memory stored: "${newestMemory}" (expires turn ${commandState.expiration1})`);
+    }
+
+    return { processed, found: true, memories };
+};
+
+/**
+ * Process @temp command - Manual temperature control
+ * @param {string} text - Input text
+ * @returns {Object} { processed, found, action, value }
+ */
+const processTempCommand = (text) => {
+    const voglerState = initVoglerState();
+
+    const tempRegex = /@temp\s+(reset|[+-]?\d+)/i;
+    const match = text.match(tempRegex);
+
+    if (!match) {
+        return { processed: text, found: false, action: null, value: null };
+    }
+
+    const value = match[1].toLowerCase();
+    let action = null;
+    let numValue = null;
+
+    if (value === 'reset') {
+        voglerState.currentStage = 1;
+        voglerState.turnsInStage = 0;
+        voglerState.completedBeats = [];
+        action = 'reset';
+        numValue = 1;
+        if (VOGLER_CONFIG.logStageChanges) {
+            console.log('🔄 Vogler RESET to Stage 1');
+        }
+    } else if (value.startsWith('+') || value.startsWith('-')) {
+        const delta = parseInt(value);
+        const oldStage = voglerState.currentStage;
+        voglerState.currentStage = Math.max(1, Math.min(12, voglerState.currentStage + delta));
+        voglerState.turnsInStage = 0;
+        action = delta > 0 ? 'increase' : 'decrease';
+        numValue = voglerState.currentStage;
+        if (VOGLER_CONFIG.logStageChanges) {
+            console.log(`🌡️ Stage ${delta > 0 ? '+' : ''}${delta} → Stage ${voglerState.currentStage}`);
+        }
+    } else {
+        const absolute = parseInt(value);
+        voglerState.currentStage = Math.max(1, Math.min(12, absolute));
+        voglerState.turnsInStage = 0;
+        action = 'set';
+        numValue = voglerState.currentStage;
+        if (VOGLER_CONFIG.logStageChanges) {
+            console.log(`🌡️ Stage set to ${voglerState.currentStage}`);
+        }
+    }
+
+    const processed = text.replace(tempRegex, '').trim();
+
+    return { processed, found: true, action, value: numValue };
+};
+
+/**
  * Process Vogler-specific commands
  */
 const processVoglerCommands = (text) => {
@@ -576,9 +744,30 @@ const processVoglerCommands = (text) => {
     let processed = text;
     const commands = {};
 
+    // Process @req FIRST (highest priority)
+    const reqResult = processReqCommand(processed);
+    processed = reqResult.processed;
+    if (reqResult.found) {
+        commands.req = reqResult.request;
+    }
+
+    // Process parentheses memory
+    const parenResult = processParenthesesCommand(processed);
+    processed = parenResult.processed;
+    if (parenResult.found) {
+        commands.parentheses = parenResult.memories;
+    }
+
+    // Process @temp
+    const tempResult = processTempCommand(processed);
+    processed = tempResult.processed;
+    if (tempResult.found) {
+        commands.temp = { action: tempResult.action, value: tempResult.value };
+    }
+
     // @stage command - manual stage control
     const stageRegex = new RegExp(`${VOGLER_CONFIG.stageCommand}\\s+(\\d+)`, 'gi');
-    const stageMatch = stageRegex.exec(text);
+    const stageMatch = stageRegex.exec(processed);
 
     if (stageMatch) {
         const targetStage = parseInt(stageMatch[1]);
@@ -599,7 +788,7 @@ const processVoglerCommands = (text) => {
 
     // @beat command - mark beat completed
     const beatRegex = new RegExp(`${VOGLER_CONFIG.beatCommand}\\s+([^\\n]+)`, 'gi');
-    const beatMatch = beatRegex.exec(text);
+    const beatMatch = beatRegex.exec(processed);
 
     if (beatMatch) {
         const beatDescription = beatMatch[1].trim();
@@ -610,6 +799,107 @@ const processVoglerCommands = (text) => {
     }
 
     return { processed, commands };
+};
+
+/**
+ * Build front memory injection for @req command
+ * Used in input modifier to inject request at start of context
+ * @returns {string} Front memory injection text
+ */
+const buildFrontMemoryInjection = () => {
+    const commandState = initCommandsState();
+
+    if (!commandState.narrativeRequest || commandState.narrativeRequestTTL <= 0) {
+        return '';
+    }
+
+    return `[PRIORITY: Immediately introduce: ${commandState.narrativeRequest}]`;
+};
+
+/**
+ * Build author's note layers for @req and parentheses
+ * @returns {Object} { reqGuidance, memoryGuidance }
+ */
+const buildCommandsAuthorsNote = () => {
+    const commandState = initCommandsState();
+    const voglerState = initVoglerState();
+    const result = { reqGuidance: '', memoryGuidance: '' };
+
+    // @req guidance (immediate priority)
+    if (commandState.narrativeRequest && commandState.narrativeRequestTTL > 0) {
+        result.reqGuidance = `PRIORITY: Immediately and naturally introduce: ${commandState.narrativeRequest}`;
+    }
+
+    // Parentheses memory guidance (gradual goals)
+    const memoryParts = [];
+    if (commandState.memory1 && commandState.expiration1 > voglerState.totalTurns) {
+        memoryParts.push(`Transition towards: ${commandState.memory1}`);
+    }
+    if (commandState.memory2 && commandState.expiration2 > voglerState.totalTurns) {
+        memoryParts.push(`Consider: ${commandState.memory2}`);
+    }
+    if (commandState.memory3 && commandState.expiration3 > voglerState.totalTurns) {
+        memoryParts.push(`Background goal: ${commandState.memory3}`);
+    }
+
+    if (memoryParts.length > 0) {
+        result.memoryGuidance = memoryParts.join(' ');
+    }
+
+    return result;
+};
+
+/**
+ * Decrement @req TTL and clean up if expired
+ * Called in output modifier after AI generates response
+ */
+const decrementRequestTTL = () => {
+    const commandState = initCommandsState();
+
+    if (commandState.narrativeRequest && commandState.narrativeRequestTTL > 0) {
+        commandState.narrativeRequestTTL--;
+
+        if (commandState.narrativeRequestTTL <= 0) {
+            commandState.narrativeRequest = null;
+            commandState.narrativeRequestFulfilled = false;
+            if (VOGLER_CONFIG.logStageChanges) {
+                console.log('⏱️ @req expired');
+            }
+        }
+    }
+};
+
+/**
+ * Clean up expired parentheses memories
+ */
+const cleanupExpiredMemories = () => {
+    const commandState = initCommandsState();
+    const voglerState = initVoglerState();
+    let expired = 0;
+
+    if (commandState.expiration1 && commandState.expiration1 <= voglerState.totalTurns) {
+        commandState.memory1 = '';
+        commandState.expiration1 = null;
+        expired++;
+    }
+
+    if (commandState.expiration2 && commandState.expiration2 <= voglerState.totalTurns) {
+        commandState.memory2 = '';
+        commandState.expiration2 = null;
+        expired++;
+    }
+
+    if (commandState.expiration3 && commandState.expiration3 <= voglerState.totalTurns) {
+        commandState.memory3 = '';
+        commandState.expiration3 = null;
+        expired++;
+    }
+
+    if (expired > 0 && VOGLER_CONFIG.logStageChanges) {
+        console.log(`🗑️ ${expired} memories expired`);
+    }
+
+    return expired;
 };
 
 // #endregion
@@ -1464,6 +1754,7 @@ initVoglerSystems();
 const VoglerEngine = {
     // State
     init: initVoglerState,
+    initCommands: initCommandsState,
     getCurrentStage: getCurrentVoglerStage,
 
     // Stage management
@@ -1482,6 +1773,10 @@ const VoglerEngine = {
 
     // Commands
     processCommands: processVoglerCommands,
+    buildFrontMemory: buildFrontMemoryInjection,
+    buildCommandsAuthorsNote: buildCommandsAuthorsNote,
+    decrementRequestTTL: decrementRequestTTL,
+    cleanupMemories: cleanupExpiredMemories,
 
     // Analytics
     getProgress: getVoglerProgress,
