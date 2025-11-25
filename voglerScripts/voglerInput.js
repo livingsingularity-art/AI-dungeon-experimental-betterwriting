@@ -42,9 +42,12 @@ Weave the following concept into the next output in a subtle, immersive way:
 ${requestText}
 </SYSTEM>`;
 
-            // Set frontMemory directly (overwrites any previous frontMemory)
+            // PROPER LIFECYCLE: Append to frontMemory instead of overwriting
             state.memory = state.memory || {};
-            state.memory.frontMemory = systemPrompt;
+            const existingFrontMemory = state.memory.frontMemory || '';
+            state.memory.frontMemory = existingFrontMemory
+                ? existingFrontMemory + '\n\n' + systemPrompt
+                : systemPrompt;
 
             if (VOGLER_CONFIG.debugLogging) {
                 log(`🎯 @req processed: "${requestText}"`);
@@ -56,7 +59,7 @@ ${requestText}
 
             // If all text was consumed, provide minimal input
             if (!text) {
-                text = ".";
+                text = " ";
             }
 
             state.message = "Request acknowledged.";
@@ -75,7 +78,7 @@ ${requestText}
 
         // CRITICAL: If commands consumed all text, provide minimal input
         if (!text || text.trim() === '') {
-            text = '.';  // Minimal continue command
+            text = ' ';  // Minimal continue command (single space)
             if (VOGLER_CONFIG.debugLogging) {
                 log(`⚠️ Commands consumed all input - using continue signal`);
             }
