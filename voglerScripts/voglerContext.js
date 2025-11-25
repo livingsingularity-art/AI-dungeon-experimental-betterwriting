@@ -24,6 +24,16 @@ const modifier = (text) => {
     const currentStage = VoglerEngine.getCurrentStage();
     const progress = VoglerEngine.getProgress();
 
+    // CRITICAL: Process commands FIRST before trying to inject them!
+    // Context script runs BEFORE input script, so we need to process commands here
+    // Get the player's ACTUAL input from history (last entry)
+    const lastEntry = history[history.length - 1];
+    const playerInput = lastEntry ? (lastEntry.text || '') : '';
+    if (VOGLER_CONFIG.enabled && playerInput.trim()) {
+        // Process commands from the player input (extracts @req, parentheses, etc.)
+        VoglerEngine.processCommands(playerInput);
+    }
+
     // Inject @req into frontMemory (single turn only!)
     if (VOGLER_CONFIG.enabled && state.memory) {
         const frontMemoryInjection = VoglerEngine.buildFrontMemory();
@@ -73,8 +83,11 @@ const modifier = (text) => {
                     noteParts.push(voglerGuidance.trim());
                 }
 
-                // Combine with separator
-                state.memory.authorsNote = noteParts.join(' | ');
+                // CRITICAL: Only set author's note if we have content to add
+                // Otherwise we'd overwrite/delete any existing content from other systems
+                if (noteParts.length > 0) {
+                    state.memory.authorsNote = noteParts.join(' | ');
+                }
 
                 // Store for restoration in output script
                 state.voglerAuthorsNoteStorage = voglerGuidance;
