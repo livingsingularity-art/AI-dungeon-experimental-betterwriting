@@ -24,6 +24,23 @@ const modifier = (text) => {
     const currentStage = VoglerEngine.getCurrentStage();
     const progress = VoglerEngine.getProgress();
 
+    // Inject @req into frontMemory (single turn only!)
+    if (VOGLER_CONFIG.enabled && state.memory) {
+        const frontMemoryInjection = VoglerEngine.buildFrontMemory();
+        if (frontMemoryInjection && frontMemoryInjection.trim() !== '') {
+            state.memory.frontMemory = (state.memory.frontMemory || '') + '\n\n' + frontMemoryInjection;
+
+            // Clear first-turn flag so it doesn't inject again next turn
+            if (state.commands && state.commands.narrativeRequestFirstTurn) {
+                state.commands.narrativeRequestFirstTurn = false;
+            }
+
+            if (VOGLER_CONFIG.debugLogging) {
+                log(`🎯 @req injected to frontMemory (SINGLE TURN): ${frontMemoryInjection.substring(0, 60)}...`);
+            }
+        }
+    }
+
     // Build and inject Vogler author's note
     if (VOGLER_CONFIG.enabled) {
         try {
@@ -32,28 +49,23 @@ const modifier = (text) => {
             // Get player's custom author's note (separate from system notes)
             const playersNote = VoglerEngine.config.playersNote.getPlayersNote();
 
-            // Get command guidance (@req and parentheses)
-            const commandGuidance = VoglerEngine.buildCommandsAuthorsNote();
+            // Get parentheses memory guidance (gradual goals with TTL)
+            const memoryGuidance = VoglerEngine.buildCommandsAuthorsNote();
 
             // Inject into author's note system
             // This works alongside NGO or as standalone
             if (state.memory) {
-                // Build combined author's note: Commands + Player's note + Vogler system
+                // Build combined author's note: Player's note + Parentheses + Vogler system
                 const noteParts = [];
 
-                // Add @req guidance FIRST (highest priority - immediate action)
-                if (commandGuidance.reqGuidance && commandGuidance.reqGuidance.trim() !== '') {
-                    noteParts.push(commandGuidance.reqGuidance.trim());
-                }
-
-                // Add player's custom note
+                // Add player's custom note first (highest priority)
                 if (playersNote && playersNote.trim() !== '') {
                     noteParts.push(playersNote.trim());
                 }
 
                 // Add parentheses memory guidance (gradual goals)
-                if (commandGuidance.memoryGuidance && commandGuidance.memoryGuidance.trim() !== '') {
-                    noteParts.push(commandGuidance.memoryGuidance.trim());
+                if (memoryGuidance && memoryGuidance.trim() !== '') {
+                    noteParts.push(memoryGuidance.trim());
                 }
 
                 // Add Vogler system guidance (structure)
@@ -67,15 +79,12 @@ const modifier = (text) => {
                 // Store for restoration in output script
                 state.voglerAuthorsNoteStorage = voglerGuidance;
                 state.playersAuthorsNoteStorage = playersNote;
-                state.commandsAuthorsNoteStorage = commandGuidance;
+                state.memoryGuidanceStorage = memoryGuidance;
 
                 if (VOGLER_CONFIG.debugLogging) {
                     log(`🎬 Vogler guidance injected: ${currentStage.name}`);
-                    if (commandGuidance.reqGuidance) {
-                        log(`   @req: ${commandGuidance.reqGuidance.substring(0, 60)}...`);
-                    }
-                    if (commandGuidance.memoryGuidance) {
-                        log(`   Memory: ${commandGuidance.memoryGuidance.substring(0, 60)}...`);
+                    if (memoryGuidance) {
+                        log(`   Memory: ${memoryGuidance.substring(0, 60)}...`);
                     }
                     log(`   System: ${voglerGuidance.substring(0, 60)}...`);
                     if (playersNote) {

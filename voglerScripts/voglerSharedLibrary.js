@@ -578,6 +578,7 @@ const initCommandsState = () => {
             narrativeRequest: null,
             narrativeRequestTTL: 0,
             narrativeRequestFulfilled: false,
+            narrativeRequestFirstTurn: false, // Flag for single-turn frontMemory injection
             lastRequestTime: 0,
             requestHistory: [],
 
@@ -612,10 +613,11 @@ const processReqCommand = (text) => {
 
     const request = match[1].trim();
 
-    // Store request with TTL (default 3 turns)
+    // Store request with TTL (default 3 turns for tracking/detection)
     commandState.narrativeRequest = request;
     commandState.narrativeRequestTTL = 3;
     commandState.narrativeRequestFulfilled = false;
+    commandState.narrativeRequestFirstTurn = true; // Flag for single-turn frontMemory
     commandState.lastRequestTime = Date.now();
 
     // Track history
@@ -802,14 +804,18 @@ const processVoglerCommands = (text) => {
 };
 
 /**
- * Build front memory injection for @req command
- * Used in input modifier to inject request at start of context
+ * Build front memory injection for @req command (SINGLE TURN ONLY!)
+ * Used in context modifier to inject request at start of context
+ * NOTE: Only injects on the FIRST turn after @req is issued
  * @returns {string} Front memory injection text
  */
 const buildFrontMemoryInjection = () => {
     const commandState = initCommandsState();
 
-    if (!commandState.narrativeRequest || commandState.narrativeRequestTTL <= 0) {
+    // Only inject on FIRST turn (single turn only!)
+    if (!commandState.narrativeRequest ||
+        commandState.narrativeRequestTTL <= 0 ||
+        !commandState.narrativeRequestFirstTurn) {
         return '';
     }
 
@@ -817,20 +823,15 @@ const buildFrontMemoryInjection = () => {
 };
 
 /**
- * Build author's note layers for @req and parentheses
- * @returns {Object} { reqGuidance, memoryGuidance }
+ * Build author's note layers for parentheses memory ONLY
+ * NOTE: @req goes to frontMemory, NOT author's note
+ * @returns {string} Memory guidance for author's note
  */
 const buildCommandsAuthorsNote = () => {
     const commandState = initCommandsState();
     const voglerState = initVoglerState();
-    const result = { reqGuidance: '', memoryGuidance: '' };
 
-    // @req guidance (immediate priority)
-    if (commandState.narrativeRequest && commandState.narrativeRequestTTL > 0) {
-        result.reqGuidance = `PRIORITY: Immediately and naturally introduce: ${commandState.narrativeRequest}`;
-    }
-
-    // Parentheses memory guidance (gradual goals)
+    // Parentheses memory guidance (gradual goals with TTL)
     const memoryParts = [];
     if (commandState.memory1 && commandState.expiration1 > voglerState.totalTurns) {
         memoryParts.push(`Transition towards: ${commandState.memory1}`);
@@ -842,11 +843,7 @@ const buildCommandsAuthorsNote = () => {
         memoryParts.push(`Background goal: ${commandState.memory3}`);
     }
 
-    if (memoryParts.length > 0) {
-        result.memoryGuidance = memoryParts.join(' ');
-    }
-
-    return result;
+    return memoryParts.join(' ');
 };
 
 /**

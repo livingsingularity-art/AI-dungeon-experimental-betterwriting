@@ -32,7 +32,7 @@ const modifier = (text) => {
     if (VOGLER_CONFIG.enabled && state.memory) {
         const voglerNote = state.voglerAuthorsNoteStorage || '';
         const playersNote = state.playersAuthorsNoteStorage || '';
-        const commandsGuidance = state.commandsAuthorsNoteStorage || { reqGuidance: '', memoryGuidance: '' };
+        const memoryGuidance = state.memoryGuidanceStorage || '';
 
         // Check if author's note was cleared or reset
         if (!state.memory.authorsNote ||
@@ -42,19 +42,14 @@ const modifier = (text) => {
             // Rebuild combined author's note
             const noteParts = [];
 
-            // Add @req guidance first (highest priority)
-            if (commandsGuidance.reqGuidance && commandsGuidance.reqGuidance.trim() !== '') {
-                noteParts.push(commandsGuidance.reqGuidance.trim());
-            }
-
-            // Add player's note
+            // Add player's note first
             if (playersNote && playersNote.trim() !== '') {
                 noteParts.push(playersNote.trim());
             }
 
             // Add parentheses memory guidance
-            if (commandsGuidance.memoryGuidance && commandsGuidance.memoryGuidance.trim() !== '') {
-                noteParts.push(commandsGuidance.memoryGuidance.trim());
+            if (memoryGuidance && memoryGuidance.trim() !== '') {
+                noteParts.push(memoryGuidance.trim());
             }
 
             // Add Vogler system guidance
@@ -66,7 +61,7 @@ const modifier = (text) => {
                 state.memory.authorsNote = noteParts.join(' | ');
 
                 if (VOGLER_CONFIG.debugLogging) {
-                    log(`🔄 Author's note restored (Commands + Player + Vogler)`);
+                    log(`🔄 Author's note restored (Player + Memory + Vogler)`);
                 }
             }
         }
