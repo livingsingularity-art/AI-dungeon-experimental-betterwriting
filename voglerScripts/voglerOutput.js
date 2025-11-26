@@ -28,33 +28,25 @@ const modifier = (text) => {
         VoglerEngine.cleanupMemories();
     }
 
-    // Restore author's note if needed (same pattern as Trinity/NGO)
+    // NOTE: Author's note restoration now happens in CONTEXT script (before AI sees it)
+    // This is just a safety check in case anything cleared it during generation
     if (VOGLER_CONFIG.enabled && state.memory) {
         const voglerNote = state.voglerAuthorsNoteStorage || '';
         const playersNote = state.playersAuthorsNoteStorage || '';
         const memoryGuidance = state.memoryGuidanceStorage || '';
 
-        // Check if author's note was cleared or reset
-        // CRITICAL: Must check all three components: player, memory, and Vogler
-        if (!state.memory.authorsNote ||
-            (!state.memory.authorsNote.includes(voglerNote) && voglerNote) ||
-            (!state.memory.authorsNote.includes(playersNote) && playersNote) ||
-            (!state.memory.authorsNote.includes(memoryGuidance) && memoryGuidance)) {
-
-            // Rebuild combined author's note
+        // Safety check: restore only if completely missing
+        if (!state.memory.authorsNote && (voglerNote || playersNote || memoryGuidance)) {
             const noteParts = [];
 
-            // Add player's note first
             if (playersNote && playersNote.trim() !== '') {
                 noteParts.push(playersNote.trim());
             }
 
-            // Add parentheses memory guidance
             if (memoryGuidance && memoryGuidance.trim() !== '') {
                 noteParts.push(memoryGuidance.trim());
             }
 
-            // Add Vogler system guidance
             if (voglerNote && voglerNote.trim() !== '') {
                 noteParts.push(voglerNote.trim());
             }
@@ -63,7 +55,7 @@ const modifier = (text) => {
                 state.memory.authorsNote = noteParts.join(' | ');
 
                 if (VOGLER_CONFIG.debugLogging) {
-                    log(`🔄 Author's note restored (Player + Memory + Vogler)`);
+                    log(`🔄 Author's note safety restoration in output (this should be rare)`);
                 }
             }
         }

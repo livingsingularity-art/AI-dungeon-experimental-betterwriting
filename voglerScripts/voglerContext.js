@@ -24,6 +24,44 @@ const modifier = (text) => {
     const currentStage = VoglerEngine.getCurrentStage();
     const progress = VoglerEngine.getProgress();
 
+    // CRITICAL FIX: Restore author's note FIRST (before any modifications)
+    // This prevents the note from being deleted for one turn after commands
+    if (VOGLER_CONFIG.enabled && state.memory) {
+        const voglerNote = state.voglerAuthorsNoteStorage || '';
+        const playersNote = state.playersAuthorsNoteStorage || '';
+        const memoryGuidance = state.memoryGuidanceStorage || '';
+
+        // Check if author's note was cleared or is missing components
+        if (!state.memory.authorsNote ||
+            (!state.memory.authorsNote.includes(voglerNote) && voglerNote) ||
+            (!state.memory.authorsNote.includes(playersNote) && playersNote) ||
+            (!state.memory.authorsNote.includes(memoryGuidance) && memoryGuidance)) {
+
+            // Rebuild combined author's note from stored components
+            const noteParts = [];
+
+            if (playersNote && playersNote.trim() !== '') {
+                noteParts.push(playersNote.trim());
+            }
+
+            if (memoryGuidance && memoryGuidance.trim() !== '') {
+                noteParts.push(memoryGuidance.trim());
+            }
+
+            if (voglerNote && voglerNote.trim() !== '') {
+                noteParts.push(voglerNote.trim());
+            }
+
+            if (noteParts.length > 0) {
+                state.memory.authorsNote = noteParts.join(' | ');
+
+                if (VOGLER_CONFIG.debugLogging) {
+                    log(`🔄 Author's note restored at start of context (Player + Memory + Vogler)`);
+                }
+            }
+        }
+    }
+
     // Inject @req frontMemory if active (SINGLE TURN ONLY)
     // This processes the @req command that was captured in INPUT script
     if (VOGLER_CONFIG.enabled && state.memory) {
