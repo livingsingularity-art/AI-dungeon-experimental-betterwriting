@@ -26,8 +26,8 @@
 const VOGLER_CONFIG = {
     // System control
     enabled: true,
-    debugLogging: false,  // DISABLED for production release
-    logStageChanges: false,  // DISABLED for production release
+    debugLogging: true,  // ENABLED for debugging @req issues
+    logStageChanges: true,  // ENABLED for debugging @req issues
 
     // Auto-advancement settings
     autoAdvance: true,
@@ -570,6 +570,7 @@ const buildVoglerAuthorsNote = () => {
 
 /**
  * Initialize commands state
+ * CRITICAL: Vogler owns state.commands. NGO commands system is disabled.
  */
 const initCommandsState = () => {
     if (!state.commands) {
@@ -588,8 +589,43 @@ const initCommandsState = () => {
             memory2: '',
             expiration2: null,
             memory3: '',
-            expiration3: null
+            expiration3: null,
+
+            // Ownership marker
+            _voglerOwned: true
         };
+
+        if (VOGLER_CONFIG.debugLogging) {
+            console.log('✨ Vogler commands state INITIALIZED (fresh)');
+        }
+    } else if (!state.commands._voglerOwned) {
+        // State exists but wasn't created by Vogler - might be NGO residue
+        // Preserve requestHistory if it exists, but reset everything else
+        const oldHistory = state.commands.requestHistory || [];
+
+        if (VOGLER_CONFIG.debugLogging) {
+            console.log('⚠️ Found non-Vogler command state - resetting to Vogler format');
+        }
+
+        state.commands = {
+            narrativeRequest: null,
+            narrativeRequestTTL: 0,
+            narrativeRequestFulfilled: false,
+            narrativeRequestFirstTurn: false,
+            lastRequestTime: 0,
+            requestHistory: oldHistory,
+            memory1: '',
+            expiration1: null,
+            memory2: '',
+            expiration2: null,
+            memory3: '',
+            expiration3: null,
+            _voglerOwned: true
+        };
+
+        if (VOGLER_CONFIG.debugLogging) {
+            console.log('✨ Vogler commands state RESET and claimed');
+        }
     }
     return state.commands;
 };
@@ -608,6 +644,9 @@ const processReqCommand = (text) => {
     const match = text.match(reqRegex);
 
     if (!match) {
+        if (VOGLER_CONFIG.debugLogging && text.includes('@req')) {
+            console.log(`⚠️ @req FOUND IN TEXT BUT NOT MATCHED BY REGEX! Text: "${text}"`);
+        }
         return { processed: text, found: false, request: null };
     }
 
@@ -619,6 +658,12 @@ const processReqCommand = (text) => {
     commandState.narrativeRequestFulfilled = false;
     commandState.narrativeRequestFirstTurn = true; // Flag for single-turn frontMemory
     commandState.lastRequestTime = Date.now();
+
+    if (VOGLER_CONFIG.debugLogging) {
+        console.log(`🎯 @req CAPTURED: "${request}"`);
+        console.log(`   ├─ TTL set to: ${commandState.narrativeRequestTTL}`);
+        console.log(`   └─ firstTurn flag: ${commandState.narrativeRequestFirstTurn}`);
+    }
 
     // Track history
     commandState.requestHistory.push({
@@ -634,10 +679,6 @@ const processReqCommand = (text) => {
 
     // Remove command from text
     const processed = text.replace(reqRegex, '').trim();
-
-    if (VOGLER_CONFIG.logStageChanges) {
-        console.log(`🎯 @req: "${request}"`);
-    }
 
     return { processed, found: true, request };
 };
@@ -812,14 +853,29 @@ const processVoglerCommands = (text) => {
 const buildFrontMemoryInjection = () => {
     const commandState = initCommandsState();
 
+    if (VOGLER_CONFIG.debugLogging) {
+        console.log(`🔍 buildFrontMemory check:`);
+        console.log(`   ├─ narrativeRequest: "${commandState.narrativeRequest || 'null'}"`);
+        console.log(`   ├─ TTL: ${commandState.narrativeRequestTTL}`);
+        console.log(`   └─ firstTurn: ${commandState.narrativeRequestFirstTurn}`);
+    }
+
     // Only inject on FIRST turn (single turn only!)
     if (!commandState.narrativeRequest ||
         commandState.narrativeRequestTTL <= 0 ||
         !commandState.narrativeRequestFirstTurn) {
+
+        if (VOGLER_CONFIG.debugLogging) {
+            console.log(`   ❌ NOT injecting (one of conditions failed)`);
+        }
         return '';
     }
 
-    return `[PRIORITY: Immediately introduce: ${commandState.narrativeRequest}]`;
+    const injection = `[PRIORITY: Immediately introduce: ${commandState.narrativeRequest}]`;
+    if (VOGLER_CONFIG.debugLogging) {
+        console.log(`   ✅ INJECTING: "${injection}"`);
+    }
+    return injection;
 };
 
 /**

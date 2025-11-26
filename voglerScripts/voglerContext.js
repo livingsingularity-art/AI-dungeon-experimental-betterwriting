@@ -20,6 +20,17 @@ const modifier = (text) => {
     // Initialize Vogler state
     VoglerEngine.init();
 
+    // DIAGNOSTIC: Dump command state at start of context
+    if (VOGLER_CONFIG.debugLogging) {
+        const commandState = VoglerEngine.initCommands();
+        log(`\n━━━ CONTEXT START ━━━`);
+        log(`📊 Command State:`);
+        log(`   narrativeRequest: "${commandState.narrativeRequest || 'null'}"`);
+        log(`   narrativeRequestTTL: ${commandState.narrativeRequestTTL}`);
+        log(`   narrativeRequestFirstTurn: ${commandState.narrativeRequestFirstTurn}`);
+        log(`   _voglerOwned: ${commandState._voglerOwned}`);
+    }
+
     // Get current stage information
     const currentStage = VoglerEngine.getCurrentStage();
     const progress = VoglerEngine.getProgress();
@@ -73,13 +84,20 @@ const modifier = (text) => {
                 ? existing + '\n\n' + frontMemoryInjection
                 : frontMemoryInjection;
 
+            if (VOGLER_CONFIG.debugLogging) {
+                log(`✅ @req injected to frontMemory: "${frontMemoryInjection}"`);
+                log(`   Final frontMemory: "${state.memory.frontMemory.substring(0, 100)}..."`);
+            }
+
             // CRITICAL: Clear first-turn flag after injection so it only happens ONCE
             const commandState = VoglerEngine.initCommands();
             commandState.narrativeRequestFirstTurn = false;
 
             if (VOGLER_CONFIG.debugLogging) {
-                log(`🎯 @req frontMemory injected (single turn only)`);
+                log(`   🔒 firstTurn flag cleared (won't inject next turn)`);
             }
+        } else if (VOGLER_CONFIG.debugLogging) {
+            log(`⏭️ @req buildFrontMemory returned empty (not first turn or no request)`);
         }
     }
 

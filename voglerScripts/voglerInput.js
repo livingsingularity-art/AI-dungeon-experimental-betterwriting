@@ -31,12 +31,17 @@ const modifier = (text) => {
 
     // Process Vogler commands (@req, @stage, @beat, parentheses)
     if (VOGLER_CONFIG.enabled) {
+        if (VOGLER_CONFIG.debugLogging) {
+            log(`📥 INPUT received: "${text}"`);
+        }
+
         const commandResult = VoglerEngine.processCommands(text);
         text = commandResult.processed;
 
         // Log commands found
         if (Object.keys(commandResult.commands).length > 0 && VOGLER_CONFIG.debugLogging) {
-            log(`🎬 Vogler commands: ${JSON.stringify(commandResult.commands)}`);
+            log(`🎬 Commands found: ${JSON.stringify(commandResult.commands)}`);
+            log(`   Remaining text after commands: "${text}"`);
         }
 
         // CRITICAL: If commands consumed all text, provide minimal input
