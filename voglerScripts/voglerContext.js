@@ -24,9 +24,26 @@ const modifier = (text) => {
     const currentStage = VoglerEngine.getCurrentStage();
     const progress = VoglerEngine.getProgress();
 
-    // NOTE: @req command is processed in INPUT script, which runs BEFORE context
-    // Input script sets state.memory.frontMemory directly with the @req content
-    // This context script just needs to preserve it (don't overwrite)
+    // Inject @req frontMemory if active (SINGLE TURN ONLY)
+    // This processes the @req command that was captured in INPUT script
+    if (VOGLER_CONFIG.enabled && state.memory) {
+        const frontMemoryInjection = VoglerEngine.buildFrontMemory();
+
+        if (frontMemoryInjection && frontMemoryInjection.trim() !== '') {
+            const existing = state.memory.frontMemory || '';
+            state.memory.frontMemory = existing
+                ? existing + '\n\n' + frontMemoryInjection
+                : frontMemoryInjection;
+
+            // CRITICAL: Clear first-turn flag after injection so it only happens ONCE
+            const commandState = VoglerEngine.initCommands();
+            commandState.narrativeRequestFirstTurn = false;
+
+            if (VOGLER_CONFIG.debugLogging) {
+                log(`🎯 @req frontMemory injected (single turn only)`);
+            }
+        }
+    }
 
     // Build and inject Vogler author's note
     if (VOGLER_CONFIG.enabled) {
@@ -58,18 +75,23 @@ const modifier = (text) => {
                 // Add Vogler system guidance (structure)
                 if (voglerGuidance && voglerGuidance.trim() !== '') {
                     noteParts.push(voglerGuidance.trim());
+                } else {
+                    // ERROR: voglerGuidance should never be empty if enabled!
+                    if (VOGLER_CONFIG.debugLogging) {
+                        log(`⚠️ WARNING: voglerGuidance is empty! This should not happen.`);
+                    }
                 }
 
-                // CRITICAL: Only set author's note if we have content to add
-                // Otherwise we'd overwrite/delete any existing content from other systems
-                if (noteParts.length > 0) {
-                    state.memory.authorsNote = noteParts.join(' | ');
-                }
+                // ALWAYS set author's note to prevent deletion/undefined state
+                // If noteParts is empty, at minimum set to empty string (not undefined)
+                state.memory.authorsNote = noteParts.length > 0
+                    ? noteParts.join(' | ')
+                    : '';
 
                 // Store for restoration in output script
-                state.voglerAuthorsNoteStorage = voglerGuidance;
-                state.playersAuthorsNoteStorage = playersNote;
-                state.memoryGuidanceStorage = memoryGuidance;
+                state.voglerAuthorsNoteStorage = voglerGuidance || '';
+                state.playersAuthorsNoteStorage = playersNote || '';
+                state.memoryGuidanceStorage = memoryGuidance || '';
 
                 if (VOGLER_CONFIG.debugLogging) {
                     log(`🎬 Vogler guidance injected: ${currentStage.name}`);
