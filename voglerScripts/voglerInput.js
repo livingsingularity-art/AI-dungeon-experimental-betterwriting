@@ -59,7 +59,7 @@ ${requestText}
 
             // If all text was consumed, provide minimal input
             if (!text) {
-                text = " ";
+                text = ".";
             }
 
             state.message = "Request acknowledged.";
@@ -78,7 +78,7 @@ ${requestText}
 
         // CRITICAL: If commands consumed all text, provide minimal input
         if (!text || text.trim() === '') {
-            text = ' ';  // Minimal continue command (single space)
+            text = '.';  // Minimal continue command (period)
             if (VOGLER_CONFIG.debugLogging) {
                 log(`⚠️ Commands consumed all input - using continue signal`);
             }
