@@ -35,9 +35,11 @@ const modifier = (text) => {
         const memoryGuidance = state.memoryGuidanceStorage || '';
 
         // Check if author's note was cleared or reset
+        // CRITICAL: Must check all three components: player, memory, and Vogler
         if (!state.memory.authorsNote ||
             (!state.memory.authorsNote.includes(voglerNote) && voglerNote) ||
-            (!state.memory.authorsNote.includes(playersNote) && playersNote)) {
+            (!state.memory.authorsNote.includes(playersNote) && playersNote) ||
+            (!state.memory.authorsNote.includes(memoryGuidance) && memoryGuidance)) {
 
             // Rebuild combined author's note
             const noteParts = [];
