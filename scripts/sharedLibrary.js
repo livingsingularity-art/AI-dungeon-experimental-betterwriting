@@ -44,8 +44,9 @@ const CONFIG = {
     },
 
     // NGO (Narrative Guidance Overhaul) - THE CENTRAL BRAIN
+    // DISABLED: Vogler scripts now handle author's note management to prevent conflicts
     ngo: {
-        enabled: true,
+        enabled: false,
 
         // HEAT MECHANICS (short-term tension)
         initialHeat: 0,
@@ -111,8 +112,10 @@ const CONFIG = {
     },
 
     // COMMAND SYSTEM (Player narrative pressure vectors)
+    // Commands system (@req and parentheses)
+    // DISABLED: Vogler scripts now handle @req and () commands to prevent conflicts
     commands: {
-        enabled: true,
+        enabled: false,
 
         // @req settings
         reqPrefix: '@req',

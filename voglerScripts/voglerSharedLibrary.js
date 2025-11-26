@@ -26,8 +26,8 @@
 const VOGLER_CONFIG = {
     // System control
     enabled: true,
-    debugLogging: false,  // PRODUCTION: Disabled for release
-    logStageChanges: false,  // PRODUCTION: Disabled for release
+    debugLogging: true,  // ENABLED for testing @req and () commands
+    logStageChanges: true,  // ENABLED for testing
 
     // Auto-advancement settings
     autoAdvance: true,
