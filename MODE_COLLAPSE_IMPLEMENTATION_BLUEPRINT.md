@@ -921,6 +921,461 @@ Instructions:
 
 ---
 
+## Safety Constraints & Memory Management
+
+**CRITICAL**: All implementations MUST follow these patterns to prevent unbounded growth, ensure debuggability, and maintain system stability.
+
+### Named Constants (Required)
+
+All magic numbers MUST be defined as named constants at the top of the implementation:
+
+```javascript
+// === DIVERSITY SYSTEM CONSTANTS ===
+// Memory management (prevent unbounded growth)
+const MAX_DIVERSITY_SCORE_HISTORY = 20;      // Rolling window of scores
+const MAX_BLOCKED_PHRASES = 30;              // Maximum phrases to track
+const MAX_BLOCKED_PHRASES_INJECTED = 10;     // Max phrases sent to AI
+const MAX_OVERLAPPING_PHRASES_LOGGED = 5;    // Limit for debug output
+
+// Bounds (prevent exponential behavior)
+const MIN_DIVERSITY_SCORE = 0.0;             // Floor for scores
+const MAX_DIVERSITY_SCORE = 1.0;             // Ceiling for scores
+const MIN_ALERT_THRESHOLD = 0.0;             // Minimum threshold setting
+const MAX_ALERT_THRESHOLD = 1.0;             // Maximum threshold setting
+const MAX_REROLL_COUNT = 10;                 // Cap reroll escalation
+
+// Expiration (nothing held indefinitely)
+const BLOCKED_PHRASE_TTL_TURNS = 15;         // Phrases expire after N turns
+const DIVERSITY_PRUNE_INTERVAL = 25;         // Prune state every N turns
+const INTERVENTION_DECAY_TURNS = 3;          // Reset intervention after good outputs
+
+// Performance limits
+const MAX_NGRAM_PROCESSING_LENGTH = 5000;    // Skip analysis for huge texts
+const MAX_PARAGRAPHS_TO_SCORE = 50;          // Limit context pruning scope
+```
+
+### State Structure with TTL and Bounds
+
+```javascript
+// === DIVERSITY STATE INITIALIZATION (with safety features) ===
+state.diversity = {
+    // Scores (bounded 0-1, rolling window)
+    scoreHistory: [],                        // Max: MAX_DIVERSITY_SCORE_HISTORY
+    avgScore: 1.0,                           // Clamped to [0, 1]
+    lastDiversityScore: 1.0,                 // Clamped to [0, 1]
+
+    // Blocked phrases (with TTL)
+    blockedPhrases: [],                      // Max: MAX_BLOCKED_PHRASES
+    blockedPhraseTTLs: [],                   // Parallel array: turns until expiration
+
+    // Counters (bounded)
+    rerollCount: 0,                          // Max: MAX_REROLL_COUNT
+    turnsSinceIntervention: 0,               // For intervention decay
+
+    // Configuration (bounded)
+    alertThreshold: 0.35,                    // Clamped to [0, 1]
+    interventionLevel: 'none',               // Enum: none, nudge, intervene, escalate
+
+    // Tracking (for debugging and pruning)
+    lastPruneTime: 0,                        // Turn number of last prune
+    totalAnalyses: 0,                        // Lifetime counter
+    debugEnabled: true                       // Debug logging toggle
+};
+```
+
+### Safe Score Calculation (with bounds)
+
+```javascript
+/**
+ * Calculate diversity score with safety clamping
+ * @returns {number} Score clamped to [0, 1]
+ */
+const calculateSafeDiversityScore = (newText, historyTexts) => {
+    // Safety: Skip huge texts to prevent performance issues
+    if (newText.length > MAX_NGRAM_PROCESSING_LENGTH) {
+        safeLog(`⚠️ Text too long (${newText.length}), skipping detailed analysis`, 'warn');
+        return { score: 0.7, overlap: 0, details: { skipped: true } };
+    }
+
+    const result = DiversityEngine.calculateDiversityScore(newText, historyTexts);
+
+    // Clamp score to valid range
+    result.score = Math.max(MIN_DIVERSITY_SCORE, Math.min(MAX_DIVERSITY_SCORE, result.score));
+
+    // Limit overlapping phrases for memory efficiency
+    if (result.details.overlappingPhrases) {
+        result.details.overlappingPhrases = result.details.overlappingPhrases.slice(0, MAX_OVERLAPPING_PHRASES_LOGGED);
+    }
+
+    return result;
+};
+```
+
+### Blocked Phrase Management (with TTL and pruning)
+
+```javascript
+/**
+ * Add phrase to blocked list with TTL
+ * Prevents unbounded growth and stale entries
+ */
+const addBlockedPhrase = (phrase) => {
+    const ds = state.diversity;
+    if (!ds) return;
+
+    // Don't add duplicates
+    if (ds.blockedPhrases.includes(phrase)) return;
+
+    // Add with TTL
+    ds.blockedPhrases.push(phrase);
+    ds.blockedPhraseTTLs.push(BLOCKED_PHRASE_TTL_TURNS);
+
+    // Enforce maximum size (remove oldest first)
+    while (ds.blockedPhrases.length > MAX_BLOCKED_PHRASES) {
+        ds.blockedPhrases.shift();
+        ds.blockedPhraseTTLs.shift();
+    }
+
+    if (ds.debugEnabled) {
+        safeLog(`🚫 Blocked phrase added: "${phrase}" (TTL: ${BLOCKED_PHRASE_TTL_TURNS})`, 'info');
+    }
+};
+
+/**
+ * Decrement TTLs and remove expired phrases
+ * Call ONCE per turn in output modifier
+ */
+const tickBlockedPhraseTTLs = () => {
+    const ds = state.diversity;
+    if (!ds || !ds.blockedPhraseTTLs) return;
+
+    const expiredCount = { count: 0 };
+
+    // Decrement all TTLs
+    ds.blockedPhraseTTLs = ds.blockedPhraseTTLs.map(ttl => ttl - 1);
+
+    // Remove expired (TTL <= 0)
+    const validIndices = [];
+    ds.blockedPhraseTTLs.forEach((ttl, idx) => {
+        if (ttl > 0) {
+            validIndices.push(idx);
+        } else {
+            expiredCount.count++;
+        }
+    });
+
+    if (expiredCount.count > 0) {
+        ds.blockedPhrases = validIndices.map(i => ds.blockedPhrases[i]);
+        ds.blockedPhraseTTLs = validIndices.map(i => ds.blockedPhraseTTLs[i]);
+
+        if (ds.debugEnabled) {
+            safeLog(`🗑️ Expired ${expiredCount.count} blocked phrases`, 'info');
+        }
+    }
+};
+```
+
+### Periodic State Pruning
+
+```javascript
+/**
+ * Prune diversity state to prevent unbounded growth
+ * Call periodically (every DIVERSITY_PRUNE_INTERVAL turns)
+ */
+const pruneDiversityState = () => {
+    const ds = state.diversity;
+    if (!ds) return;
+
+    const currentTurn = state.turnCount || 0;
+
+    // Only prune at intervals
+    if (currentTurn - ds.lastPruneTime < DIVERSITY_PRUNE_INTERVAL) return;
+
+    ds.lastPruneTime = currentTurn;
+
+    const prunedStats = {
+        scoreHistory: 0,
+        blockedPhrases: 0
+    };
+
+    // Prune score history to maximum
+    while (ds.scoreHistory.length > MAX_DIVERSITY_SCORE_HISTORY) {
+        ds.scoreHistory.shift();
+        prunedStats.scoreHistory++;
+    }
+
+    // Prune blocked phrases to maximum (keep newest)
+    while (ds.blockedPhrases.length > MAX_BLOCKED_PHRASES) {
+        ds.blockedPhrases.shift();
+        ds.blockedPhraseTTLs.shift();
+        prunedStats.blockedPhrases++;
+    }
+
+    // Reset reroll count if too high (prevent infinite escalation)
+    if (ds.rerollCount > MAX_REROLL_COUNT) {
+        ds.rerollCount = MAX_REROLL_COUNT;
+    }
+
+    // Decay intervention level after consecutive good outputs
+    if (ds.interventionLevel !== 'none' && ds.turnsSinceIntervention >= INTERVENTION_DECAY_TURNS) {
+        ds.interventionLevel = 'none';
+        ds.turnsSinceIntervention = 0;
+        safeLog(`✅ Intervention level reset after ${INTERVENTION_DECAY_TURNS} good turns`, 'info');
+    }
+
+    if (ds.debugEnabled && (prunedStats.scoreHistory > 0 || prunedStats.blockedPhrases > 0)) {
+        safeLog(`🧹 Diversity state pruned: ${prunedStats.scoreHistory} scores, ${prunedStats.blockedPhrases} phrases`, 'info');
+    }
+};
+```
+
+### Debug Logging Integration
+
+```javascript
+/**
+ * Log diversity debug information
+ * Respects CONFIG.diversity.debugLogging setting
+ */
+const logDiversityDebug = (message, level = 'info', forceLog = false) => {
+    const ds = state.diversity;
+    if (!forceLog && (!ds || !ds.debugEnabled)) return;
+    if (!CONFIG.diversity || !CONFIG.diversity.debugLogging) return;
+
+    safeLog(`[DIV] ${message}`, level);
+};
+
+/**
+ * Generate comprehensive debug report
+ * Called by /divdebug command
+ */
+const generateDiversityDebugReport = () => {
+    const ds = state.diversity;
+    if (!ds) return "Diversity system not initialized";
+
+    return `📊 DIVERSITY DEBUG REPORT
+═══════════════════════════════════
+State:
+  Last Score: ${(ds.lastDiversityScore * 100).toFixed(1)}%
+  Avg Score: ${(ds.avgScore * 100).toFixed(1)}%
+  Intervention: ${ds.interventionLevel}
+  Reroll Count: ${ds.rerollCount}/${MAX_REROLL_COUNT}
+
+Memory Usage:
+  Score History: ${ds.scoreHistory.length}/${MAX_DIVERSITY_SCORE_HISTORY}
+  Blocked Phrases: ${ds.blockedPhrases.length}/${MAX_BLOCKED_PHRASES}
+  Last Prune: Turn ${ds.lastPruneTime}
+  Total Analyses: ${ds.totalAnalyses}
+
+Configuration:
+  Alert Threshold: ${(ds.alertThreshold * 100).toFixed(0)}%
+  Debug Enabled: ${ds.debugEnabled}
+  Prune Interval: Every ${DIVERSITY_PRUNE_INTERVAL} turns
+
+Blocked Phrases (with TTL):
+${ds.blockedPhrases.slice(0, 10).map((p, i) =>
+    `  ${i+1}. "${p}" (${ds.blockedPhraseTTLs[i]} turns left)`
+).join('\n') || '  (none)'}
+${ds.blockedPhrases.length > 10 ? `  ... and ${ds.blockedPhrases.length - 10} more` : ''}
+═══════════════════════════════════`;
+};
+```
+
+### Safe Array Operations
+
+```javascript
+/**
+ * Safe array trimming (from OPTIMIZATIONS_APPLIED.md pattern)
+ * Uses shift() instead of slice() for better performance
+ */
+const trimArrayToMax = (arr, maxLength) => {
+    while (arr.length > maxLength) {
+        arr.shift();
+    }
+    return arr;
+};
+
+/**
+ * Safe score history update with bounds
+ */
+const updateScoreHistory = (score) => {
+    const ds = state.diversity;
+    if (!ds) return;
+
+    // Clamp score
+    const clampedScore = Math.max(MIN_DIVERSITY_SCORE, Math.min(MAX_DIVERSITY_SCORE, score));
+
+    // Add to history
+    ds.scoreHistory.push(clampedScore);
+
+    // Trim to max (using efficient shift pattern)
+    trimArrayToMax(ds.scoreHistory, MAX_DIVERSITY_SCORE_HISTORY);
+
+    // Recalculate average
+    ds.avgScore = ds.scoreHistory.length > 0
+        ? ds.scoreHistory.reduce((a, b) => a + b, 0) / ds.scoreHistory.length
+        : 1.0;
+
+    // Clamp average
+    ds.avgScore = Math.max(MIN_DIVERSITY_SCORE, Math.min(MAX_DIVERSITY_SCORE, ds.avgScore));
+};
+```
+
+### Configuration Validation
+
+```javascript
+/**
+ * Validate and clamp configuration values
+ * Call on initialization and config changes
+ */
+const validateDiversityConfig = () => {
+    const ds = state.diversity;
+    if (!ds) return;
+
+    // Clamp threshold to valid range
+    ds.alertThreshold = Math.max(MIN_ALERT_THRESHOLD,
+                                  Math.min(MAX_ALERT_THRESHOLD, ds.alertThreshold));
+
+    // Validate intervention level
+    const validLevels = ['none', 'monitor', 'nudge', 'intervene', 'escalate'];
+    if (!validLevels.includes(ds.interventionLevel)) {
+        ds.interventionLevel = 'none';
+    }
+
+    // Ensure arrays are initialized
+    ds.scoreHistory = ds.scoreHistory || [];
+    ds.blockedPhrases = ds.blockedPhrases || [];
+    ds.blockedPhraseTTLs = ds.blockedPhraseTTLs || [];
+
+    // Sync TTL array length with blocked phrases
+    while (ds.blockedPhraseTTLs.length < ds.blockedPhrases.length) {
+        ds.blockedPhraseTTLs.push(BLOCKED_PHRASE_TTL_TURNS);
+    }
+    while (ds.blockedPhraseTTLs.length > ds.blockedPhrases.length) {
+        ds.blockedPhraseTTLs.pop();
+    }
+};
+```
+
+### Integration with Turn Processing
+
+```javascript
+// In output modifier, add these calls in sequence:
+
+// 1. Tick TTLs (once per turn)
+tickBlockedPhraseTTLs();
+
+// 2. Run diversity analysis
+const diversityAnalysis = analyzeDiversity(text);
+
+// 3. Update state safely
+updateScoreHistory(diversityAnalysis.score);
+
+// 4. Increment analysis counter
+state.diversity.totalAnalyses++;
+
+// 5. Prune if interval reached
+pruneDiversityState();
+
+// 6. Track intervention decay
+if (diversityAnalysis.score >= 0.65) {
+    state.diversity.turnsSinceIntervention++;
+} else {
+    state.diversity.turnsSinceIntervention = 0;
+}
+```
+
+### Additional Debug Commands
+
+```javascript
+// Add to command processing in input modifier:
+
+case 'divdebug':
+    // Comprehensive debug report
+    state.message = generateDiversityDebugReport();
+    return { text: "", stop: true };
+
+case 'divlog':
+    // Toggle debug logging
+    if (state.diversity) {
+        state.diversity.debugEnabled = !state.diversity.debugEnabled;
+        state.message = `Diversity debug logging: ${state.diversity.debugEnabled ? 'ON' : 'OFF'}`;
+    }
+    return { text: "", stop: true };
+
+case 'divprune':
+    // Force immediate prune
+    if (state.diversity) {
+        state.diversity.lastPruneTime = 0; // Reset to force prune
+        pruneDiversityState();
+        state.message = "✓ Diversity state pruned";
+    }
+    return { text: "", stop: true };
+```
+
+---
+
+## Comparison with Existing Best Practices
+
+### Alignment with CODE_OPTIMIZATION_REPORT.md
+
+| Existing Pattern | Blueprint Implementation | Status |
+|-----------------|-------------------------|--------|
+| Named constants (MAX_OUTPUT_HISTORY) | MAX_DIVERSITY_SCORE_HISTORY, etc. | ✅ Added |
+| Array pruning with shift() | trimArrayToMax() function | ✅ Added |
+| Memory pruning intervals | DIVERSITY_PRUNE_INTERVAL | ✅ Added |
+| TypeScript references | Same pattern | ✅ Compatible |
+| JSDoc annotations | All functions documented | ✅ Added |
+| safeLog() usage | logDiversityDebug() wrapper | ✅ Added |
+
+### Alignment with OPTIMIZATIONS_APPLIED.md
+
+| Optimization | Blueprint Status |
+|-------------|-----------------|
+| Regex caching | Uses existing getCachedRegex() | ✅ Reuses |
+| Bounded state growth | MAX constants + pruning | ✅ Added |
+| Performance limits | MAX_NGRAM_PROCESSING_LENGTH | ✅ Added |
+| Debug logging controls | debugEnabled flag | ✅ Added |
+| Memory management constants | All magic numbers named | ✅ Added |
+
+### Alignment with Scripting Guidebook.md
+
+| Best Practice | Blueprint Status |
+|--------------|-----------------|
+| No async/setTimeout | All synchronous | ✅ Compliant |
+| State persistence via state object | Uses state.diversity | ✅ Compliant |
+| Modifier return pattern | Returns { text } | ✅ Compliant |
+| Console logging via log() | Uses safeLog() | ✅ Compliant |
+| Story card management | Uses buildCard() | ✅ Compliant |
+
+---
+
+## Summary of Safety Features Added
+
+### Memory Management
+- ✅ All arrays have maximum sizes
+- ✅ Periodic pruning every 25 turns
+- ✅ TTL expiration for blocked phrases (15 turns)
+- ✅ No unbounded growth possible
+
+### Bounds Checking
+- ✅ All scores clamped to [0, 1]
+- ✅ Configuration values validated
+- ✅ Reroll counter capped at 10
+- ✅ Text length limits for performance
+
+### Debugging Tools
+- ✅ `/divdebug` - Comprehensive state report
+- ✅ `/divlog` - Toggle debug logging
+- ✅ `/divprune` - Force state cleanup
+- ✅ All operations logged when debug enabled
+
+### Expiration/Decay
+- ✅ Blocked phrases expire after 15 turns
+- ✅ Intervention level decays after 3 good outputs
+- ✅ State pruned at regular intervals
+- ✅ Nothing held indefinitely
+
+---
+
 ## Future Enhancements
 
 1. **Machine Learning Integration**: Track which interventions work best per user
