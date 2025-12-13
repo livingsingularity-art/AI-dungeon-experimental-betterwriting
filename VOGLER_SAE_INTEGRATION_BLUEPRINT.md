@@ -349,126 +349,156 @@ Keep each event under 7 words. The climax must feel earned.`,
 
 ---
 
-## Part 2: Pre-Generated Story Arc Cards
+## Part 2: Two-Tier Story Arc System
 
-### Arc Generation System
+### Overview: Vogler Beats + SAE Bridges
 
-**IMPORTANT DESIGN DECISION:** Unlike SAE which generates arcs mid-game, all Vogler arc story cards are **pre-generated at turn zero** during initialization. This provides:
+The system uses a **two-tier approach** for narrative guidance:
 
-1. **Consistent structure** - All three acts have their arcs defined from the start
-2. **No mid-story pauses** - No AI generation calls interrupting gameplay
-3. **Player visibility** - Users can see and edit all arcs in Story Cards immediately
-4. **Predictable behavior** - Same initialization every time
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     TWO-TIER STORY ARC SYSTEM                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  TIER 1: VOGLER BEAT CARDS (Pre-generated at turn zero)                    │
+│  ──────────────────────────────────────────────────────                    │
+│  • Structural story beats (WHAT needs to happen)                           │
+│  • Pre-generated for all 3 acts at initialization                          │
+│  • Beats are DELETED from card when completed                              │
+│  • Card shows only remaining beats to guide AI                             │
+│                                                                             │
+│  Example Card Content:                                                      │
+│    [Act I: The Setup - Remaining Beats]                                    │
+│    • Hero resists or fears the call                                        │
+│    • Mentor provides guidance or gift                                      │
+│    • Hero commits and crosses threshold                                    │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  TIER 2: SAE BRIDGE CARDS (Generated on-demand via command)                │
+│  ──────────────────────────────────────────────────────────                │
+│  • Specific plot events (HOW to move between beats)                        │
+│  • AI-generated based on current story context                             │
+│  • Created via /vogler bridge or @bridge command                           │
+│  • Events removed progressively as story advances                          │
+│                                                                             │
+│  Example Card Content:                                                      │
+│    [Story Bridge - Current Arc]                                            │
+│    1. Elena discovers the hidden map in grandmother's attic                │
+│    2. The merchant reveals the prophecy about her bloodline                │
+│    3. She must choose between family duty and destiny                      │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
-The arc cards are created alongside configuration cards during `initVoglerState()`.
+**Key Difference:**
+- **Vogler Beats** = Structural milestones (generic, reusable across stories)
+- **SAE Bridges** = Specific plot points (unique to THIS story, AI-generated)
+
+### Tier 1: Vogler Beat Cards
+
+Pre-generated at turn zero. Completed beats are **deleted** from the card so the AI only sees what still needs to happen.
 
 ```javascript
 /**
- * Arc Configuration
+ * Vogler Beat Configuration
  */
-const ARC_CONFIG = {
-    // Pre-generation (all arcs created at turn zero)
-    preGenerateAllArcs: true,       // Create all 3 act arcs on initialization
+const VOGLER_BEAT_CONFIG = {
+    // Pre-generation (all beat cards created at turn zero)
+    preGenerateAllBeats: true,
 
-    // Arc format
-    eventsPerAct: {
-        1: 5,  // Act I: 5 events
-        2: 5,  // Act II: 5 events
-        3: 4   // Act III: 4 events
+    // Beat format
+    beatsPerAct: {
+        1: 5,  // Act I: 5 beats
+        2: 5,  // Act II: 5 beats
+        3: 4   // Act III: 4 beats
     },
-    maxWordsPerEvent: 7,
 
     // Story card settings
-    storyCardPrefix: "vogler-act-",
-    arcCardType: "author",          // Ensures it influences AI
-    arcCardTrigger: "",             // Always active (no keys needed)
+    storyCardPrefix: "vogler-beats-",
+    beatCardType: "author",
 
-    // Progressive completion tracking
-    enableProgressiveCompletion: true,  // Mark events as complete (✓) as story progresses
-
-    // Manual regeneration (only via /vogler generate command)
-    allowManualRegeneration: true,
+    // IMPORTANT: Delete completed beats from card (not just mark them)
+    deleteCompletedBeats: true,
 
     // Debug
     debugLogging: true
 };
 
 /**
- * Pre-defined Arc Templates
- * These are the DEFAULT arcs created at turn zero.
+ * Pre-defined Beat Templates
+ * These are the DEFAULT structural beats created at turn zero.
  * Users can customize them in Story Cards after initialization.
+ * Completed beats are DELETED from cards, not marked.
  */
-const DEFAULT_ARC_TEMPLATES = {
+const DEFAULT_BEAT_TEMPLATES = {
     1: {
         name: "Act I: The Setup",
-        events: [
-            { text: "Hero established in ordinary world", completed: false },
-            { text: "Disruption or call arrives unexpectedly", completed: false },
-            { text: "Hero resists or fears the call", completed: false },
-            { text: "Mentor provides guidance or gift", completed: false },
-            { text: "Hero commits and crosses threshold", completed: false }
+        beats: [
+            "Hero established in ordinary world",
+            "Disruption or call arrives unexpectedly",
+            "Hero resists or fears the call",
+            "Mentor provides guidance or gift",
+            "Hero commits and crosses threshold"
         ]
     },
     2: {
         name: "Act II: The Confrontation",
-        events: [
-            { text: "Tests reveal allies and enemies", completed: false },
-            { text: "Hero approaches the central danger", completed: false },
-            { text: "THE ORDEAL - darkest moment arrives", completed: false },
-            { text: "Hero survives and claims reward", completed: false },
-            { text: "Complication threatens the victory", completed: false }
+        beats: [
+            "Tests reveal allies and enemies",
+            "Hero approaches the central danger",
+            "THE ORDEAL - darkest moment arrives",
+            "Hero survives and claims reward",
+            "Complication threatens the victory"
         ]
     },
     3: {
         name: "Act III: The Resolution",
-        events: [
-            { text: "Chase or pursuit toward finale", completed: false },
-            { text: "CLIMAX - final confrontation begins", completed: false },
-            { text: "Hero transformed through sacrifice", completed: false },
-            { text: "Return home with wisdom gained", completed: false }
+        beats: [
+            "Chase or pursuit toward finale",
+            "CLIMAX - final confrontation begins",
+            "Hero transformed through sacrifice",
+            "Return home with wisdom gained"
         ]
     }
 };
 
 /**
- * Create all arc story cards at initialization (turn zero)
+ * Create all beat story cards at initialization (turn zero)
  * Called once during initVoglerState()
  */
-function createAllArcCards() {
-    log('[VOGLER-ARC] Creating pre-generated arc story cards...');
+function createAllBeatCards() {
+    log('[VOGLER-BEAT] Creating pre-generated beat story cards...');
 
     for (let actNum = 1; actNum <= 3; actNum++) {
-        createArcCard(actNum, DEFAULT_ARC_TEMPLATES[actNum]);
+        createBeatCard(actNum, DEFAULT_BEAT_TEMPLATES[actNum]);
     }
 
-    log('[VOGLER-ARC] All 3 act arc cards created successfully');
+    log('[VOGLER-BEAT] All 3 act beat cards created successfully');
 }
 
 /**
- * Create a single arc story card
+ * Create a single beat story card
  */
-function createArcCard(actNumber, arcTemplate) {
-    const cardKey = ARC_CONFIG.storyCardPrefix + actNumber;
+function createBeatCard(actNumber, beatTemplate) {
+    const cardKey = VOGLER_BEAT_CONFIG.storyCardPrefix + actNumber;
     const act = ACTS[actNumber];
 
-    // Build card content
-    let content = `[${arcTemplate.name}]\n`;
+    // Build card content - only show remaining beats
+    let content = `[${beatTemplate.name} - Remaining Beats]\n`;
     content += `Stages: ${act.stages.join('-')}\n\n`;
-    content += `Story Arc Events:\n`;
 
-    arcTemplate.events.forEach((event, idx) => {
-        const status = event.completed ? '✓' : '○';
-        content += `${status} ${idx + 1}. ${event.text}\n`;
+    beatTemplate.beats.forEach(beat => {
+        content += `• ${beat}\n`;
     });
 
-    content += `\n[Edit these events to match your story]`;
+    content += `\n[Beats are deleted when completed]`;
 
     // Check if card already exists
     const existingCard = getCard(cardKey);
     if (existingCard) {
-        // Don't overwrite user customizations
-        if (ARC_CONFIG.debugLogging) {
-            log('[VOGLER-ARC] Arc card ' + cardKey + ' already exists, preserving');
+        if (VOGLER_BEAT_CONFIG.debugLogging) {
+            log('[VOGLER-BEAT] Beat card ' + cardKey + ' already exists, preserving');
         }
         return;
     }
@@ -477,103 +507,86 @@ function createArcCard(actNumber, arcTemplate) {
     addStoryCard({
         keys: cardKey,
         entry: content,
-        type: ARC_CONFIG.arcCardType,
-        title: arcTemplate.name + ' Arc'
+        type: VOGLER_BEAT_CONFIG.beatCardType,
+        title: beatTemplate.name + ' Beats'
     });
 
-    // Store in state for tracking
+    // Store in state for tracking (copy of remaining beats)
     state.vogler.acts[actNumber] = {
-        arc: JSON.parse(JSON.stringify(arcTemplate.events)), // Deep copy
-        created: 0,  // Turn zero
+        remainingBeats: [...beatTemplate.beats],  // Copy array
+        completedBeats: [],
+        created: 0,
         cardKey: cardKey
     };
 
-    if (ARC_CONFIG.debugLogging) {
-        log('[VOGLER-ARC] Created arc card: ' + cardKey);
+    if (VOGLER_BEAT_CONFIG.debugLogging) {
+        log('[VOGLER-BEAT] Created beat card: ' + cardKey);
     }
 }
 
 /**
- * Regenerate arc for a specific act (manual only, via /vogler generate)
- * Resets the arc to default template
+ * Complete a beat - DELETES it from the card
+ * This is the key difference from marking complete
  */
-function regenerateArcCard(actNumber) {
-    if (!ARC_CONFIG.allowManualRegeneration) {
-        log('[VOGLER-ARC] Manual regeneration disabled');
-        return false;
-    }
-
-    const cardKey = ARC_CONFIG.storyCardPrefix + actNumber;
-    const arcTemplate = DEFAULT_ARC_TEMPLATES[actNumber];
-
-    // Remove existing card
-    const existingCard = getCard(cardKey);
-    if (existingCard) {
-        removeStoryCard(existingCard.index);
-    }
-
-    // Reset state
-    state.vogler.acts[actNumber] = null;
-
-    // Create fresh card
-    createArcCard(actNumber, arcTemplate);
-
-    log('[VOGLER-ARC] Regenerated arc card for Act ' + actNumber);
-    return true;
-}
-
-
-/**
- * Mark an arc event as completed and update the story card
- */
-function markArcEventComplete(actNumber, eventIndex) {
+function completeBeat(actNumber, beatIndex) {
     const actData = state.vogler.acts[actNumber];
-    if (!actData || !actData.arc || !actData.arc[eventIndex]) {
-        log('[VOGLER-ARC] Cannot mark event complete: invalid act or event');
+    if (!actData || !actData.remainingBeats || beatIndex >= actData.remainingBeats.length) {
+        log('[VOGLER-BEAT] Cannot complete beat: invalid act or beat index');
         return false;
     }
 
-    // Mark in state
-    actData.arc[eventIndex].completed = true;
-    actData.arc[eventIndex].completedTurn = info.actionCount;
+    // Get the beat being completed
+    const completedBeat = actData.remainingBeats[beatIndex];
 
-    // Update story card
-    updateArcCardDisplay(actNumber);
+    // Move from remaining to completed
+    actData.completedBeats.push({
+        text: completedBeat,
+        completedTurn: info.actionCount
+    });
 
-    if (ARC_CONFIG.debugLogging) {
-        log('[VOGLER-ARC] Event ' + (eventIndex + 1) + ' marked complete in Act ' + actNumber);
+    // REMOVE from remaining (not just mark)
+    actData.remainingBeats.splice(beatIndex, 1);
+
+    // Update the story card to reflect removal
+    updateBeatCardDisplay(actNumber);
+
+    if (VOGLER_BEAT_CONFIG.debugLogging) {
+        log('[VOGLER-BEAT] Beat completed and removed: "' + completedBeat + '"');
+        log('[VOGLER-BEAT] Remaining beats in Act ' + actNumber + ': ' + actData.remainingBeats.length);
+    }
+
+    // Check if act is complete
+    if (actData.remainingBeats.length === 0) {
+        log('[VOGLER-BEAT] ★ Act ' + actNumber + ' complete! All beats achieved.');
     }
 
     return true;
 }
 
 /**
- * Update arc story card display to reflect current completion status
+ * Update beat story card - shows ONLY remaining beats
  */
-function updateArcCardDisplay(actNumber) {
-    const cardKey = ARC_CONFIG.storyCardPrefix + actNumber;
+function updateBeatCardDisplay(actNumber) {
+    const cardKey = VOGLER_BEAT_CONFIG.storyCardPrefix + actNumber;
     const actData = state.vogler.acts[actNumber];
-    const arcTemplate = DEFAULT_ARC_TEMPLATES[actNumber];
+    const beatTemplate = DEFAULT_BEAT_TEMPLATES[actNumber];
 
-    if (!actData || !actData.arc) {
+    if (!actData) {
         return;
     }
 
-    // Build updated card content
-    let content = `[${arcTemplate.name}]\n`;
-    content += `Stages: ${ACTS[actNumber].stages.join('-')}\n`;
+    // Build card content - ONLY remaining beats
+    let content = `[${beatTemplate.name} - Remaining Beats]\n`;
     content += `Current Stage: ${VOGLER_STAGES[state.vogler.currentStage].name}\n\n`;
-    content += `Story Arc Events:\n`;
 
-    actData.arc.forEach((event, idx) => {
-        const status = event.completed ? '✓' : '○';
-        content += `${status} ${idx + 1}. ${event.text}\n`;
-    });
-
-    // Calculate progress
-    const completed = actData.arc.filter(e => e.completed).length;
-    const total = actData.arc.length;
-    content += `\nProgress: ${completed}/${total} events`;
+    if (actData.remainingBeats.length === 0) {
+        content += `★ ALL BEATS COMPLETE ★\n`;
+        content += `This act's structural goals achieved.\n`;
+    } else {
+        actData.remainingBeats.forEach(beat => {
+            content += `• ${beat}\n`;
+        });
+    }
 
     // Update card
     const existingCard = getCard(cardKey);
@@ -586,16 +599,236 @@ function updateArcCardDisplay(actNumber) {
 }
 
 /**
- * Get completion percentage for an act's arc
+ * Reset beat card to defaults
  */
-function getArcCompletionPercent(actNumber) {
+function resetBeatCard(actNumber) {
+    const cardKey = VOGLER_BEAT_CONFIG.storyCardPrefix + actNumber;
+    const beatTemplate = DEFAULT_BEAT_TEMPLATES[actNumber];
+
+    // Remove existing card
+    const existingCard = getCard(cardKey);
+    if (existingCard) {
+        removeStoryCard(existingCard.index);
+    }
+
+    // Reset state
+    state.vogler.acts[actNumber] = null;
+
+    // Create fresh card
+    createBeatCard(actNumber, beatTemplate);
+
+    log('[VOGLER-BEAT] Reset beat card for Act ' + actNumber);
+    return true;
+}
+```
+
+### Tier 2: SAE Bridge Cards (On-Demand)
+
+Generated via command when the player wants specific plot guidance. Uses AI to create story-specific events that bridge between structural beats.
+
+```javascript
+/**
+ * SAE Bridge Configuration
+ */
+const SAE_BRIDGE_CONFIG = {
+    // Story card settings
+    storyCardKey: "sae-bridge",
+    bridgeCardType: "author",
+
+    // Generation settings
+    eventsToGenerate: 5,
+    maxWordsPerEvent: 10,
+
+    // Progressive removal
+    turnsPerEventRemoval: 3,    // Auto-remove first event every N turns
+
+    // Debug
+    debugLogging: true
+};
+
+/**
+ * Generate SAE-style bridge card via command
+ * Creates specific plot events based on current story context
+ */
+function generateBridgeCard() {
+    const currentAct = state.vogler.currentAct;
+    const currentStage = state.vogler.currentStage;
+    const actData = state.vogler.acts[currentAct];
+
+    // Get remaining beats for context
+    const remainingBeats = actData?.remainingBeats || [];
+    const nextBeat = remainingBeats[0] || "story continues";
+
+    // Get recent story context
+    const recentHistory = history.slice(-8).map(h => h.text).join(' ').slice(-800);
+
+    // Build generation prompt
+    const prompt = buildBridgePrompt(nextBeat, recentHistory, currentStage);
+
+    // Store in state for context injection
+    state.vogler.pendingBridgeGeneration = {
+        prompt: prompt,
+        targetBeat: nextBeat,
+        attempts: 0
+    };
+
+    // Flag for context to inject
+    state.vogler.generateBridgeThisTurn = true;
+
+    if (SAE_BRIDGE_CONFIG.debugLogging) {
+        log('[SAE-BRIDGE] Bridge generation initiated');
+        log('[SAE-BRIDGE] Target beat: ' + nextBeat);
+    }
+
+    return prompt;
+}
+
+/**
+ * Build the bridge generation prompt
+ */
+function buildBridgePrompt(nextBeat, recentHistory, currentStage) {
+    const stage = VOGLER_STAGES[currentStage];
+
+    return `[STORY BRIDGE GENERATION]
+
+Current narrative:
+${recentHistory}
+
+Current stage: ${stage.name}
+Next structural beat: ${nextBeat}
+
+Generate ${SAE_BRIDGE_CONFIG.eventsToGenerate} specific plot events that will move the story toward the next beat.
+Each event should:
+- Be under ${SAE_BRIDGE_CONFIG.maxWordsPerEvent} words
+- Use character names from the story
+- Be specific and actionable
+- Create a clear path toward: "${nextBeat}"
+
+Format as numbered list:
+1. [First specific event]
+2. [Second specific event]
+...
+
+[END GENERATION]`;
+}
+
+/**
+ * Parse and store generated bridge events
+ */
+function storeBridgeEvents(generatedText) {
+    const events = [];
+    const lines = generatedText.split('\n');
+
+    for (const line of lines) {
+        const match = line.match(/^\d+[\.\)]\s*(.+)$/);
+        if (match && match[1].trim()) {
+            events.push(match[1].trim());
+        }
+    }
+
+    if (events.length === 0) {
+        log('[SAE-BRIDGE] Failed to parse bridge events');
+        return false;
+    }
+
+    // Store in state
+    state.vogler.bridge = {
+        events: events,
+        created: info.actionCount,
+        lastRemoval: info.actionCount
+    };
+
+    // Create/update story card
+    updateBridgeCard();
+
+    log('[SAE-BRIDGE] Stored ' + events.length + ' bridge events');
+    return true;
+}
+
+/**
+ * Update bridge story card display
+ */
+function updateBridgeCard() {
+    const bridgeData = state.vogler.bridge;
+    if (!bridgeData || !bridgeData.events) {
+        return;
+    }
+
+    let content = `[Story Bridge - Current Arc]\n`;
+    content += `Moving toward: ${state.vogler.acts[state.vogler.currentAct]?.remainingBeats?.[0] || 'next beat'}\n\n`;
+
+    bridgeData.events.forEach((event, idx) => {
+        content += `${idx + 1}. ${event}\n`;
+    });
+
+    // Check if card exists
+    const existingCard = getCard(SAE_BRIDGE_CONFIG.storyCardKey);
+    if (existingCard) {
+        updateStoryCard(existingCard.index, {
+            ...existingCard,
+            entry: content
+        });
+    } else {
+        addStoryCard({
+            keys: SAE_BRIDGE_CONFIG.storyCardKey,
+            entry: content,
+            type: SAE_BRIDGE_CONFIG.bridgeCardType,
+            title: 'Story Bridge'
+        });
+    }
+}
+
+/**
+ * Progressive removal of bridge events
+ * Called each turn to remove completed events
+ */
+function progressiveBridgeRemoval() {
+    const bridgeData = state.vogler.bridge;
+    if (!bridgeData || !bridgeData.events || bridgeData.events.length === 0) {
+        return;
+    }
+
+    const turnsSinceRemoval = info.actionCount - bridgeData.lastRemoval;
+
+    if (turnsSinceRemoval >= SAE_BRIDGE_CONFIG.turnsPerEventRemoval) {
+        // Remove first event
+        const removed = bridgeData.events.shift();
+        bridgeData.lastRemoval = info.actionCount;
+
+        if (SAE_BRIDGE_CONFIG.debugLogging) {
+            log('[SAE-BRIDGE] Removed bridge event: "' + removed + '"');
+        }
+
+        // Update card
+        updateBridgeCard();
+
+        // If bridge is empty, remove the card
+        if (bridgeData.events.length === 0) {
+            const card = getCard(SAE_BRIDGE_CONFIG.storyCardKey);
+            if (card) {
+                removeStoryCard(card.index);
+            }
+            state.vogler.bridge = null;
+            log('[SAE-BRIDGE] Bridge completed and removed');
+        }
+    }
+}
+
+/**
+ * Get beat completion percentage for an act
+ */
+function getBeatCompletionPercent(actNumber) {
     const actData = state.vogler.acts[actNumber];
-    if (!actData || !actData.arc) {
+    const template = DEFAULT_BEAT_TEMPLATES[actNumber];
+    if (!actData || !template) {
         return 0;
     }
 
-    const completed = actData.arc.filter(e => e.completed).length;
-    return Math.round((completed / actData.arc.length) * 100);
+    const total = template.beats.length;
+    const remaining = actData.remainingBeats?.length || total;
+    const completed = total - remaining;
+
+    return Math.round((completed / total) * 100);
 }
 ```
 
@@ -934,26 +1167,34 @@ function getHelpDisplay() {
          VOGLER SYSTEM COMMANDS
 ═══════════════════════════════════════════
 
+STATUS & INFO:
 /vogler status    - Show current journey status
-/vogler debug     - Toggle verbose debug logging
-/vogler arc       - Display all act arcs
-/vogler stage [n] - Show stage details (current if no number)
-/vogler generate [n] - Reset Act N arc to defaults (1, 2, or 3)
-/vogler advance   - Force advance to next stage
-/vogler reset     - Reset journey to Stage 1 (preserves arc edits)
-/vogler health    - Run system health check
 /vogler beats     - Show beat completion status
+/vogler bridge    - Show current bridge events
+/vogler stage [n] - Show stage details (current if no number)
 /vogler ngo       - Show NGO synchronization status
+/vogler health    - Run system health check
+
+CONTROL:
+/vogler advance   - Force advance to next stage
+/vogler complete  - Complete the next beat in current act
+/vogler generate  - Generate SAE bridge card (AI call)
+/vogler reset [n] - Reset Act N beats to defaults (1, 2, or 3)
+
+DEBUG:
+/vogler debug     - Toggle verbose debug logging
 /vogler help      - Show this help message
 
 Player Commands (in-story):
 @stage <1-12>    - Jump to specific stage
-@beat <text>     - Mark a story beat as complete
-@event <n>       - Mark arc event N as complete
-@arc             - Show current arc in story
+@beat            - Complete the next structural beat
+@bridge          - Generate SAE bridge card
 
-Note: All arc cards are pre-generated at turn zero.
-Edit them in Story Cards to customize for your story.
+TWO-TIER SYSTEM:
+• Beat Cards: Pre-generated at turn zero. Completed beats
+  are DELETED from the card (AI only sees what's left).
+• Bridge Cards: Generated on-demand via @bridge command.
+  Specific plot events that bridge between beats.
 
 ═══════════════════════════════════════════`;
 }
@@ -1122,7 +1363,7 @@ function checkQualityGateForAdvancement() {
 ```javascript
 /**
  * Initialize or restore Vogler state
- * Called at turn zero - creates all story cards (config + arcs)
+ * Called at turn zero - creates all story cards (config + beat cards)
  */
 function initVoglerState() {
     // Check for existing state
@@ -1140,25 +1381,26 @@ function initVoglerState() {
     // Initialize fresh state
     state.vogler = {
         initialized: true,
-        version: '1.0.0',
+        version: '2.0.0',  // Two-tier system
 
         // Current position
         currentStage: 1,
         currentAct: 1,
         turnsInStage: 0,
 
-        // Beat tracking (per stage)
-        completedBeats: {
-            1: [], 2: [], 3: [], 4: [], 5: [], 6: [],
-            7: [], 8: [], 9: [], 10: [], 11: [], 12: []
-        },
-
-        // Arc data (per act) - will be populated by createAllArcCards()
+        // TIER 1: Beat data (per act) - populated by createAllBeatCards()
+        // Each act tracks: remainingBeats[], completedBeats[]
         acts: {
             1: null,
             2: null,
             3: null
         },
+
+        // TIER 2: SAE Bridge (on-demand, not pre-generated)
+        // Created via @bridge or /vogler generate command
+        bridge: null,
+        pendingBridgeGeneration: null,
+        generateBridgeThisTurn: false,
 
         // Manual overrides
         manualOverride: false,
@@ -1167,24 +1409,26 @@ function initVoglerState() {
         // Statistics
         stats: {
             stageChanges: 0,
-            beatsDetected: 0,
-            eventsCompleted: 0,
+            beatsCompleted: 0,
+            bridgesGenerated: 0,
             totalTurns: 0
         }
     };
 
     // ═══════════════════════════════════════════════════════════════
-    // CREATE ALL STORY CARDS AT TURN ZERO
+    // CREATE STORY CARDS AT TURN ZERO
     // ═══════════════════════════════════════════════════════════════
 
     // 1. Create configuration story cards
     createConfigurationCards();
 
-    // 2. Create all three act arc story cards (PRE-GENERATED)
-    createAllArcCards();
+    // 2. Create all three act BEAT cards (TIER 1 - pre-generated)
+    //    Note: Bridge cards (TIER 2) are created on-demand via command
+    createAllBeatCards();
 
     log('[VOGLER] All story cards created successfully');
     log('[VOGLER] State initialized at Stage 1 - Ordinary World');
+    log('[VOGLER] Use @bridge to generate SAE-style plot guidance');
 
     // Sync with NGO
     syncVoglerToNGO(1);
@@ -1354,17 +1598,17 @@ voglerSaeScripts/
 - Debug command processing
 - Display/formatting utilities
 - NGO/Bonepoke integration functions
-- Story card management and arc completion tracking
+- Story card management (beat cards + bridge cards)
 
 **voglerSaeContext.js**
 - Author's note injection with stage-appropriate guidance
-- Current arc event injection (from pre-generated cards)
+- Remaining beat injection (from pre-generated beat cards)
+- Bridge prompt injection for SAE generation
 - NGO temperature/heat adjustments
 - Front memory injection for @req commands
-- Verbalized Sampling parameter adjustment based on stage
 
 **voglerSaeInput.js**
-- Command processing (@stage, @beat, /vogler commands)
+- Command processing (@stage, @beat, @bridge, /vogler commands)
 - Player action beat detection
 - Turn counting
 - Input validation
@@ -1373,8 +1617,8 @@ voglerSaeScripts/
 **voglerSaeOutput.js**
 - AI output beat detection
 - Stage advancement logic
-- Arc event completion marking
-- Arc story card display updates
+- Beat completion and DELETION from cards
+- Bridge event parsing and progressive removal
 - Quality analysis integration
 - Duplicate prevention
 - Output cleaning
@@ -1385,43 +1629,51 @@ voglerSaeScripts/
 
 ### Phase 1: Foundation
 - [ ] Create `voglerSaeSharedLibrary.js` with VOGLER_STAGES and ACTS constants
-- [ ] Add DEFAULT_ARC_TEMPLATES with pre-defined arc events
+- [ ] Add DEFAULT_BEAT_TEMPLATES with pre-defined structural beats
 - [ ] Implement state initialization with turn-zero card creation
 - [ ] Port debug command system
 - [ ] Create story card management functions
 
-### Phase 2: Turn-Zero Card Creation
+### Phase 2: Tier 1 - Beat Cards (Pre-generated)
 - [ ] Implement createConfigurationCards() for config story cards
-- [ ] Implement createAllArcCards() to create all 3 act arcs at init
-- [ ] Implement createArcCard() for individual arc card creation
+- [ ] Implement createAllBeatCards() to create all 3 act beat cards at init
+- [ ] Implement createBeatCard() for individual beat card creation
+- [ ] Implement completeBeat() - DELETES beat from card when complete
+- [ ] Implement updateBeatCardDisplay() - shows only remaining beats
 - [ ] Ensure cards don't overwrite user customizations on reload
 
-### Phase 3: Core Logic
+### Phase 3: Tier 2 - SAE Bridge Cards (On-demand)
+- [ ] Implement generateBridgeCard() for on-demand AI generation
+- [ ] Implement buildBridgePrompt() to create context-aware prompts
+- [ ] Implement storeBridgeEvents() to parse AI output
+- [ ] Implement updateBridgeCard() for display
+- [ ] Implement progressiveBridgeRemoval() for auto-removal
+
+### Phase 4: Core Logic
 - [ ] Implement beat detection system (keyword matching)
 - [ ] Implement stage advancement logic
 - [ ] Implement act transition handling
-- [ ] Implement arc event completion tracking
-- [ ] Implement updateArcCardDisplay() for live progress updates
+- [ ] Connect beat completion to stage progression
 
-### Phase 4: Trinity Integration
+### Phase 5: Trinity Integration
 - [ ] Port NGO synchronization from old Vogler
 - [ ] Integrate with existing NGO heat/temperature system
 - [ ] Integrate with Bonepoke quality gates
 - [ ] Integrate with Verbalized Sampling parameters
 - [ ] Ensure Auto-Cards compatibility
 
-### Phase 5: Debug Tools
-- [ ] Implement all /vogler commands
+### Phase 6: Debug Tools
+- [ ] Implement all /vogler commands (status, beats, bridge, etc.)
 - [ ] Create status display with progress bars
 - [ ] Implement health check system
 - [ ] Add verbose logging mode
-- [ ] Implement /vogler generate (reset arc to defaults)
 
-### Phase 6: Testing
+### Phase 7: Testing
 - [ ] Test state persistence across turns
-- [ ] Test turn-zero card creation
+- [ ] Test turn-zero beat card creation
+- [ ] Test beat completion and DELETION
+- [ ] Test bridge generation and progressive removal
 - [ ] Test stage advancement at boundaries
-- [ ] Test arc event completion tracking
 - [ ] Test NGO synchronization
 - [ ] Test all debug commands
 - [ ] Full journey playthrough test
@@ -1477,27 +1729,37 @@ turnsPerRemoval: 4`
 | Command | Description |
 |---------|-------------|
 | `@stage 5` | Jump to stage 5 |
-| `@beat mentors gift` | Mark beat as complete |
-| `@event 2` | Mark arc event 2 as complete |
+| `@beat` | Complete next structural beat (DELETES from card) |
+| `@bridge` | Generate SAE bridge card (AI call) |
 | `@temp 10` | Set NGO temperature to 10 |
-| `@arc` | Display current story arc |
 
 ### Debug Commands (/vogler)
 | Command | Description |
 |---------|-------------|
 | `/vogler status` | Full status display |
-| `/vogler debug` | Toggle verbose logging |
-| `/vogler arc` | Show all act arcs |
+| `/vogler beats` | Show remaining beats per act |
+| `/vogler bridge` | Show current bridge events |
 | `/vogler stage 8` | Show stage 8 details |
-| `/vogler generate 1` | Reset Act 1 arc to defaults |
+| `/vogler complete` | Complete next beat in current act |
+| `/vogler generate` | Generate SAE bridge card |
+| `/vogler reset 1` | Reset Act 1 beats to defaults |
 | `/vogler advance` | Force stage advance |
-| `/vogler reset` | Reset journey to Stage 1 |
 | `/vogler health` | System health check |
-| `/vogler beats` | Show beat completion |
 | `/vogler ngo` | Show NGO sync status |
+| `/vogler debug` | Toggle verbose logging |
 | `/vogler help` | Show help |
 
-**Note:** Arc cards are pre-generated at turn zero. Use Story Cards UI to edit them for your story.
+### Two-Tier System Summary
+
+**TIER 1 - Beat Cards (Pre-generated at turn zero):**
+- Structural milestones: "Hero resists the call", "THE ORDEAL arrives"
+- Completed beats are DELETED from card (AI only sees remaining)
+- Edit in Story Cards UI to customize
+
+**TIER 2 - Bridge Cards (Generated on-demand via @bridge):**
+- Specific plot events: "Elena finds the hidden map"
+- AI-generated based on current story context
+- Events auto-removed every few turns
 
 ---
 
