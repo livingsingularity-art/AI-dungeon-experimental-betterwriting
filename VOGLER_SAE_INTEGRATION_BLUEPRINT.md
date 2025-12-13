@@ -349,21 +349,26 @@ Keep each event under 7 words. The climax must feel earned.`,
 
 ---
 
-## Part 2: SAE-Style Story Arc Generation
+## Part 2: Pre-Generated Story Arc Cards
 
 ### Arc Generation System
 
-The SAE integration will generate story arcs at the start of each Act and store them in dedicated story cards.
+**IMPORTANT DESIGN DECISION:** Unlike SAE which generates arcs mid-game, all Vogler arc story cards are **pre-generated at turn zero** during initialization. This provides:
+
+1. **Consistent structure** - All three acts have their arcs defined from the start
+2. **No mid-story pauses** - No AI generation calls interrupting gameplay
+3. **Player visibility** - Users can see and edit all arcs in Story Cards immediately
+4. **Predictable behavior** - Same initialization every time
+
+The arc cards are created alongside configuration cards during `initVoglerState()`.
 
 ```javascript
 /**
- * Arc Generation Configuration
+ * Arc Configuration
  */
 const ARC_CONFIG = {
-    // Generation timing
-    generateOnActStart: true,       // Auto-generate when entering new act
-    turnsBeforeRegeneration: 25,    // Minimum turns before allowing regeneration
-    maxRegenerationAttempts: 3,     // Max AI call attempts
+    // Pre-generation (all arcs created at turn zero)
+    preGenerateAllArcs: true,       // Create all 3 act arcs on initialization
 
     // Arc format
     eventsPerAct: {
@@ -376,150 +381,221 @@ const ARC_CONFIG = {
     // Story card settings
     storyCardPrefix: "vogler-act-",
     arcCardType: "author",          // Ensures it influences AI
-    arcCardTrigger: "",             // Always active
+    arcCardTrigger: "",             // Always active (no keys needed)
 
-    // Progressive removal (SAE-style)
-    enableProgressiveRemoval: true,
-    turnsPerEventRemoval: 4,        // Remove completed event every N turns
+    // Progressive completion tracking
+    enableProgressiveCompletion: true,  // Mark events as complete (✓) as story progresses
+
+    // Manual regeneration (only via /vogler generate command)
+    allowManualRegeneration: true,
 
     // Debug
-    debugLogging: true,
-    showGenerationProcess: true
+    debugLogging: true
 };
 
 /**
- * Generate story arc for an Act
- * Called automatically on act transition or via /vogler generate
+ * Pre-defined Arc Templates
+ * These are the DEFAULT arcs created at turn zero.
+ * Users can customize them in Story Cards after initialization.
  */
-function generateActArc(actNumber) {
-    const act = ACTS[actNumber];
-    if (!act) {
-        log('[VOGLER-ARC] Invalid act number: ' + actNumber);
-        return null;
+const DEFAULT_ARC_TEMPLATES = {
+    1: {
+        name: "Act I: The Setup",
+        events: [
+            { text: "Hero established in ordinary world", completed: false },
+            { text: "Disruption or call arrives unexpectedly", completed: false },
+            { text: "Hero resists or fears the call", completed: false },
+            { text: "Mentor provides guidance or gift", completed: false },
+            { text: "Hero commits and crosses threshold", completed: false }
+        ]
+    },
+    2: {
+        name: "Act II: The Confrontation",
+        events: [
+            { text: "Tests reveal allies and enemies", completed: false },
+            { text: "Hero approaches the central danger", completed: false },
+            { text: "THE ORDEAL - darkest moment arrives", completed: false },
+            { text: "Hero survives and claims reward", completed: false },
+            { text: "Complication threatens the victory", completed: false }
+        ]
+    },
+    3: {
+        name: "Act III: The Resolution",
+        events: [
+            { text: "Chase or pursuit toward finale", completed: false },
+            { text: "CLIMAX - final confrontation begins", completed: false },
+            { text: "Hero transformed through sacrifice", completed: false },
+            { text: "Return home with wisdom gained", completed: false }
+        ]
+    }
+};
+
+/**
+ * Create all arc story cards at initialization (turn zero)
+ * Called once during initVoglerState()
+ */
+function createAllArcCards() {
+    log('[VOGLER-ARC] Creating pre-generated arc story cards...');
+
+    for (let actNum = 1; actNum <= 3; actNum++) {
+        createArcCard(actNum, DEFAULT_ARC_TEMPLATES[actNum]);
     }
 
-    // Get context for AI generation
-    const recentHistory = history.slice(-10).map(h => h.text).join(' ');
-    const currentStage = state.vogler.currentStage;
-    const stageInfo = VOGLER_STAGES[currentStage];
-
-    // Build generation prompt
-    const prompt = buildArcPrompt(act, recentHistory, stageInfo);
-
-    // Store in state for context injection
-    state.vogler.pendingArcGeneration = {
-        act: actNumber,
-        prompt: prompt,
-        attempts: 0
-    };
-
-    // Flag for context to inject
-    state.vogler.generateArcThisTurn = true;
-
-    if (ARC_CONFIG.debugLogging) {
-        log('[VOGLER-ARC] Initiated arc generation for ' + act.name);
-    }
-
-    return prompt;
+    log('[VOGLER-ARC] All 3 act arc cards created successfully');
 }
 
 /**
- * Build the arc generation prompt
+ * Create a single arc story card
  */
-function buildArcPrompt(act, recentHistory, currentStage) {
-    return `[STORY ARC GENERATION]
-
-Current narrative context:
-${recentHistory.slice(-500)}
-
-Current stage: ${currentStage.name}
-
-${act.arcPrompt}
-
-Generate a numbered list of ${ARC_CONFIG.eventsPerAct[act.stages[0] <= 5 ? 1 : act.stages[0] <= 9 ? 2 : 3]} key events for this act.
-Each event should:
-- Be under ${ARC_CONFIG.maxWordsPerEvent} words
-- Focus on turning points, not dialogue
-- Be specific to this story's characters and situation
-- Progress logically from the current state
-
-Format:
-1. [First event]
-2. [Second event]
-...
-
-[END GENERATION]`;
-}
-
-/**
- * Parse generated arc from AI output
- */
-function parseGeneratedArc(text) {
-    const events = [];
-    const lines = text.split('\n');
-
-    for (const line of lines) {
-        // Match numbered lines: "1. Event text" or "1) Event text"
-        const match = line.match(/^\d+[\.\)]\s*(.+)$/);
-        if (match && match[1].trim()) {
-            const event = match[1].trim();
-            // Validate length
-            if (event.split(' ').length <= ARC_CONFIG.maxWordsPerEvent + 2) {
-                events.push({
-                    text: event,
-                    completed: false,
-                    turnAdded: info.actionCount
-                });
-            }
-        }
-    }
-
-    return events;
-}
-
-/**
- * Store arc in story card
- */
-function storeActArc(actNumber, events) {
+function createArcCard(actNumber, arcTemplate) {
     const cardKey = ARC_CONFIG.storyCardPrefix + actNumber;
     const act = ACTS[actNumber];
 
     // Build card content
-    let content = `[${act.name} - Story Arc]\n`;
-    content += `Current Focus: ${VOGLER_STAGES[state.vogler.currentStage].name}\n\n`;
-    content += `Key Events:\n`;
+    let content = `[${arcTemplate.name}]\n`;
+    content += `Stages: ${act.stages.join('-')}\n\n`;
+    content += `Story Arc Events:\n`;
 
-    events.forEach((event, idx) => {
+    arcTemplate.events.forEach((event, idx) => {
         const status = event.completed ? '✓' : '○';
         content += `${status} ${idx + 1}. ${event.text}\n`;
     });
 
-    // Add/update story card
+    content += `\n[Edit these events to match your story]`;
+
+    // Check if card already exists
+    const existingCard = getCard(cardKey);
+    if (existingCard) {
+        // Don't overwrite user customizations
+        if (ARC_CONFIG.debugLogging) {
+            log('[VOGLER-ARC] Arc card ' + cardKey + ' already exists, preserving');
+        }
+        return;
+    }
+
+    // Create new card
+    addStoryCard({
+        keys: cardKey,
+        entry: content,
+        type: ARC_CONFIG.arcCardType,
+        title: arcTemplate.name + ' Arc'
+    });
+
+    // Store in state for tracking
+    state.vogler.acts[actNumber] = {
+        arc: JSON.parse(JSON.stringify(arcTemplate.events)), // Deep copy
+        created: 0,  // Turn zero
+        cardKey: cardKey
+    };
+
+    if (ARC_CONFIG.debugLogging) {
+        log('[VOGLER-ARC] Created arc card: ' + cardKey);
+    }
+}
+
+/**
+ * Regenerate arc for a specific act (manual only, via /vogler generate)
+ * Resets the arc to default template
+ */
+function regenerateArcCard(actNumber) {
+    if (!ARC_CONFIG.allowManualRegeneration) {
+        log('[VOGLER-ARC] Manual regeneration disabled');
+        return false;
+    }
+
+    const cardKey = ARC_CONFIG.storyCardPrefix + actNumber;
+    const arcTemplate = DEFAULT_ARC_TEMPLATES[actNumber];
+
+    // Remove existing card
+    const existingCard = getCard(cardKey);
+    if (existingCard) {
+        removeStoryCard(existingCard.index);
+    }
+
+    // Reset state
+    state.vogler.acts[actNumber] = null;
+
+    // Create fresh card
+    createArcCard(actNumber, arcTemplate);
+
+    log('[VOGLER-ARC] Regenerated arc card for Act ' + actNumber);
+    return true;
+}
+
+
+/**
+ * Mark an arc event as completed and update the story card
+ */
+function markArcEventComplete(actNumber, eventIndex) {
+    const actData = state.vogler.acts[actNumber];
+    if (!actData || !actData.arc || !actData.arc[eventIndex]) {
+        log('[VOGLER-ARC] Cannot mark event complete: invalid act or event');
+        return false;
+    }
+
+    // Mark in state
+    actData.arc[eventIndex].completed = true;
+    actData.arc[eventIndex].completedTurn = info.actionCount;
+
+    // Update story card
+    updateArcCardDisplay(actNumber);
+
+    if (ARC_CONFIG.debugLogging) {
+        log('[VOGLER-ARC] Event ' + (eventIndex + 1) + ' marked complete in Act ' + actNumber);
+    }
+
+    return true;
+}
+
+/**
+ * Update arc story card display to reflect current completion status
+ */
+function updateArcCardDisplay(actNumber) {
+    const cardKey = ARC_CONFIG.storyCardPrefix + actNumber;
+    const actData = state.vogler.acts[actNumber];
+    const arcTemplate = DEFAULT_ARC_TEMPLATES[actNumber];
+
+    if (!actData || !actData.arc) {
+        return;
+    }
+
+    // Build updated card content
+    let content = `[${arcTemplate.name}]\n`;
+    content += `Stages: ${ACTS[actNumber].stages.join('-')}\n`;
+    content += `Current Stage: ${VOGLER_STAGES[state.vogler.currentStage].name}\n\n`;
+    content += `Story Arc Events:\n`;
+
+    actData.arc.forEach((event, idx) => {
+        const status = event.completed ? '✓' : '○';
+        content += `${status} ${idx + 1}. ${event.text}\n`;
+    });
+
+    // Calculate progress
+    const completed = actData.arc.filter(e => e.completed).length;
+    const total = actData.arc.length;
+    content += `\nProgress: ${completed}/${total} events`;
+
+    // Update card
     const existingCard = getCard(cardKey);
     if (existingCard) {
         updateStoryCard(existingCard.index, {
             ...existingCard,
             entry: content
         });
-    } else {
-        addStoryCard({
-            keys: cardKey,
-            entry: content,
-            type: ARC_CONFIG.arcCardType,
-            title: act.name + ' Arc'
-        });
+    }
+}
+
+/**
+ * Get completion percentage for an act's arc
+ */
+function getArcCompletionPercent(actNumber) {
+    const actData = state.vogler.acts[actNumber];
+    if (!actData || !actData.arc) {
+        return 0;
     }
 
-    // Store in state for tracking
-    state.vogler.acts[actNumber] = {
-        arc: events,
-        generated: info.actionCount,
-        lastEventRemoved: info.actionCount
-    };
-
-    if (ARC_CONFIG.debugLogging) {
-        log('[VOGLER-ARC] Stored arc for ' + act.name + ' with ' + events.length + ' events');
-    }
+    const completed = actData.arc.filter(e => e.completed).length;
+    return Math.round((completed / actData.arc.length) * 100);
 }
 ```
 
@@ -862,9 +938,9 @@ function getHelpDisplay() {
 /vogler debug     - Toggle verbose debug logging
 /vogler arc       - Display all act arcs
 /vogler stage [n] - Show stage details (current if no number)
-/vogler generate  - Force arc regeneration for current act
+/vogler generate [n] - Reset Act N arc to defaults (1, 2, or 3)
 /vogler advance   - Force advance to next stage
-/vogler reset     - Reset journey to Stage 1
+/vogler reset     - Reset journey to Stage 1 (preserves arc edits)
 /vogler health    - Run system health check
 /vogler beats     - Show beat completion status
 /vogler ngo       - Show NGO synchronization status
@@ -873,7 +949,11 @@ function getHelpDisplay() {
 Player Commands (in-story):
 @stage <1-12>    - Jump to specific stage
 @beat <text>     - Mark a story beat as complete
+@event <n>       - Mark arc event N as complete
 @arc             - Show current arc in story
+
+Note: All arc cards are pre-generated at turn zero.
+Edit them in Story Cards to customize for your story.
 
 ═══════════════════════════════════════════`;
 }
@@ -1042,6 +1122,7 @@ function checkQualityGateForAdvancement() {
 ```javascript
 /**
  * Initialize or restore Vogler state
+ * Called at turn zero - creates all story cards (config + arcs)
  */
 function initVoglerState() {
     // Check for existing state
@@ -1051,6 +1132,10 @@ function initVoglerState() {
         }
         return state.vogler;
     }
+
+    log('[VOGLER] ═══════════════════════════════════════');
+    log('[VOGLER] INITIALIZING VOGLER SYSTEM (Turn Zero)');
+    log('[VOGLER] ═══════════════════════════════════════');
 
     // Initialize fresh state
     state.vogler = {
@@ -1068,16 +1153,12 @@ function initVoglerState() {
             7: [], 8: [], 9: [], 10: [], 11: [], 12: []
         },
 
-        // Arc data (per act)
+        // Arc data (per act) - will be populated by createAllArcCards()
         acts: {
-            1: { arc: null, generated: null, lastEventRemoved: null },
-            2: { arc: null, generated: null, lastEventRemoved: null },
-            3: { arc: null, generated: null, lastEventRemoved: null }
+            1: null,
+            2: null,
+            3: null
         },
-
-        // Generation flags
-        generateArcThisTurn: false,
-        pendingArcGeneration: null,
 
         // Manual overrides
         manualOverride: false,
@@ -1087,17 +1168,70 @@ function initVoglerState() {
         stats: {
             stageChanges: 0,
             beatsDetected: 0,
-            arcsGenerated: 0,
+            eventsCompleted: 0,
             totalTurns: 0
         }
     };
 
+    // ═══════════════════════════════════════════════════════════════
+    // CREATE ALL STORY CARDS AT TURN ZERO
+    // ═══════════════════════════════════════════════════════════════
+
+    // 1. Create configuration story cards
+    createConfigurationCards();
+
+    // 2. Create all three act arc story cards (PRE-GENERATED)
+    createAllArcCards();
+
+    log('[VOGLER] All story cards created successfully');
     log('[VOGLER] State initialized at Stage 1 - Ordinary World');
 
     // Sync with NGO
     syncVoglerToNGO(1);
 
     return state.vogler;
+}
+
+/**
+ * Create configuration story cards at turn zero
+ */
+function createConfigurationCards() {
+    log('[VOGLER] Creating configuration story cards...');
+
+    // Vogler main config card
+    const configExists = getCard('vogler-config');
+    if (!configExists) {
+        addStoryCard({
+            keys: 'vogler-config',
+            entry: `[Vogler Hero's Journey Configuration]
+autoAdvance: true
+minTurnsPerStage: 4
+beatThreshold: 0.6
+ngoSync: true
+debugLogging: false
+
+[Edit these values to customize behavior]`,
+            type: 'author',
+            title: 'Vogler Config'
+        });
+        log('[VOGLER] Created vogler-config card');
+    }
+
+    // Player's author's note card
+    const playerNoteExists = getCard('player-guidance');
+    if (!playerNoteExists) {
+        addStoryCard({
+            keys: 'player-guidance',
+            entry: `[Your Personal Author's Note]
+Add your style preferences, character details, or narrative goals here.
+This will be combined with Vogler's stage-specific guidance.
+
+[Edit this card to add your preferences]`,
+            type: 'author',
+            title: "Player's Guidance"
+        });
+        log('[VOGLER] Created player-guidance card');
+    }
 }
 ```
 
@@ -1214,17 +1348,17 @@ voglerSaeScripts/
 ### File Responsibilities
 
 **voglerSaeSharedLibrary.js**
-- Configuration constants (VOGLER_STAGES, ACTS, configs)
+- Configuration constants (VOGLER_STAGES, ACTS, DEFAULT_ARC_TEMPLATES)
 - State initialization and management
+- Turn-zero story card creation (config + all 3 arc cards)
 - Debug command processing
 - Display/formatting utilities
 - NGO/Bonepoke integration functions
-- Story card management
-- Arc generation utilities
+- Story card management and arc completion tracking
 
 **voglerSaeContext.js**
 - Author's note injection with stage-appropriate guidance
-- Arc prompt injection for AI generation
+- Current arc event injection (from pre-generated cards)
 - NGO temperature/heat adjustments
 - Front memory injection for @req commands
 - Verbalized Sampling parameter adjustment based on stage
@@ -1239,8 +1373,8 @@ voglerSaeScripts/
 **voglerSaeOutput.js**
 - AI output beat detection
 - Stage advancement logic
-- Arc parsing from AI generation
-- Progressive event removal
+- Arc event completion marking
+- Arc story card display updates
 - Quality analysis integration
 - Duplicate prevention
 - Output cleaning
@@ -1251,23 +1385,26 @@ voglerSaeScripts/
 
 ### Phase 1: Foundation
 - [ ] Create `voglerSaeSharedLibrary.js` with VOGLER_STAGES and ACTS constants
-- [ ] Implement state initialization
+- [ ] Add DEFAULT_ARC_TEMPLATES with pre-defined arc events
+- [ ] Implement state initialization with turn-zero card creation
 - [ ] Port debug command system
 - [ ] Create story card management functions
 
-### Phase 2: Core Logic
+### Phase 2: Turn-Zero Card Creation
+- [ ] Implement createConfigurationCards() for config story cards
+- [ ] Implement createAllArcCards() to create all 3 act arcs at init
+- [ ] Implement createArcCard() for individual arc card creation
+- [ ] Ensure cards don't overwrite user customizations on reload
+
+### Phase 3: Core Logic
 - [ ] Implement beat detection system (keyword matching)
 - [ ] Implement stage advancement logic
-- [ ] Port NGO synchronization from old Vogler
 - [ ] Implement act transition handling
-
-### Phase 3: SAE Integration
-- [ ] Implement arc generation prompt building
-- [ ] Implement arc parsing from AI output
-- [ ] Implement progressive event removal
-- [ ] Create act story cards
+- [ ] Implement arc event completion tracking
+- [ ] Implement updateArcCardDisplay() for live progress updates
 
 ### Phase 4: Trinity Integration
+- [ ] Port NGO synchronization from old Vogler
 - [ ] Integrate with existing NGO heat/temperature system
 - [ ] Integrate with Bonepoke quality gates
 - [ ] Integrate with Verbalized Sampling parameters
@@ -1278,11 +1415,13 @@ voglerSaeScripts/
 - [ ] Create status display with progress bars
 - [ ] Implement health check system
 - [ ] Add verbose logging mode
+- [ ] Implement /vogler generate (reset arc to defaults)
 
 ### Phase 6: Testing
 - [ ] Test state persistence across turns
+- [ ] Test turn-zero card creation
 - [ ] Test stage advancement at boundaries
-- [ ] Test arc generation and parsing
+- [ ] Test arc event completion tracking
 - [ ] Test NGO synchronization
 - [ ] Test all debug commands
 - [ ] Full journey playthrough test
@@ -1339,6 +1478,7 @@ turnsPerRemoval: 4`
 |---------|-------------|
 | `@stage 5` | Jump to stage 5 |
 | `@beat mentors gift` | Mark beat as complete |
+| `@event 2` | Mark arc event 2 as complete |
 | `@temp 10` | Set NGO temperature to 10 |
 | `@arc` | Display current story arc |
 
@@ -1349,11 +1489,15 @@ turnsPerRemoval: 4`
 | `/vogler debug` | Toggle verbose logging |
 | `/vogler arc` | Show all act arcs |
 | `/vogler stage 8` | Show stage 8 details |
-| `/vogler generate` | Force arc regeneration |
+| `/vogler generate 1` | Reset Act 1 arc to defaults |
 | `/vogler advance` | Force stage advance |
-| `/vogler reset` | Reset to beginning |
+| `/vogler reset` | Reset journey to Stage 1 |
 | `/vogler health` | System health check |
+| `/vogler beats` | Show beat completion |
+| `/vogler ngo` | Show NGO sync status |
 | `/vogler help` | Show help |
+
+**Note:** Arc cards are pre-generated at turn zero. Use Story Cards UI to edit them for your story.
 
 ---
 
