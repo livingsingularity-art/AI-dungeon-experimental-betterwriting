@@ -199,6 +199,26 @@ const CONFIG = {
     system: {
         persistState: true,     // Save state between sessions
         enableAnalytics: true   // Track metrics over time (NOW ENABLED for NGO)
+    },
+
+    // Diversity Engine (Mode Collapse Prevention)
+    diversity: {
+        enabled: true,
+        alertThreshold: 0.35,           // Score below this triggers alerts (0-1)
+        autoBlockPhrases: true,         // Auto-add overlapping phrases to block list
+        maxBlockedPhrases: 30,          // Max phrases to track
+        contextPruningEnabled: false,   // Enable context pruning (experimental)
+        showFeedback: true,             // Show diversity feedback to user
+        debugLogging: true,             // Log diversity analysis
+
+        // Intervention escalation
+        nudgeThreshold: 0.5,            // Below this, add diversity nudge
+        interveneThreshold: 0.35,       // Below this, stronger intervention
+        escalateThreshold: 0.2,         // Below this, critical intervention
+
+        // Verbalized sampling integration
+        rotateSamplingPrompts: true,    // Rotate VS prompts based on diversity
+        escalateOnLowDiversity: true    // Escalate VS prompts when diversity is low
     }
 };
 
@@ -785,6 +805,18 @@ const initState = () => {
                 fatigueIncrease: 0,
                 insufficientImprovement: 0
             }
+        };
+
+        // === DIVERSITY STATE INITIALIZATION ===
+        state.diversity = {
+            scoreHistory: [],           // Last 20 diversity scores
+            avgScore: 1.0,              // Running average
+            blockedPhrases: [],         // Phrases to avoid (auto-populated)
+            rerollCount: 0,             // Consecutive rerolls (resets on good output)
+            lastDiversityScore: 1.0,    // Most recent score
+            alertThreshold: CONFIG.diversity.alertThreshold,
+            interventionLevel: 'none',  // none, nudge, intervene, escalate
+            outputTexts: []             // Recent output texts for comparison
         };
 
         // Note: Original author's note is NOT preserved - it gets overwritten constantly
@@ -4662,6 +4694,330 @@ const NGOEngine = (() => {
         processTurn,
         shouldTriggerOverheat
     };
+})();
+
+// #endregion
+
+// #region Diversity Engine (Mode Collapse Prevention)
+
+/**
+ * DiversityEngine - Tracks and manages output diversity across the session
+ * Prevents mode collapse by detecting and addressing repetitive patterns
+ */
+const DiversityEngine = (() => {
+    // === STOPWORDS (Filter from n-gram analysis) ===
+    const STOPWORDS = new Set([
+        'the', 'a', 'an', 'is', 'are', 'was', 'were', 'to', 'and', 'of', 'in',
+        'that', 'it', 'for', 'on', 'with', 'as', 'at', 'by', 'from', 'or', 'be',
+        'this', 'have', 'has', 'had', 'you', 'your', 'i', 'my', 'me', 'we', 'our',
+        'they', 'their', 'he', 'she', 'his', 'her', 'but', 'not', 'what', 'which'
+    ]);
+
+    /**
+     * Generate meaningful n-grams (filtering stopword-heavy sequences)
+     * @param {string} text - Text to analyze
+     * @param {number} n - N-gram size (2-4 recommended)
+     * @returns {string[]} Array of meaningful n-grams
+     */
+    const generateMeaningfulNgrams = (text, n) => {
+        const words = text.toLowerCase()
+            .replace(/[^\w\s]/g, '')
+            .split(/\s+/)
+            .filter(w => w.length > 2);
+
+        const ngrams = [];
+        for (let i = 0; i <= words.length - n; i++) {
+            const gram = words.slice(i, i + n);
+            // Require at least half the words to be meaningful
+            const meaningfulCount = gram.filter(w => !STOPWORDS.has(w)).length;
+            if (meaningfulCount >= Math.ceil(n / 2)) {
+                ngrams.push(gram.join(' '));
+            }
+        }
+        return ngrams;
+    };
+
+    /**
+     * Calculate diversity score comparing new text to history
+     * @param {string} newText - New output to evaluate
+     * @param {string[]} historyTexts - Array of previous outputs
+     * @returns {Object} { score: 0-1 (1=fully diverse), overlap: number, details: {...} }
+     */
+    const calculateDiversityScore = (newText, historyTexts) => {
+        const currentGrams = new Set(generateMeaningfulNgrams(newText, 3));
+        const historicalGrams = new Set(
+            historyTexts.flatMap(h => generateMeaningfulNgrams(h, 3))
+        );
+
+        if (currentGrams.size === 0) {
+            return { score: 1.0, overlap: 0, details: { currentSize: 0, historySize: historicalGrams.size } };
+        }
+
+        let overlap = 0;
+        const overlappingPhrases = [];
+        currentGrams.forEach(gram => {
+            if (historicalGrams.has(gram)) {
+                overlap++;
+                overlappingPhrases.push(gram);
+            }
+        });
+
+        const repetitionRatio = overlap / currentGrams.size;
+        const diversityScore = 1 - repetitionRatio;
+
+        return {
+            score: diversityScore,
+            overlap: overlap,
+            details: {
+                currentSize: currentGrams.size,
+                historySize: historicalGrams.size,
+                overlappingPhrases: overlappingPhrases.slice(0, 5) // Top 5 for logging
+            }
+        };
+    };
+
+    /**
+     * Detect exact phrase repetitions within text
+     * @param {string} text - Text to check
+     * @returns {string[]} Array of repeated phrases
+     */
+    const detectExactRepetition = (text) => {
+        const matches = text.match(/(.{15,}?)\1+/g);
+        return matches || [];
+    };
+
+    /**
+     * Detect structural repetition (repeated sentence starters)
+     * @param {string} text - Text to analyze
+     * @returns {Array} Array of {pattern, count} objects
+     */
+    const detectStructuralRepetition = (text) => {
+        const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 10);
+        const starters = {};
+
+        sentences.forEach(s => {
+            const start = s.trim().split(/\s+/).slice(0, 3).join(' ').toLowerCase();
+            starters[start] = (starters[start] || 0) + 1;
+        });
+
+        return Object.entries(starters)
+            .filter(([_, count]) => count >= 3)
+            .map(([pattern, count]) => ({ pattern, count }));
+    };
+
+    /**
+     * Detect looping patterns across paragraphs
+     * @param {string} text - Full text to analyze
+     * @returns {Array} Array of detected loops
+     */
+    const detectLoopingPatterns = (text) => {
+        const paragraphs = text.split(/\n\n+/).filter(p => p.trim().length > 50);
+        const seen = new Map();
+        const loops = [];
+
+        paragraphs.forEach((p, idx) => {
+            const normalized = p.toLowerCase().replace(/\s+/g, ' ').trim();
+            const signature = normalized.slice(0, 100);
+
+            if (seen.has(signature)) {
+                loops.push({
+                    preview: p.slice(0, 50) + '...',
+                    firstIndex: seen.get(signature),
+                    repeatIndex: idx
+                });
+            } else {
+                seen.set(signature, idx);
+            }
+        });
+
+        return loops;
+    };
+
+    /**
+     * Get diversity assessment with thresholds
+     * @param {number} score - Diversity score (0-1)
+     * @returns {Object} { level: string, action: string, color: string }
+     */
+    const assessDiversity = (score) => {
+        if (score >= 0.8) return { level: 'excellent', action: 'none', color: '🟢' };
+        if (score >= 0.65) return { level: 'good', action: 'monitor', color: '🟡' };
+        if (score >= 0.5) return { level: 'moderate', action: 'nudge', color: '🟠' };
+        if (score >= 0.35) return { level: 'low', action: 'intervene', color: '🔴' };
+        return { level: 'critical', action: 'escalate', color: '⛔' };
+    };
+
+    return {
+        generateMeaningfulNgrams,
+        calculateDiversityScore,
+        detectExactRepetition,
+        detectStructuralRepetition,
+        detectLoopingPatterns,
+        assessDiversity,
+        STOPWORDS
+    };
+})();
+
+// #endregion
+
+// #region Memory Health Analysis
+
+/**
+ * MemoryHealth - Analyzes Memory/WorldInfo for repetition-inducing content
+ */
+const MemoryHealth = (() => {
+    /**
+     * Analyze Memory/WorldInfo for repetition-inducing content
+     * @param {string} memoryText - Memory text to analyze
+     * @returns {Array} Array of issues
+     */
+    const analyzeMemory = (memoryText) => {
+        const issues = [];
+
+        // Check for duplicate sentences
+        const sentences = memoryText.match(/[^.!?]+[.!?]+/g) || [];
+        const seenSentences = new Set();
+
+        sentences.forEach(s => {
+            const normalized = s.toLowerCase().trim();
+            if (seenSentences.has(normalized)) {
+                issues.push({
+                    type: 'duplicate_sentence',
+                    text: s.trim().slice(0, 50) + '...'
+                });
+            }
+            seenSentences.add(normalized);
+        });
+
+        // Check for high n-gram density
+        const trigrams = DiversityEngine.generateMeaningfulNgrams(memoryText, 3);
+        const freq = new Map();
+        trigrams.forEach(g => freq.set(g, (freq.get(g) || 0) + 1));
+
+        const highFreqPhrases = [...freq.entries()]
+            .filter(([_, count]) => count > 3)
+            .map(([gram, count]) => ({ gram, count }));
+
+        if (highFreqPhrases.length > 3) {
+            issues.push({
+                type: 'high_phrase_density',
+                examples: highFreqPhrases.slice(0, 3)
+            });
+        }
+
+        // Check for negative instructions (often backfire)
+        if (/\bnot\b|\bdon't\b|\bwon't\b|\bnever\b/i.test(memoryText)) {
+            issues.push({
+                type: 'negative_instruction',
+                note: 'Negative instructions often backfire. Consider positive framing.'
+            });
+        }
+
+        return issues;
+    };
+
+    /**
+     * Analyze Story Cards for issues
+     * @param {Array} cards - Story cards to analyze
+     * @returns {Array} Array of issues
+     */
+    const analyzeStoryCards = (cards) => {
+        const issues = [];
+        const allEntries = cards.map(c => c.entry || '').join(' ');
+
+        // Check for duplicate keys
+        const keySet = new Map();
+        cards.forEach((card, idx) => {
+            if (!card.keys) return;
+            const keysStr = typeof card.keys === 'string' ? card.keys : '';
+            keysStr.split(',').forEach(key => {
+                const k = key.trim().toLowerCase();
+                if (k && keySet.has(k)) {
+                    issues.push({
+                        type: 'duplicate_key',
+                        key: k,
+                        indices: [keySet.get(k), idx]
+                    });
+                }
+                if (k) keySet.set(k, idx);
+            });
+        });
+
+        // Check for oversized entries
+        cards.forEach((card, idx) => {
+            if (card.entry && card.entry.length > 1000) {
+                issues.push({
+                    type: 'oversized_entry',
+                    title: card.title || `Card ${idx}`,
+                    length: card.entry.length
+                });
+            }
+        });
+
+        // Check for repetitive content across entries
+        const crossEntryGrams = DiversityEngine.generateMeaningfulNgrams(allEntries, 4);
+        const gramFreq = new Map();
+        crossEntryGrams.forEach(g => gramFreq.set(g, (gramFreq.get(g) || 0) + 1));
+
+        const repeatedAcrossEntries = [...gramFreq.entries()]
+            .filter(([_, count]) => count > 2);
+
+        if (repeatedAcrossEntries.length > 5) {
+            issues.push({
+                type: 'cross_entry_repetition',
+                count: repeatedAcrossEntries.length,
+                examples: repeatedAcrossEntries.slice(0, 3).map(([g, _]) => g)
+            });
+        }
+
+        return issues;
+    };
+
+    /**
+     * Generate health report
+     * @returns {string} Formatted report
+     */
+    const generateReport = () => {
+        const memoryText = (state.memory && state.memory.context) || '';
+        const memoryIssues = analyzeMemory(memoryText);
+        const cardIssues = analyzeStoryCards(storyCards || []);
+
+        let report = "📋 Memory Health Report\n\n";
+
+        if (memoryIssues.length === 0 && cardIssues.length === 0) {
+            report += "✓ No issues detected!";
+            return report;
+        }
+
+        if (memoryIssues.length > 0) {
+            report += "Memory Issues:\n";
+            memoryIssues.forEach(i => {
+                if (i.type === 'duplicate_sentence') {
+                    report += `• Duplicate: "${i.text}"\n`;
+                } else if (i.type === 'high_phrase_density') {
+                    report += `• High phrase density: ${i.examples.map(e => e.gram).join(', ')}\n`;
+                } else if (i.type === 'negative_instruction') {
+                    report += `• ${i.note}\n`;
+                }
+            });
+        }
+
+        if (cardIssues.length > 0) {
+            report += "\nStory Card Issues:\n";
+            cardIssues.forEach(i => {
+                if (i.type === 'duplicate_key') {
+                    report += `• Duplicate key: "${i.key}"\n`;
+                } else if (i.type === 'oversized_entry') {
+                    report += `• Oversized: ${i.title} (${i.length} chars)\n`;
+                } else if (i.type === 'cross_entry_repetition') {
+                    report += `• Cross-entry repetition: ${i.examples.join(', ')}\n`;
+                }
+            });
+        }
+
+        return report;
+    };
+
+    return { analyzeMemory, analyzeStoryCards, generateReport };
 })();
 
 // #endregion

@@ -44,6 +44,70 @@ const modifier = (text) => {
         }
     }
 
+    // === DIVERSITY COMMANDS ===
+    // Process /diversity, /health, /clearblocked, /diversityreset, /threshold commands
+    if (CONFIG.diversity && CONFIG.diversity.enabled) {
+        const trimmedText = text.trim().toLowerCase();
+
+        // /diversity or /div - Show diversity statistics
+        if (trimmedText === '/diversity' || trimmedText === '/div') {
+            const ds = state.diversity || {};
+            state.message = `📊 Diversity Statistics\n` +
+                `Current Score: ${Math.round((ds.lastDiversityScore || 1) * 100)}%\n` +
+                `Session Average: ${Math.round((ds.avgScore || 1) * 100)}%\n` +
+                `Blocked Phrases: ${(ds.blockedPhrases || []).length}\n` +
+                `Intervention Level: ${ds.interventionLevel || 'none'}`;
+            return { text: ".", stop: true };
+        }
+
+        // /health - Memory and story card health check
+        if (trimmedText === '/health') {
+            state.message = MemoryHealth.generateReport();
+            return { text: ".", stop: true };
+        }
+
+        // /clearblocked - Reset blocked phrase list
+        if (trimmedText === '/clearblocked') {
+            if (state.diversity) {
+                state.diversity.blockedPhrases = [];
+            }
+            state.message = "✓ Blocked phrase list cleared";
+            return { text: ".", stop: true };
+        }
+
+        // /diversityreset or /divreset - Full diversity system reset
+        if (trimmedText === '/diversityreset' || trimmedText === '/divreset') {
+            state.diversity = {
+                scoreHistory: [],
+                avgScore: 1.0,
+                blockedPhrases: [],
+                rerollCount: 0,
+                lastDiversityScore: 1.0,
+                alertThreshold: CONFIG.diversity.alertThreshold,
+                interventionLevel: 'none',
+                outputTexts: []
+            };
+            state.message = "✓ Diversity system reset";
+            return { text: ".", stop: true };
+        }
+
+        // /threshold X - Adjust alert threshold
+        if (trimmedText.startsWith('/threshold ')) {
+            const args = trimmedText.split(' ').slice(1);
+            const newThreshold = parseFloat(args[0]);
+            if (!isNaN(newThreshold) && newThreshold >= 0 && newThreshold <= 1) {
+                if (state.diversity) {
+                    state.diversity.alertThreshold = newThreshold;
+                }
+                CONFIG.diversity.alertThreshold = newThreshold;
+                state.message = `✓ Alert threshold set to ${Math.round(newThreshold * 100)}%`;
+            } else {
+                state.message = "Usage: /threshold 0.35 (value between 0 and 1)";
+            }
+            return { text: ".", stop: true };
+        }
+    }
+
     // Better Say Actions - Enhanced dialogue formatting
     // Credit: BinKompliziert (AI Dungeon Discord)
     const enhanceSayActions = (input) => {
