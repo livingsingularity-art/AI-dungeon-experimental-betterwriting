@@ -245,8 +245,297 @@ After implementing fixes:
 
 ---
 
+---
+
+## PART 2: MISSING FEATURES ANALYSIS
+
+Beyond the critical API bugs, the vogler-v2 scripts are **missing massive amounts of functionality** present in the functional Trinity scripts. This is a comprehensive comparison.
+
+---
+
+## Missing from Shared Library
+
+### CRITICAL MISSING: buildCard() Utility
+Trinity has a robust `buildCard()` wrapper (lines 815-883) that:
+- Validates all inputs
+- Handles index positioning
+- Returns sealed card references
+- Provides proper error handling
+- Works around AI Dungeon quirks
+
+**Vogler has**: Simple `getCard(key)` that only finds cards by key string.
+
+### CRITICAL MISSING: safeLog() Utility
+Trinity has `safeLog(message, level)` (lines 310-319) that:
+- Respects CONFIG debug settings
+- Uses emoji prefixes for log levels
+- Provides consistent logging
+
+**Vogler has**: Raw `log()` calls scattered throughout.
+
+### CRITICAL MISSING: CONFIG Object
+Trinity has comprehensive CONFIG (lines 26-203):
+- `CONFIG.vs` - Verbalized Sampling settings
+- `CONFIG.bonepoke` - Quality analysis settings
+- `CONFIG.ngo` - NGO engine settings (50+ parameters)
+- `CONFIG.commands` - Command system settings
+- `CONFIG.smartReplacement` - Replacement system settings
+- `CONFIG.system` - System settings
+
+**Vogler has**: Only basic `DEBUG_CONFIG`, `VOGLER_BEAT_CONFIG`, `SAE_BRIDGE_CONFIG`, `NGO_CONFIG` with minimal parameters.
+
+### CRITICAL MISSING: Core Systems
+
+| Trinity System | Purpose | Vogler Has? |
+|----------------|---------|-------------|
+| `VerbalizedSampling` | VS diversity system | NO |
+| `BonepokeAnalysis` | Quality analysis (fatigue, drift, MARM) | NO |
+| `DynamicCorrection` | Auto-correction via story cards | NO |
+| `Analytics` | Usage tracking and metrics | NO |
+| `NGOEngine` | Full narrative engine | PARTIAL (only sync) |
+| `NGOCommands` | @req, (), @temp, @arc commands | PARTIAL |
+| `PlayersAuthorsNoteCard` | Player's author note card | NO |
+| `AutoCards` | Automatic story card generation | NO |
+| `SYNONYM_MAP` | 200+ word synonyms | NO |
+| `ENHANCED_SYNONYM_MAP` | Extended synonyms with tags | NO |
+| `NGO_WORD_LISTS` | Conflict/calming word detection | NO |
+| `NGO_PHASES` | 5 narrative phases | NO |
+| `STOPWORDS` | 120+ protected functional words | NO |
+
+### CRITICAL MISSING: Story Card Management Functions
+
+| Trinity Function | Purpose | Vogler Has? |
+|------------------|---------|-------------|
+| `buildCard()` | Robust card creation with validation | NO |
+| `getCard(predicate)` | Find cards by predicate function | NO (only by key) |
+| `removeCard()` | Safe card removal | NO |
+| `ensureBannedWordsCard()` | PRECISE word bank | NO |
+| `ensureAggressiveCard()` | AGGRESSIVE word bank | NO |
+| `ensureReplacerCard()` | REPLACER word bank | NO |
+
+---
+
+## Missing from Context Script
+
+### CRITICAL MISSING: Quality Analysis Integration
+```javascript
+// Trinity Context has:
+const analyzeRecentHistory = () => {
+    const recentOutputs = history.filter(h => h.type === 'ai').slice(-3)...
+    return BonepokeAnalysis.analyze(recentOutputs);
+};
+if (CONFIG.bonepoke.enabled && CONFIG.bonepoke.enableDynamicCorrection) {
+    const recentAnalysis = analyzeRecentHistory();
+    DynamicCorrection.applyCorrections(recentAnalysis);
+}
+```
+**Vogler has**: Nothing - no quality analysis.
+
+### CRITICAL MISSING: Layered Author's Note System
+Trinity builds author's note with 3+ layers:
+1. `PlayersAuthorsNoteCard.getPlayerContent()` - User's stable note
+2. `getCurrentNGOPhase().authorNoteGuidance` - Dynamic phase guidance
+3. `NGOCommands.buildAuthorsNoteLayer()` - Command memories
+
+**Vogler has**: Simple single-layer stage guidance injection.
+
+### CRITICAL MISSING: VS Integration
+```javascript
+// Trinity Context has:
+if (CONFIG.vs.enabled && CONFIG.vs.adaptive) {
+    const adaptedParams = VerbalizedSampling.analyzeContext(text);
+    VerbalizedSampling.updateCard(adaptedParams);
+}
+text += '\n\n' + VerbalizedSampling.getInstruction();
+```
+**Vogler has**: Nothing - no Verbalized Sampling.
+
+### CRITICAL MISSING: AutoCards Integration
+```javascript
+// Trinity Context has:
+const autoCardsResult = AutoCards("context", text, stop);
+```
+**Vogler has**: Nothing - no automatic card generation.
+
+### CRITICAL MISSING: Continue Handling
+Trinity has proper continue handling for incomplete sentences.
+**Vogler has**: Nothing.
+
+---
+
+## Missing from Input Script
+
+### CRITICAL MISSING: Full NGOCommands Processing
+```javascript
+// Trinity Input has:
+const commandResult = NGOCommands.processAllCommands(text);
+text = commandResult.processed;
+```
+**Vogler has**: Only basic @stage, @beat, @bridge, @temp parsing.
+
+### CRITICAL MISSING: Front Memory Injection
+```javascript
+// Trinity Input has:
+if (CONFIG.commands.reqDualInjection && state.commands.narrativeRequest) {
+    state.memory.frontMemory = NGOCommands.buildFrontMemoryInjection();
+}
+```
+**Vogler has**: Nothing - no frontMemory support.
+
+### CRITICAL MISSING: Better Say Actions (Full Version)
+Trinity has comprehensive dialogue formatting from BinKompliziert with:
+- All trigger words (say, exclaim, whisper, mutter, utter, shout, yell, scream, ask, answer, reply, respond, joke, lie)
+- Double comma pattern handling
+- Proper capitalization
+
+**Vogler has**: Basic partial implementation.
+
+### CRITICAL MISSING: NGO Conflict Analysis
+```javascript
+// Trinity Input has:
+const conflictData = NGOEngine.analyzeConflict(text);
+const heatResult = NGOEngine.updateHeat(conflictData, 'player');
+```
+**Vogler has**: Nothing - no heat tracking from player input.
+
+### CRITICAL MISSING: AutoCards Integration
+```javascript
+// Trinity Input has:
+text = AutoCards("input", text);
+```
+**Vogler has**: Nothing.
+
+---
+
+## Missing from Output Script
+
+### CRITICAL MISSING: NGO Author's Note Restoration
+```javascript
+// Trinity Output has:
+if (state.memory.authorsNote !== state.authorsNoteStorage) {
+    state.memory.authorsNote = state.authorsNoteStorage;
+}
+```
+**Vogler has**: Nothing - author's note can be lost.
+
+### CRITICAL MISSING: AutoCards Integration
+```javascript
+// Trinity Output has:
+text = AutoCards("output", text);
+```
+**Vogler has**: Nothing.
+
+### CRITICAL MISSING: Comprehensive Output Cleaning
+Trinity cleanOutput() removes:
+- XML tags (response, probability, text, candidate, selected)
+- VS instruction leaks
+- Trailing "stop" quirk
+- Multiple newlines
+
+**Vogler has**: Basic XML and marker removal only.
+
+### CRITICAL MISSING: Bonepoke Quality Analysis
+```javascript
+// Trinity Output has:
+const analysis = BonepokeAnalysis.analyze(text);
+state.bonepokeHistory.push(analysis);
+state.lastBonepokeScore = analysis.avgScore;
+```
+**Vogler has**: Nothing - no quality tracking.
+
+### CRITICAL MISSING: NGO Turn Processing
+```javascript
+// Trinity Output has:
+const turnResult = NGOEngine.processTurn();
+// Handles overheat completion, cooldown completion, phase tracking
+```
+**Vogler has**: Nothing - no NGO turn processing.
+
+### CRITICAL MISSING: Cross-Output N-gram Tracking
+Trinity tracks 2-3 word phrases across outputs to detect repetition.
+**Vogler has**: Nothing.
+
+### CRITICAL MISSING: Word Bank Card Processing
+Trinity reads from three user-editable cards:
+- `banned_words` - PRECISE removal
+- `aggressive_removal` - Sentence removal
+- `word_replacer` - Custom synonyms
+
+**Vogler has**: Nothing - no word bank support.
+
+### CRITICAL MISSING: Smart Replacement System
+Trinity has sophisticated synonym replacement with:
+- Context matching
+- Adaptive learning
+- Validation
+- Dimension-aware selection
+
+**Vogler has**: Nothing.
+
+### CRITICAL MISSING: Analytics Recording
+```javascript
+// Trinity Output has:
+Analytics.recordOutput(analysis);
+Analytics.recordRegeneration();
+```
+**Vogler has**: Nothing.
+
+---
+
+## Repair Priority Levels
+
+### P0 - CRITICAL (Scripts non-functional without these)
+1. Fix addStoryCard() API calls
+2. Fix updateStoryCard() API calls
+3. Remove modifier(text) calls
+
+### P1 - HIGH (Core functionality broken)
+1. Add `safeLog()` utility
+2. Add `buildCard()` utility with validation
+3. Add proper `getCard()` with predicate support
+4. Add comprehensive CONFIG object
+
+### P2 - MEDIUM (Major features missing)
+1. Add `PlayersAuthorsNoteCard` system
+2. Add layered author's note building
+3. Add `AutoCards` integration hooks
+4. Add NGO author's note restoration
+5. Add comprehensive output cleaning
+
+### P3 - ENHANCEMENT (Quality of life)
+1. Add `BonepokeAnalysis` integration
+2. Add `NGOEngine` full integration
+3. Add `NGOCommands` full integration
+4. Add `VerbalizedSampling` integration
+5. Add word bank card support
+6. Add cross-output tracking
+7. Add analytics
+
+---
+
+## Recommended Approach
+
+Given the extensive missing features, there are two approaches:
+
+### Option A: Minimal Fix (P0 only)
+Fix only the API bugs to make scripts functional. Vogler-specific features will work, but no Trinity quality systems.
+
+**Pros**: Quick, focused
+**Cons**: Missing quality control, no synonym replacement, no adaptive systems
+
+### Option B: Full Integration
+Port all Trinity systems into Vogler, creating a comprehensive integrated solution.
+
+**Pros**: Full feature parity, quality control, all systems working together
+**Cons**: Major effort, risk of new bugs, larger codebase
+
+### Recommendation
+Start with **Option A** to get basic functionality working, then incrementally add P1 features. P2 and P3 can be added in future iterations.
+
+---
+
 ## Version
 
-**Blueprint Version**: 1.0.0
-**Date**: 2025-01-XX
-**Status**: Ready for Implementation
+**Blueprint Version**: 2.0.0
+**Date**: 2025-12-15
+**Status**: Comprehensive Analysis Complete
