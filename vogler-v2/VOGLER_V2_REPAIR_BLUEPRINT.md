@@ -109,6 +109,127 @@ This is clearly documented in:
 
 ---
 
+## PART 1.5: DEFINITIVE API SIGNATURES (from aidungeon.d.ts)
+
+The official TypeScript definitions in `Best-Practices/aidungeon.d.ts` provide the **definitive API signatures**:
+
+### addStoryCard() - FULL SIGNATURE (5 parameters)
+
+```typescript
+function addStoryCard(
+    keys: string,      // Comma-separated keywords that trigger this card
+    entry?: string,    // The text to inject into AI context when triggered
+    type?: string,     // Category for organizing cards (default: "Custom")
+    name?: string,     // Display name for the card (default: keys)
+    notes?: string     // Additional notes stored in description field (default: "")
+): number;             // Returns the index of the newly added card
+```
+
+**Reference Implementation** (from aidungeon.d.ts lines 358-371):
+```javascript
+(keys, entry, type = 'Custom', name = keys, notes = '', options) => {
+  const { returnCard = false } = options ?? {}
+  storyCards.push({
+    id: Math.floor(Math.random() * 1000000000).toString(),
+    keys,
+    entry,
+    type,
+    title: name,
+    description: notes
+  })
+  if (returnCard) return storyCards[storyCards.length - 1]
+  else return storyCards.length
+}
+```
+
+### updateStoryCard() - FULL SIGNATURE (6 parameters)
+
+```typescript
+function updateStoryCard(
+    index: number,     // The index of the story card to update
+    keys: string,      // New comma-separated keywords
+    entry: string,     // New text to inject into context
+    type?: string,     // New category (optional, preserves existing)
+    name?: string,     // New display name (optional, preserves existing)
+    notes?: string     // New description/notes (optional, preserves existing)
+): void;
+```
+
+**Reference Implementation** (from aidungeon.d.ts lines 446-460):
+```javascript
+(index, keys, entry, type, name, notes) => {
+  const existing = storyCards[index]
+  if (existing) {
+    storyCards[index] = {
+      id: existing.id,
+      keys,
+      entry,
+      type: type ?? existing.type,
+      title: name ?? existing.title,
+      description: notes ?? existing.description
+    }
+  } else {
+    throw new Error(`Story card not found at index ${index} in updateStoryCard`)
+  }
+}
+```
+
+### removeStoryCard() - SIGNATURE
+
+```typescript
+function removeStoryCard(index: number): void;
+// Throws Error if no card exists at the given index
+```
+
+---
+
+## Known API Issues (from Best Practices)
+
+### Issue #1: onOutput Memory Changes Delayed
+From `aidungeon.d.ts` line 227:
+> "Changes to state.memory in onOutput won't affect the AI until the next turn."
+
+**Impact**: Any `state.memory.authorsNote` or `state.memory.context` changes made in the Output script won't be visible to the AI until the NEXT player action.
+
+### Issue #2: Story Card Changes May Not Propagate Between Hooks
+From Best Practices documentation:
+> "Changes to story cards made in earlier hooks are not always present in later hooks."
+
+**Impact**: A story card created in `onInput` may not be visible in `onModelContext` during the same turn.
+
+### Issue #3: Direct Array Manipulation Supported
+From `aidungeon.d.ts` line 283:
+> "Direct array manipulation is supported: `storyCards.push()`, `storyCards[i] = ...`"
+
+**Impact**: Can bypass `addStoryCard()` and directly manipulate the `storyCards` array, but must handle ID generation manually.
+
+---
+
+## Alternative Pattern: Director Framework
+
+The `director.md` Best Practices document shows an alternative pattern for organizing modifier functions:
+
+```javascript
+// Instead of:
+const modifier = (text) => { return { text }; };
+modifier(text);
+void 0;
+
+// Use Director pattern:
+const fn = (text) => { return { text }; };
+director.input(fn);  // or director.context(fn), director.output(fn)
+void 0;
+```
+
+**Key Benefits**:
+- Chains multiple modifier functions automatically
+- Cleaner separation of concerns
+- No manual `modifier(text)` call needed
+
+**Note**: This is an ALTERNATIVE approach. For P0 fixes, simply removing `modifier(text)` and keeping `void 0` is sufficient
+
+---
+
 ## Repair Implementation Plan
 
 ### STEP 1: Fix addStoryCard() calls in voglerSharedLibrary.js
@@ -536,6 +657,11 @@ Start with **Option A** to get basic functionality working, then incrementally a
 
 ## Version
 
-**Blueprint Version**: 2.0.0
-**Date**: 2025-12-15
-**Status**: Comprehensive Analysis Complete
+**Blueprint Version**: 2.1.0
+**Date**: 2025-12-16
+**Status**: Comprehensive Analysis Complete with Best Practices API Verification
+
+### Changelog
+- **v2.1.0**: Added definitive API signatures from aidungeon.d.ts, known API issues, and Director pattern alternative
+- **v2.0.0**: Added comprehensive missing features analysis comparing to Trinity scripts
+- **v1.0.0**: Initial bug identification (addStoryCard/updateStoryCard API misuse)
