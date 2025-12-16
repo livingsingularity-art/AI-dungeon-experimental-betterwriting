@@ -66,7 +66,7 @@ const modifier = (text) => {
     // AUTOCARDS INTEGRATION HOOK
     // ═══════════════════════════════════════════════════════════════
 
-    text = autoCardsContextHook(text, stop);
+    text = autoCardsContextHook(text, null);
 
     // ═══════════════════════════════════════════════════════════════
     // LOGGING
