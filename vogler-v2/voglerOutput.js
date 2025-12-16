@@ -24,6 +24,11 @@ const modifier = (text) => {
     const originalText = text;
 
     // ═══════════════════════════════════════════════════════════════
+    // RESTORE AUTHOR'S NOTE (preserved from context hook)
+    // ═══════════════════════════════════════════════════════════════
+    restoreAuthorsNote();
+
+    // ═══════════════════════════════════════════════════════════════
     // PARSE BRIDGE GENERATION RESPONSE
     // ═══════════════════════════════════════════════════════════════
 
@@ -44,17 +49,17 @@ const modifier = (text) => {
             // Increment attempt counter
             state.vogler.pendingBridgeGeneration.attempts++;
             if (state.vogler.pendingBridgeGeneration.attempts >= 3) {
-                log('[SAE-BRIDGE] Max attempts reached, aborting generation');
+                safeLog('[BRIDGE] Max attempts reached, aborting generation', 'warn');
                 state.vogler.pendingBridgeGeneration = null;
             }
         }
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // CLEAN OUTPUT
+    // COMPREHENSIVE OUTPUT CLEANING
     // ═══════════════════════════════════════════════════════════════
 
-    text = cleanOutput(text);
+    text = cleanOutputComprehensive(text);
 
     // ═══════════════════════════════════════════════════════════════
     // BEAT DETECTION FROM AI OUTPUT
@@ -84,7 +89,9 @@ const modifier = (text) => {
     // DUPLICATE PREVENTION
     // ═══════════════════════════════════════════════════════════════
 
-    text = removeDuplicates(text);
+    if (CONFIG.output.removeDuplicates) {
+        text = removeDuplicates(text);
+    }
 
     // ═══════════════════════════════════════════════════════════════
     // DIALOGUE FORMATTING
@@ -92,9 +99,11 @@ const modifier = (text) => {
 
     text = formatDialogue(text);
 
-    // Log output processing
+    // ═══════════════════════════════════════════════════════════════
+    // LOGGING
+    // ═══════════════════════════════════════════════════════════════
     if (DEBUG_CONFIG.verboseMode) {
-        log('[VOGLER-OUTPUT] Processed output, length: ' + text.length);
+        safeLog('[OUTPUT] Processed output, length: ' + text.length, 'debug');
     }
 
     return { text };
@@ -144,26 +153,79 @@ function detectBeatsFromOutput(text) {
 }
 
 /**
- * Clean AI output of unwanted artifacts
+ * Comprehensive AI output cleaning
+ * Uses CONFIG.output settings for flexibility
  */
-function cleanOutput(text) {
-    // Remove accidental XML/instruction leaks
-    text = text.replace(/<[^>]+>/g, '');
+function cleanOutputComprehensive(text) {
+    const cfg = CONFIG.output;
 
-    // Remove stage instruction leaks
-    text = text.replace(/\[Stage:.*?\]/g, '');
-    text = text.replace(/\[Next beat.*?\]/g, '');
-    text = text.replace(/\[VOGLER.*?\]/g, '');
+    // ─────────────────────────────────────────────────────────────────
+    // PHASE 1: Remove XML tags
+    // ─────────────────────────────────────────────────────────────────
+    if (cfg.cleanXmlTags) {
+        // Remove specific XML tags from config
+        for (const tag of cfg.xmlTagsToRemove) {
+            const openPattern = new RegExp('<' + tag + '[^>]*>', 'gi');
+            const closePattern = new RegExp('</' + tag + '>', 'gi');
+            text = text.replace(openPattern, '');
+            text = text.replace(closePattern, '');
+        }
+        // Remove any remaining generic XML-like tags
+        text = text.replace(/<[^>]+>/g, '');
+    }
 
-    // Remove generation markers
-    text = text.replace(/\[STORY BRIDGE GENERATION\]/g, '');
-    text = text.replace(/\[END GENERATION\]/g, '');
+    // ─────────────────────────────────────────────────────────────────
+    // PHASE 2: Remove marker leaks (stage instructions, etc.)
+    // ─────────────────────────────────────────────────────────────────
+    if (cfg.cleanMarkerLeaks) {
+        // Apply marker patterns from config
+        for (const pattern of cfg.markerPatterns) {
+            try {
+                const regex = new RegExp(pattern, 'gi');
+                text = text.replace(regex, '');
+            } catch (e) {
+                safeLog('[OUTPUT] Invalid marker pattern: ' + pattern, 'warn');
+            }
+        }
 
-    // Clean excessive whitespace
-    text = text.replace(/\n{4,}/g, '\n\n\n');
+        // Remove common instruction leaks
+        text = text.replace(/\[Next beat.*?\]/gi, '');
+        text = text.replace(/\[Current stage.*?\]/gi, '');
+        text = text.replace(/\[Author's note.*?\]/gi, '');
+
+        // Remove generation markers
+        text = text.replace(/\[STORY BRIDGE GENERATION\]/g, '');
+        text = text.replace(/\[END GENERATION\]/g, '');
+
+        // Remove VS (Verbalized Sampling) leaks
+        text = text.replace(/\[VS:.*?\]/gi, '');
+        text = text.replace(/\[Temperature:.*?\]/gi, '');
+
+        // Remove trailing "stop" quirk (common AI artifact)
+        text = text.replace(/\s*stop\s*$/i, '');
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // PHASE 3: Clean excessive whitespace
+    // ─────────────────────────────────────────────────────────────────
+    if (cfg.cleanExcessiveNewlines) {
+        const maxNewlines = cfg.maxConsecutiveNewlines || 3;
+        const pattern = new RegExp('\\n{' + (maxNewlines + 1) + ',}', 'g');
+        text = text.replace(pattern, '\n'.repeat(maxNewlines));
+    }
+
+    // Always trim
     text = text.trim();
 
     return text;
+}
+
+/**
+ * Legacy function - Clean AI output of unwanted artifacts
+ * @deprecated Use cleanOutputComprehensive() instead
+ */
+function cleanOutput(text) {
+    return cleanOutputComprehensive(text);
 }
 
 /**

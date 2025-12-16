@@ -107,6 +107,99 @@ const NGO_CONFIG = {
     debugLogging: true
 };
 
+/**
+ * ============================================================================
+ * UNIFIED CONFIG OBJECT
+ * Consolidates all configuration with additional P3+ features
+ * ============================================================================
+ */
+const CONFIG = {
+    // System version
+    version: '2.1.0',
+
+    // Debug settings (references DEBUG_CONFIG)
+    debug: DEBUG_CONFIG,
+
+    // Vogler story structure
+    vogler: {
+        ...VOGLER_BEAT_CONFIG,
+        autoAdvance: true,
+        minTurnsPerStage: 4,
+        maxTurnsPerStage: 12,
+        beatCompletionThreshold: 0.6, // 60% beats needed before stage advance
+        stageKeywordMatching: true
+    },
+
+    // SAE Bridge settings (references SAE_BRIDGE_CONFIG)
+    bridge: SAE_BRIDGE_CONFIG,
+
+    // NGO integration (references NGO_CONFIG)
+    ngo: NGO_CONFIG,
+
+    // Author's Note layering system
+    authorsNote: {
+        enabled: true,
+        // Layer priorities (higher = more important, added last)
+        layers: {
+            playerNote: 1,      // Player's stable author's note
+            stageGuidance: 2,   // Vogler stage-specific guidance
+            beatHints: 3,       // Current beat hints
+            tempEffects: 4      // Temporary command effects (@temp)
+        },
+        maxLength: 500,         // Max combined length
+        separator: '\n',        // Layer separator
+        playerNoteCardKey: 'player-guidance',
+        preserveOnOutput: true  // Restore after context hook
+    },
+
+    // Output cleaning settings
+    output: {
+        cleanXmlTags: true,
+        cleanMarkerLeaks: true,
+        cleanExcessiveNewlines: true,
+        maxConsecutiveNewlines: 3,
+        removeDuplicates: true,
+        duplicateCheckLength: 50,
+        // XML tags to remove
+        xmlTagsToRemove: ['response', 'probability', 'text', 'candidate', 'selected'],
+        // Marker patterns to remove
+        markerPatterns: ['\\[Stage:.*?\\]', '\\[Beat:.*?\\]', '\\[VOGLER.*?\\]', '\\[SAE.*?\\]']
+    },
+
+    // Player commands
+    commands: {
+        prefix: '@',
+        // Available commands
+        stage: true,    // @stage <n>
+        beat: true,     // @beat
+        bridge: true,   // @bridge
+        temp: true,     // @temp <text> (temporary author's note)
+        skip: true      // @skip (skip current beat)
+    },
+
+    // Story card defaults
+    cards: {
+        defaultType: 'author',
+        configCardKey: 'vogler-config',
+        playerGuidanceKey: 'player-guidance',
+        debugCardKey: 'vogler-debug'
+    },
+
+    // Future integrations (hooks for P4)
+    integrations: {
+        autoCards: false,
+        bonepoke: false,
+        verbalizedSampling: false,
+        wordBanks: false
+    }
+};
+
+// Ensure backwards compatibility - keep original const references working
+Object.assign(DEBUG_CONFIG, CONFIG.debug);
+Object.assign(VOGLER_BEAT_CONFIG, CONFIG.vogler);
+Object.assign(SAE_BRIDGE_CONFIG, CONFIG.bridge);
+Object.assign(NGO_CONFIG, CONFIG.ngo);
+
 // #endregion
 
 // #region Stage Definitions
@@ -1666,43 +1759,227 @@ TWO-TIER SYSTEM:
 // #region Author's Note Generation
 
 /**
+ * ============================================================================
+ * LAYERED AUTHOR'S NOTE SYSTEM
+ * Combines multiple sources into a single cohesive author's note
+ * ============================================================================
+ *
+ * Layers (in order of application):
+ * 1. Player's stable note (from player-guidance card)
+ * 2. Stage-specific guidance (from Vogler stages)
+ * 3. Current beat hints (next beat to achieve)
+ * 4. Temporary effects (@temp command)
+ */
+
+/**
+ * Get player's author's note content from their guidance card
+ * @returns {string} Player's custom content or empty string
+ */
+function getPlayerAuthorsNote() {
+    const playerCard = getCard(CONFIG.authorsNote.playerNoteCardKey);
+
+    if (!playerCard || !playerCard.entry) {
+        return '';
+    }
+
+    const entry = playerCard.entry;
+
+    // Skip if it's just the template text
+    if (entry.includes('[Edit this card') || entry.includes('[Your Personal')) {
+        return '';
+    }
+
+    // Extract content, removing template markers
+    let content = entry
+        .replace(/\[Your Personal Author's Note\]/g, '')
+        .replace(/\[Edit this card.*?\]/g, '')
+        .trim();
+
+    return content;
+}
+
+/**
  * Build stage-appropriate author's note guidance
+ * @returns {string} Stage guidance text
  */
 function buildStageGuidance() {
+    if (!state.vogler || !state.vogler.currentStage) {
+        return '';
+    }
+
     const stage = VOGLER_STAGES[state.vogler.currentStage];
-    const actData = state.vogler.acts[state.vogler.currentAct];
+    if (!stage) return '';
 
     let guidance = '[Stage: ' + stage.name + ']\n';
-    guidance += stage.guidance + '\n';
-
-    // Add next beat if available
-    if (actData && actData.remainingBeats && actData.remainingBeats.length > 0) {
-        guidance += '\nNext beat to achieve: ' + actData.remainingBeats[0];
-    }
+    guidance += stage.guidance;
 
     return guidance;
 }
 
 /**
- * Get combined author's note (player + stage guidance)
+ * Build beat hints for current act
+ * @returns {string} Beat hint text
  */
-function getCombinedAuthorsNote() {
-    const playerNote = getCard('player-guidance');
-    const stageGuidance = buildStageGuidance();
-
-    let combined = '';
-
-    if (playerNote && playerNote.entry) {
-        // Extract just the user content, not the template text
-        const entry = playerNote.entry;
-        if (!entry.includes('[Edit this card')) {
-            combined += entry + '\n\n';
-        }
+function buildBeatHints() {
+    if (!state.vogler || !state.vogler.currentAct) {
+        return '';
     }
 
-    combined += stageGuidance;
+    const actData = state.vogler.acts[state.vogler.currentAct];
+
+    if (!actData || !actData.remainingBeats || actData.remainingBeats.length === 0) {
+        return '';
+    }
+
+    return 'Next beat: ' + actData.remainingBeats[0];
+}
+
+/**
+ * Get temporary author's note effects (from @temp command)
+ * @returns {string} Temporary effects or empty string
+ */
+function getTempEffects() {
+    if (!state.vogler || !state.vogler.tempAuthorsNote) {
+        return '';
+    }
+
+    const temp = state.vogler.tempAuthorsNote;
+
+    // Check if temporary note has expired
+    if (temp.expiresAt && info.actionCount >= temp.expiresAt) {
+        state.vogler.tempAuthorsNote = null;
+        return '';
+    }
+
+    return temp.text || '';
+}
+
+/**
+ * Build complete layered author's note
+ * Combines all layers according to CONFIG.authorsNote settings
+ * @returns {string} Complete layered author's note
+ */
+function buildLayeredAuthorsNote() {
+    if (!CONFIG.authorsNote.enabled) {
+        return state.memory?.authorsNote || '';
+    }
+
+    const layers = [];
+
+    // Layer 1: Player's stable note (lowest priority)
+    const playerNote = getPlayerAuthorsNote();
+    if (playerNote) {
+        layers.push({ priority: CONFIG.authorsNote.layers.playerNote, content: playerNote });
+    }
+
+    // Layer 2: Stage guidance
+    const stageGuidance = buildStageGuidance();
+    if (stageGuidance) {
+        layers.push({ priority: CONFIG.authorsNote.layers.stageGuidance, content: stageGuidance });
+    }
+
+    // Layer 3: Beat hints
+    const beatHints = buildBeatHints();
+    if (beatHints) {
+        layers.push({ priority: CONFIG.authorsNote.layers.beatHints, content: beatHints });
+    }
+
+    // Layer 4: Temporary effects (highest priority)
+    const tempEffects = getTempEffects();
+    if (tempEffects) {
+        layers.push({ priority: CONFIG.authorsNote.layers.tempEffects, content: tempEffects });
+    }
+
+    // Sort by priority (lower = earlier in output)
+    layers.sort((a, b) => a.priority - b.priority);
+
+    // Combine with separator
+    let combined = layers.map(l => l.content).join(CONFIG.authorsNote.separator);
+
+    // Enforce max length
+    if (combined.length > CONFIG.authorsNote.maxLength) {
+        combined = combined.slice(0, CONFIG.authorsNote.maxLength) + '...';
+        safeLog('[AuthorsNote] Truncated to max length: ' + CONFIG.authorsNote.maxLength, 'debug');
+    }
 
     return combined;
+}
+
+/**
+ * Store current author's note for restoration after output
+ * Call this at the START of context processing
+ */
+function storeAuthorsNote() {
+    if (!CONFIG.authorsNote.preserveOnOutput) return;
+
+    state.vogler = state.vogler || {};
+    state.vogler._authorsNoteBackup = state.memory?.authorsNote || null;
+
+    safeLog('[AuthorsNote] Stored backup for restoration', 'debug');
+}
+
+/**
+ * Restore author's note after output processing
+ * Call this at the END of output processing
+ */
+function restoreAuthorsNote() {
+    if (!CONFIG.authorsNote.preserveOnOutput) return;
+
+    if (state.vogler?._authorsNoteBackup !== undefined) {
+        state.memory = state.memory || {};
+        state.memory.authorsNote = state.vogler._authorsNoteBackup;
+        state.vogler._authorsNoteBackup = undefined;
+
+        safeLog('[AuthorsNote] Restored from backup', 'debug');
+    }
+}
+
+/**
+ * Apply layered author's note to state.memory
+ * Call this during context processing
+ */
+function applyLayeredAuthorsNote() {
+    const layeredNote = buildLayeredAuthorsNote();
+
+    if (layeredNote) {
+        state.memory = state.memory || {};
+        state.memory.authorsNote = layeredNote;
+
+        safeLog('[AuthorsNote] Applied layered note (' + layeredNote.length + ' chars)', 'debug');
+    }
+}
+
+/**
+ * Set temporary author's note effect
+ * @param {string} text - The temporary text
+ * @param {number} duration - Number of turns to last (default: 3)
+ */
+function setTempAuthorsNote(text, duration = 3) {
+    state.vogler = state.vogler || {};
+    state.vogler.tempAuthorsNote = {
+        text: text,
+        createdAt: info.actionCount,
+        expiresAt: info.actionCount + duration
+    };
+
+    safeLog('[AuthorsNote] Set temporary note for ' + duration + ' turns', 'info');
+}
+
+/**
+ * Clear temporary author's note
+ */
+function clearTempAuthorsNote() {
+    if (state.vogler) {
+        state.vogler.tempAuthorsNote = null;
+    }
+}
+
+/**
+ * Legacy function - Get combined author's note (player + stage guidance)
+ * @deprecated Use buildLayeredAuthorsNote() instead
+ */
+function getCombinedAuthorsNote() {
+    return buildLayeredAuthorsNote();
 }
 
 // #endregion

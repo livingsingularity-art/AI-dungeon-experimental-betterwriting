@@ -16,35 +16,40 @@ const modifier = (text) => {
         initVoglerState();
     }
 
-    // Increment turn counter
+    // ═══════════════════════════════════════════════════════════════
+    // STORE AUTHOR'S NOTE FOR RESTORATION
+    // ═══════════════════════════════════════════════════════════════
+    storeAuthorsNote();
+
+    // ═══════════════════════════════════════════════════════════════
+    // INCREMENT TURN COUNTERS
+    // ═══════════════════════════════════════════════════════════════
     state.vogler.turnsInStage++;
     state.vogler.stats.totalTurns++;
 
-    // Progressive bridge removal (if bridge exists)
+    // ═══════════════════════════════════════════════════════════════
+    // PROGRESSIVE BRIDGE REMOVAL
+    // ═══════════════════════════════════════════════════════════════
     if (state.vogler.bridge) {
         progressiveBridgeRemoval();
     }
 
-    // Build and inject author's note with stage guidance
-    const stageGuidance = buildStageGuidance();
+    // ═══════════════════════════════════════════════════════════════
+    // APPLY LAYERED AUTHOR'S NOTE
+    // Combines: Player note + Stage guidance + Beat hints + Temp effects
+    // ═══════════════════════════════════════════════════════════════
+    applyLayeredAuthorsNote();
 
-    // Combine with existing author's note
-    if (state.memory && state.memory.authorsNote !== undefined) {
-        // Preserve any existing author's note and add stage guidance
-        const existingNote = state.memory.authorsNote || '';
-        if (!existingNote.includes('[Stage:')) {
-            state.memory.authorsNote = existingNote + '\n\n' + stageGuidance;
-        } else {
-            // Update stage guidance portion
-            state.memory.authorsNote = existingNote.replace(/\[Stage:[\s\S]*$/, stageGuidance);
-        }
-    } else {
-        // Initialize memory if needed
-        if (!state.memory) state.memory = {};
-        state.memory.authorsNote = stageGuidance;
+    // ═══════════════════════════════════════════════════════════════
+    // UPDATE DEBUG CARD (if enabled)
+    // ═══════════════════════════════════════════════════════════════
+    if (DEBUG_CONFIG.showDebugCard) {
+        updateDebugCard();
     }
 
-    // Handle bridge generation if flagged
+    // ═══════════════════════════════════════════════════════════════
+    // BRIDGE GENERATION INJECTION
+    // ═══════════════════════════════════════════════════════════════
     if (state.vogler.generateBridgeThisTurn && state.vogler.pendingBridgeGeneration) {
         const bridgePrompt = state.vogler.pendingBridgeGeneration.prompt;
 
@@ -54,17 +59,17 @@ const modifier = (text) => {
         // Clear flag (will be processed in output)
         state.vogler.generateBridgeThisTurn = false;
 
-        if (DEBUG_CONFIG.verboseMode) {
-            log('[VOGLER-CONTEXT] Injected bridge generation prompt');
-        }
+        safeLog('[CONTEXT] Injected bridge generation prompt', 'debug');
     }
 
-    // Log current state if verbose
+    // ═══════════════════════════════════════════════════════════════
+    // LOGGING
+    // ═══════════════════════════════════════════════════════════════
     if (DEBUG_CONFIG.verboseMode) {
         const stage = VOGLER_STAGES[state.vogler.currentStage];
-        log('[VOGLER-CONTEXT] Turn ' + state.vogler.stats.totalTurns +
+        safeLog('[CONTEXT] Turn ' + state.vogler.stats.totalTurns +
             ' | Stage: ' + stage.name +
-            ' | Turns in stage: ' + state.vogler.turnsInStage);
+            ' | Turns in stage: ' + state.vogler.turnsInStage, 'debug');
     }
 
     return { text };
