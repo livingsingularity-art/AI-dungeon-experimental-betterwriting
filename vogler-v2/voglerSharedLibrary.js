@@ -1984,6 +1984,162 @@ function getCombinedAuthorsNote() {
 
 // #endregion
 
+// #region AutoCards Integration Hooks
+
+/**
+ * ============================================================================
+ * AUTOCARDS INTEGRATION HOOKS
+ * Provides hook points for future AutoCards system integration
+ * ============================================================================
+ *
+ * AutoCards automatically generates story cards based on context.
+ * These hooks allow the system to be added without modifying core code.
+ */
+
+/**
+ * AutoCards hook for input processing
+ * Called from Input script after command processing
+ * @param {string} text - The processed input text
+ * @returns {string} Modified text (or original if AutoCards disabled)
+ */
+function autoCardsInputHook(text) {
+    if (!CONFIG.integrations.autoCards) {
+        return text;
+    }
+
+    // Hook point for AutoCards input processing
+    // When AutoCards is implemented, it will:
+    // 1. Analyze player input for key entities/concepts
+    // 2. Create or update relevant story cards
+    // 3. Return modified text if needed
+
+    safeLog('[AutoCards] Input hook called (not yet implemented)', 'debug');
+    return text;
+}
+
+/**
+ * AutoCards hook for context processing
+ * Called from Context script during author's note building
+ * @param {string} text - The context text
+ * @param {object} stop - Stop sequences object
+ * @returns {string} Modified context (or original if AutoCards disabled)
+ */
+function autoCardsContextHook(text, stop) {
+    if (!CONFIG.integrations.autoCards) {
+        return text;
+    }
+
+    // Hook point for AutoCards context processing
+    // When AutoCards is implemented, it will:
+    // 1. Analyze context for narrative patterns
+    // 2. Inject relevant story card content
+    // 3. Update dynamic cards based on story state
+
+    safeLog('[AutoCards] Context hook called (not yet implemented)', 'debug');
+    return text;
+}
+
+/**
+ * AutoCards hook for output processing
+ * Called from Output script after cleaning
+ * @param {string} text - The cleaned output text
+ * @returns {string} Modified output (or original if AutoCards disabled)
+ */
+function autoCardsOutputHook(text) {
+    if (!CONFIG.integrations.autoCards) {
+        return text;
+    }
+
+    // Hook point for AutoCards output processing
+    // When AutoCards is implemented, it will:
+    // 1. Analyze AI output for new entities/concepts
+    // 2. Create cards for newly introduced characters/locations
+    // 3. Update existing cards with new information
+
+    safeLog('[AutoCards] Output hook called (not yet implemented)', 'debug');
+    return text;
+}
+
+/**
+ * Enable AutoCards integration
+ * Call this to activate the AutoCards system
+ */
+function enableAutoCards() {
+    CONFIG.integrations.autoCards = true;
+    safeLog('[AutoCards] Integration enabled', 'info');
+}
+
+/**
+ * Disable AutoCards integration
+ */
+function disableAutoCards() {
+    CONFIG.integrations.autoCards = false;
+    safeLog('[AutoCards] Integration disabled', 'info');
+}
+
+// #endregion
+
+// #region Quality Systems Hooks (P4 Placeholder)
+
+/**
+ * ============================================================================
+ * QUALITY SYSTEMS HOOKS
+ * Placeholder hooks for P4 quality systems (Bonepoke, VS, etc.)
+ * ============================================================================
+ */
+
+/**
+ * Bonepoke analysis hook
+ * Placeholder for quality analysis integration
+ * @param {string} text - Text to analyze
+ * @returns {object|null} Analysis results or null if disabled
+ */
+function bonepokeAnalysisHook(text) {
+    if (!CONFIG.integrations.bonepoke) {
+        return null;
+    }
+
+    // Placeholder for Bonepoke quality analysis
+    // Will analyze for: fatigue indicators, drift, MARM scores
+    safeLog('[Bonepoke] Analysis hook called (not yet implemented)', 'debug');
+    return null;
+}
+
+/**
+ * Verbalized Sampling hook
+ * Placeholder for VS diversity control
+ * @returns {string} VS instruction string or empty
+ */
+function verbalizedSamplingHook() {
+    if (!CONFIG.integrations.verbalizedSampling) {
+        return '';
+    }
+
+    // Placeholder for Verbalized Sampling
+    // Will provide diversity control instructions
+    safeLog('[VS] Hook called (not yet implemented)', 'debug');
+    return '';
+}
+
+/**
+ * Word bank processing hook
+ * Placeholder for word replacement/banning
+ * @param {string} text - Text to process
+ * @returns {string} Processed text
+ */
+function wordBankHook(text) {
+    if (!CONFIG.integrations.wordBanks) {
+        return text;
+    }
+
+    // Placeholder for word bank processing
+    // Will handle: banned words, aggressive removal, replacements
+    safeLog('[WordBank] Hook called (not yet implemented)', 'debug');
+    return text;
+}
+
+// #endregion
+
 // Export for use in other scripts
 if (typeof module !== 'undefined') {
     module.exports = {

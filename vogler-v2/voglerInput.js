@@ -103,6 +103,12 @@ const modifier = (text) => {
 
     text = processSayAction(text);
 
+    // ═══════════════════════════════════════════════════════════════
+    // AUTOCARDS INTEGRATION HOOK
+    // ═══════════════════════════════════════════════════════════════
+
+    text = autoCardsInputHook(text);
+
     return { text };
 };
 

@@ -100,6 +100,22 @@ const modifier = (text) => {
     text = formatDialogue(text);
 
     // ═══════════════════════════════════════════════════════════════
+    // AUTOCARDS INTEGRATION HOOK
+    // ═══════════════════════════════════════════════════════════════
+
+    text = autoCardsOutputHook(text);
+
+    // ═══════════════════════════════════════════════════════════════
+    // QUALITY SYSTEMS HOOKS (P4 placeholders)
+    // ═══════════════════════════════════════════════════════════════
+
+    // Bonepoke analysis (when enabled)
+    bonepokeAnalysisHook(text);
+
+    // Word bank processing (when enabled)
+    text = wordBankHook(text);
+
+    // ═══════════════════════════════════════════════════════════════
     // LOGGING
     // ═══════════════════════════════════════════════════════════════
     if (DEBUG_CONFIG.verboseMode) {
