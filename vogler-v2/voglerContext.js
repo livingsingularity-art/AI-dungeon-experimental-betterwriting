@@ -71,5 +71,5 @@ const modifier = (text) => {
 };
 
 // Don't modify below this line
-modifier(text);
+// FIX: Don't manually call modifier - let AI Dungeon call it
 void 0;

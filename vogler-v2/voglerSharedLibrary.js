@@ -400,9 +400,9 @@ function createConfigurationCards() {
 
     const configExists = getCard('vogler-config');
     if (!configExists) {
-        addStoryCard({
-            keys: 'vogler-config',
-            entry: `[Vogler Hero's Journey Configuration]
+        addStoryCard(
+            'vogler-config',
+            `[Vogler Hero's Journey Configuration]
 autoAdvance: true
 minTurnsPerStage: 4
 beatThreshold: 0.6
@@ -410,24 +410,24 @@ ngoSync: true
 debugLogging: false
 
 [Edit these values to customize behavior]`,
-            type: 'author',
-            title: 'Vogler Config'
-        });
+            'author',
+            'Vogler Config'
+        );
         log('[VOGLER] Created vogler-config card');
     }
 
     const playerNoteExists = getCard('player-guidance');
     if (!playerNoteExists) {
-        addStoryCard({
-            keys: 'player-guidance',
-            entry: `[Your Personal Author's Note]
+        addStoryCard(
+            'player-guidance',
+            `[Your Personal Author's Note]
 Add your style preferences, character details, or narrative goals here.
 This will be combined with Vogler's stage-specific guidance.
 
 [Edit this card to add your preferences]`,
-            type: 'author',
-            title: "Player's Guidance"
-        });
+            'author',
+            "Player's Guidance"
+        );
         log('[VOGLER] Created player-guidance card');
     }
 }
@@ -473,12 +473,12 @@ function createBeatCard(actNumber, beatTemplate) {
         return;
     }
 
-    addStoryCard({
-        keys: cardKey,
-        entry: content,
-        type: VOGLER_BEAT_CONFIG.beatCardType,
-        title: beatTemplate.name + ' Beats'
-    });
+    addStoryCard(
+        cardKey,
+        content,
+        VOGLER_BEAT_CONFIG.beatCardType,
+        beatTemplate.name + ' Beats'
+    );
 
     state.vogler.acts[actNumber] = {
         remainingBeats: [...beatTemplate.beats],
@@ -565,10 +565,12 @@ function updateBeatCardDisplay(actNumber) {
 
     const existingCard = getCard(cardKey);
     if (existingCard) {
-        updateStoryCard(existingCard.index, {
-            ...existingCard,
-            entry: content
-        });
+        updateStoryCard(
+            existingCard.index,
+            existingCard.keys,
+            content,
+            existingCard.type
+        );
     }
 }
 
@@ -701,17 +703,19 @@ function updateBridgeCard() {
 
     const existingCard = getCard(SAE_BRIDGE_CONFIG.storyCardKey);
     if (existingCard) {
-        updateStoryCard(existingCard.index, {
-            ...existingCard,
-            entry: content
-        });
+        updateStoryCard(
+            existingCard.index,
+            existingCard.keys,
+            content,
+            existingCard.type
+        );
     } else {
-        addStoryCard({
-            keys: SAE_BRIDGE_CONFIG.storyCardKey,
-            entry: content,
-            type: SAE_BRIDGE_CONFIG.bridgeCardType,
-            title: 'Story Bridge'
-        });
+        addStoryCard(
+            SAE_BRIDGE_CONFIG.storyCardKey,
+            content,
+            SAE_BRIDGE_CONFIG.bridgeCardType,
+            'Story Bridge'
+        );
     }
 }
 
