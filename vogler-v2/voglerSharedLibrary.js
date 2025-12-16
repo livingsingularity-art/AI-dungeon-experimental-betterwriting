@@ -32,8 +32,47 @@ const DEBUG_CONFIG = {
     verboseMode: false,
     showProgressBar: true,
     showNGOState: true,
-    showBeatStatus: true
+    showBeatStatus: true,
+    // Log levels: 'debug' < 'info' < 'warn' < 'error'
+    logLevel: 'info',
+    // Show debug story card with real-time status
+    showDebugCard: false,
+    debugCardKey: 'vogler-debug'
 };
+
+/**
+ * Log level hierarchy for filtering
+ */
+const LOG_LEVELS = {
+    debug: 0,
+    info: 1,
+    warn: 2,
+    error: 3
+};
+
+/**
+ * Safe logging utility with level filtering and prefixes
+ * @param {string} message - The message to log
+ * @param {'debug'|'info'|'warn'|'error'} level - Log level (default: 'info')
+ */
+function safeLog(message, level = 'info') {
+    if (!DEBUG_CONFIG.enabled) return;
+
+    const currentLevel = LOG_LEVELS[DEBUG_CONFIG.logLevel] || 0;
+    const messageLevel = LOG_LEVELS[level] || 1;
+
+    if (messageLevel < currentLevel) return;
+
+    const prefixes = {
+        debug: '[DEBUG]',
+        info: '[INFO]',
+        warn: '[WARN]',
+        error: '[ERROR]'
+    };
+
+    const prefix = prefixes[level] || '';
+    log(prefix + ' ' + message);
+}
 
 /**
  * Vogler Beat Configuration (Tier 1)
@@ -326,6 +365,282 @@ function getBeatCompletionPercent(actNumber) {
     const completed = total - remaining;
 
     return Math.round((completed / total) * 100);
+}
+
+/**
+ * Get a story card by key OR predicate function
+ * @param {string|function} keyOrPredicate - Key string or predicate function (card) => boolean
+ * @returns {object|null} Card with index property, or null if not found
+ */
+function getCardAdvanced(keyOrPredicate) {
+    if (!storyCards || !Array.isArray(storyCards)) return null;
+
+    const predicate = typeof keyOrPredicate === 'function'
+        ? keyOrPredicate
+        : (card) => card.keys === keyOrPredicate;
+
+    for (let i = 0; i < storyCards.length; i++) {
+        if (predicate(storyCards[i])) {
+            return { ...storyCards[i], index: i };
+        }
+    }
+    return null;
+}
+
+/**
+ * Get all cards matching a predicate
+ * @param {function} predicate - Function (card) => boolean
+ * @returns {array} Array of cards with index properties
+ */
+function getCardsByPredicate(predicate) {
+    if (!storyCards || !Array.isArray(storyCards)) return [];
+
+    const results = [];
+    for (let i = 0; i < storyCards.length; i++) {
+        if (predicate(storyCards[i])) {
+            results.push({ ...storyCards[i], index: i });
+        }
+    }
+    return results;
+}
+
+/**
+ * Get all cards of a specific type
+ * @param {string} cardType - The type to filter by
+ */
+function getCardsByType(cardType) {
+    return getCardsByPredicate(card => card.type === cardType);
+}
+
+/**
+ * Get all cards with keys starting with a prefix
+ * @param {string} prefix - The key prefix to match
+ */
+function getCardsByPrefix(prefix) {
+    return getCardsByPredicate(card => card.keys && card.keys.startsWith(prefix));
+}
+
+/**
+ * Safe wrapper for addStoryCard with validation and error handling
+ * @param {string} keys - Card keys
+ * @param {string} entry - Card content
+ * @param {string} type - Card type
+ * @param {string} name - Card display name
+ * @param {string} notes - Optional notes
+ * @returns {object|null} Created card info or null on failure
+ */
+function buildCard(keys, entry, type, name, notes) {
+    try {
+        // Validate inputs
+        if (!keys || typeof keys !== 'string') {
+            safeLog('[buildCard] Invalid keys: ' + keys, 'error');
+            return null;
+        }
+        if (entry === undefined || entry === null) {
+            entry = '';
+        }
+        if (!type) type = 'Custom';
+        if (!name) name = keys;
+
+        // Check for duplicate keys
+        const existing = getCard(keys);
+        if (existing) {
+            safeLog('[buildCard] Card with key "' + keys + '" already exists at index ' + existing.index, 'warn');
+            return existing;
+        }
+
+        // Create the card
+        const index = addStoryCard(keys, entry, type, name, notes || '');
+
+        safeLog('[buildCard] Created card "' + keys + '" at index ' + index, 'debug');
+
+        // Return card info
+        return {
+            keys: keys,
+            entry: entry,
+            type: type,
+            title: name,
+            index: index - 1 // addStoryCard returns length, index is length - 1
+        };
+    } catch (error) {
+        safeLog('[buildCard] Error creating card: ' + error.message, 'error');
+        return null;
+    }
+}
+
+/**
+ * Safe wrapper for removeStoryCard with error handling
+ * @param {string|number} keyOrIndex - Card key or index to remove
+ * @returns {boolean} True if removed successfully
+ */
+function removeCardSafe(keyOrIndex) {
+    try {
+        let index;
+
+        if (typeof keyOrIndex === 'string') {
+            const card = getCard(keyOrIndex);
+            if (!card) {
+                safeLog('[removeCard] Card not found: ' + keyOrIndex, 'warn');
+                return false;
+            }
+            index = card.index;
+        } else {
+            index = keyOrIndex;
+        }
+
+        if (index < 0 || index >= storyCards.length) {
+            safeLog('[removeCard] Invalid index: ' + index, 'error');
+            return false;
+        }
+
+        const cardKeys = storyCards[index]?.keys || 'unknown';
+        removeStoryCard(index);
+
+        safeLog('[removeCard] Removed card "' + cardKeys + '" at index ' + index, 'debug');
+        return true;
+    } catch (error) {
+        safeLog('[removeCard] Error: ' + error.message, 'error');
+        return false;
+    }
+}
+
+/**
+ * Validate Vogler state integrity
+ * @returns {object} Validation results with passed, failed arrays
+ */
+function validateState() {
+    const results = { passed: [], failed: [], warnings: [] };
+
+    // Check state.vogler exists
+    if (!state.vogler) {
+        results.failed.push('state.vogler is undefined');
+        return results;
+    }
+    results.passed.push('state.vogler exists');
+
+    // Check initialization
+    if (!state.vogler.initialized) {
+        results.failed.push('state.vogler.initialized is false');
+    } else {
+        results.passed.push('Vogler initialized');
+    }
+
+    // Check current stage valid
+    if (!VOGLER_STAGES[state.vogler.currentStage]) {
+        results.failed.push('Invalid currentStage: ' + state.vogler.currentStage);
+    } else {
+        results.passed.push('Valid currentStage: ' + state.vogler.currentStage);
+    }
+
+    // Check act tracking
+    if (state.vogler.currentAct < 1 || state.vogler.currentAct > 3) {
+        results.failed.push('Invalid currentAct: ' + state.vogler.currentAct);
+    } else {
+        results.passed.push('Valid currentAct: ' + state.vogler.currentAct);
+    }
+
+    // Check beat cards exist
+    for (let i = 1; i <= 3; i++) {
+        const card = getCard(VOGLER_BEAT_CONFIG.storyCardPrefix + i);
+        if (!card) {
+            results.warnings.push('Beat card missing for Act ' + i);
+        } else {
+            results.passed.push('Beat card exists for Act ' + i);
+        }
+    }
+
+    // Check acts data
+    for (let i = 1; i <= 3; i++) {
+        const actData = state.vogler.acts[i];
+        if (!actData) {
+            results.warnings.push('Act ' + i + ' data not initialized');
+        } else if (!actData.remainingBeats) {
+            results.warnings.push('Act ' + i + ' missing remainingBeats array');
+        }
+    }
+
+    return results;
+}
+
+/**
+ * Create or update the debug story card
+ */
+function updateDebugCard() {
+    if (!DEBUG_CONFIG.showDebugCard) return;
+
+    const stage = VOGLER_STAGES[state.vogler?.currentStage] || { name: 'Unknown' };
+    const actData = state.vogler?.acts?.[state.vogler?.currentAct];
+
+    let content = '[VOGLER DEBUG - Turn ' + (state.vogler?.stats?.totalTurns || 0) + ']\n\n';
+    content += 'Stage: ' + (state.vogler?.currentStage || '?') + '/12 - ' + stage.name + '\n';
+    content += 'Act: ' + (state.vogler?.currentAct || '?') + '\n';
+    content += 'Turns in Stage: ' + (state.vogler?.turnsInStage || 0) + '/' + (stage.maxTurns || '?') + '\n\n';
+
+    if (actData?.remainingBeats) {
+        content += 'Remaining Beats: ' + actData.remainingBeats.length + '\n';
+        if (actData.remainingBeats[0]) {
+            content += 'Next Beat: ' + actData.remainingBeats[0] + '\n';
+        }
+    }
+
+    content += '\nStats:\n';
+    content += '- Stage Changes: ' + (state.vogler?.stats?.stageChanges || 0) + '\n';
+    content += '- Beats Completed: ' + (state.vogler?.stats?.beatsCompleted || 0) + '\n';
+    content += '- Bridges Generated: ' + (state.vogler?.stats?.bridgesGenerated || 0) + '\n';
+
+    const existingCard = getCard(DEBUG_CONFIG.debugCardKey);
+    if (existingCard) {
+        try {
+            updateStoryCard(
+                existingCard.index,
+                existingCard.keys,
+                content,
+                existingCard.type
+            );
+        } catch (e) {
+            safeLog('[updateDebugCard] Update failed: ' + e.message, 'error');
+        }
+    } else {
+        buildCard(DEBUG_CONFIG.debugCardKey, content, 'author', 'Vogler Debug');
+    }
+}
+
+/**
+ * Dump state to log for debugging
+ */
+function dumpState() {
+    safeLog('=== STATE DUMP ===', 'debug');
+    safeLog('Version: ' + (state.vogler?.version || 'unknown'), 'debug');
+    safeLog('Stage: ' + state.vogler?.currentStage + ' / Act: ' + state.vogler?.currentAct, 'debug');
+    safeLog('Turns in Stage: ' + state.vogler?.turnsInStage, 'debug');
+    safeLog('Total Turns: ' + state.vogler?.stats?.totalTurns, 'debug');
+
+    for (let i = 1; i <= 3; i++) {
+        const actData = state.vogler?.acts?.[i];
+        if (actData) {
+            safeLog('Act ' + i + ': ' + (actData.remainingBeats?.length || 0) + ' beats remaining', 'debug');
+        }
+    }
+
+    safeLog('Story Cards: ' + (storyCards?.length || 0) + ' total', 'debug');
+    safeLog('=== END DUMP ===', 'debug');
+}
+
+/**
+ * Dump all story cards to log
+ */
+function dumpCards() {
+    safeLog('=== STORY CARDS ===', 'debug');
+    if (!storyCards || storyCards.length === 0) {
+        safeLog('No story cards found', 'debug');
+        return;
+    }
+
+    for (let i = 0; i < storyCards.length; i++) {
+        const card = storyCards[i];
+        safeLog('[' + i + '] keys="' + card.keys + '" type="' + card.type + '" title="' + card.title + '"', 'debug');
+    }
+    safeLog('=== END CARDS ===', 'debug');
 }
 
 // #endregion
@@ -985,6 +1300,68 @@ function processVoglerCommand(input) {
         case 'ngo':
             return { handled: true, message: getNGOSyncStatus() };
 
+        case 'validate':
+            const validation = validateState();
+            let valMsg = '\n═══ VALIDATION RESULTS ═══\n';
+            valMsg += 'PASSED (' + validation.passed.length + '):\n';
+            validation.passed.forEach(p => valMsg += '  ✓ ' + p + '\n');
+            if (validation.failed.length > 0) {
+                valMsg += 'FAILED (' + validation.failed.length + '):\n';
+                validation.failed.forEach(f => valMsg += '  ✗ ' + f + '\n');
+            }
+            if (validation.warnings.length > 0) {
+                valMsg += 'WARNINGS (' + validation.warnings.length + '):\n';
+                validation.warnings.forEach(w => valMsg += '  ⚠ ' + w + '\n');
+            }
+            return { handled: true, message: valMsg };
+
+        case 'cards':
+            let cardsMsg = '\n═══ STORY CARDS (' + (storyCards?.length || 0) + ') ═══\n';
+            if (storyCards && storyCards.length > 0) {
+                for (let i = 0; i < storyCards.length; i++) {
+                    const card = storyCards[i];
+                    cardsMsg += '[' + i + '] ' + (card.keys || '?') + ' (' + (card.type || '?') + ')\n';
+                }
+            } else {
+                cardsMsg += 'No story cards found.\n';
+            }
+            return { handled: true, message: cardsMsg };
+
+        case 'state':
+            dumpState();
+            return { handled: true, message: '[VOGLER] State dumped to log. Check script console.' };
+
+        case 'loglevel':
+            const newLevel = args[1];
+            if (newLevel && LOG_LEVELS[newLevel] !== undefined) {
+                DEBUG_CONFIG.logLevel = newLevel;
+                return { handled: true, message: '[VOGLER] Log level set to: ' + newLevel };
+            }
+            return { handled: true, message: '[VOGLER] Current: ' + DEBUG_CONFIG.logLevel + '. Usage: /vogler loglevel <debug|info|warn|error>' };
+
+        case 'debugcard':
+            DEBUG_CONFIG.showDebugCard = !DEBUG_CONFIG.showDebugCard;
+            if (DEBUG_CONFIG.showDebugCard) {
+                updateDebugCard();
+            } else {
+                removeCardSafe(DEBUG_CONFIG.debugCardKey);
+            }
+            return { handled: true, message: '[VOGLER] Debug card: ' + (DEBUG_CONFIG.showDebugCard ? 'ON' : 'OFF') };
+
+        case 'reinit':
+            state.vogler = null;
+            initVoglerState();
+            return { handled: true, message: '[VOGLER] State reinitialized from scratch.' };
+
+        case 'history':
+            let histMsg = '\n═══ RECENT HISTORY ═══\n';
+            const recentHistory = history.slice(-5);
+            recentHistory.forEach((h, i) => {
+                const preview = (h.text || '').slice(0, 60).replace(/\n/g, ' ');
+                histMsg += '[' + (history.length - 5 + i) + '] ' + h.type + ': ' + preview + '...\n';
+            });
+            return { handled: true, message: histMsg };
+
         case 'help':
             return { handled: true, message: getHelpDisplay() };
 
@@ -1258,9 +1635,16 @@ CONTROL:
 /vogler complete  - Complete the next beat
 /vogler generate  - Generate SAE bridge card
 /vogler reset [n] - Reset Act N beats (1, 2, or 3)
+/vogler reinit    - Reinitialize state from scratch
 
-DEBUG:
+DEBUG & DIAGNOSTICS:
 /vogler debug     - Toggle verbose debug logging
+/vogler validate  - Run state validation checks
+/vogler cards     - List all story cards
+/vogler state     - Dump state to script console
+/vogler history   - Show recent history entries
+/vogler loglevel  - Set log level (debug/info/warn/error)
+/vogler debugcard - Toggle real-time debug story card
 /vogler help      - Show this help message
 
 Player Commands (in-story):
