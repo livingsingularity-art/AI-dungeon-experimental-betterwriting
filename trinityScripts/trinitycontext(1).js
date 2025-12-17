@@ -10,6 +10,67 @@
  */
 
 const modifier = (text) => {
+    // === DIVERSITY-AWARE VERBALIZED SAMPLING ===
+    // Rotate through prompts based on turn count and diversity state
+    const getDiversityAwareVSPrompt = () => {
+        const ds = state.diversity || { interventionLevel: 'none', rerollCount: 0 };
+
+        // Rotate through prompts based on turn count
+        const turnIndex = (state.ngo?.turnsInPhase || state.turnCount || 0) % 4;
+
+        // Base prompts (rotate to prevent AI from ignoring them)
+        const basePrompts = [
+            "Consider 3 different directions this scene could take. Choose the most engaging yet unexpected option.",
+            "Before continuing, identify which narrative elements have been overused. Consciously vary your approach.",
+            "This scene should reveal something new about the world or characters. Avoid retreading familiar ground.",
+            "Write as if surprising a reader who has correctly predicted the obvious continuation."
+        ];
+
+        // Escalation prompts for low diversity
+        const escalationPrompts = [
+            "IMPORTANT: Recent output has been repetitive. Introduce unexpected elements and fresh vocabulary.",
+            "The narrative has fallen into patterns. This paragraph MUST feel distinctly different.",
+            "CRITICAL: Vary sentence structure dramatically. Use words you haven't used recently.",
+            "Force yourself to take the story in a direction the reader would NOT expect."
+        ];
+
+        let selectedPrompt = basePrompts[turnIndex];
+
+        // Escalate based on intervention level
+        if (ds.interventionLevel === 'intervene' || ds.interventionLevel === 'escalate') {
+            selectedPrompt = escalationPrompts[turnIndex];
+        }
+
+        // Further escalate based on reroll count
+        if (ds.rerollCount >= 2) {
+            selectedPrompt += " Completely change your approach from previous attempts.";
+        }
+
+        return selectedPrompt;
+    };
+
+    // === BLOCKED PHRASE INJECTION ===
+    // Add dynamic blocked phrase injection before the AI processes
+    const injectBlockedPhrases = (contextText) => {
+        const ds = state.diversity;
+        if (!ds || !CONFIG.diversity || !CONFIG.diversity.enabled) return contextText;
+        if (ds.blockedPhrases.length === 0) return contextText;
+
+        // Only inject if we have problematic phrases
+        const recentBlocked = ds.blockedPhrases.slice(-10);
+        if (recentBlocked.length === 0) return contextText;
+
+        // Build avoidance instruction
+        const blockedSection = `\n[Avoid using these overused phrases: ${recentBlocked.join('; ')}]`;
+
+        // Insert near end of context
+        const lines = contextText.split('\n');
+        const insertPosition = Math.max(0, lines.length - 2);
+        lines.splice(insertPosition, 0, blockedSection);
+
+        return lines.join('\n');
+    };
+
     // Analyze recent history for problems
     const analyzeRecentHistory = () => {
         const recentOutputs = history
@@ -156,10 +217,17 @@ const modifier = (text) => {
 
     text += handleContinue();
 
-    // Inject Verbalized Sampling instruction
+    // Inject Verbalized Sampling instruction with diversity guidance
     // FIX: Use better formatting to prevent leakage
     if (CONFIG.vs.enabled) {
-        text += '\n\n' + VerbalizedSampling.getInstruction();
+        const vsInstruction = VerbalizedSampling.getInstruction();
+        text += '\n\n' + vsInstruction;
+
+        // Add diversity-aware guidance if enabled
+        if (CONFIG.diversity && CONFIG.diversity.enabled && CONFIG.diversity.rotateSamplingPrompts) {
+            const diversityGuidance = getDiversityAwareVSPrompt();
+            text += `\n[Writing guidance: ${diversityGuidance}]`;
+        }
     }
 
     // Track context size for debugging
@@ -177,6 +245,12 @@ const modifier = (text) => {
     if (autoCardsResult && typeof autoCardsResult === 'object') {
         text = autoCardsResult.text || text;
         // Note: stop parameter is read-only in AI Dungeon context modifier, but AutoCards may set it
+    }
+
+    // === BLOCKED PHRASE INJECTION ===
+    // Inject blocked phrases before returning to guide AI away from repetitive content
+    if (CONFIG.diversity && CONFIG.diversity.enabled) {
+        text = injectBlockedPhrases(text);
     }
 
     return { text };

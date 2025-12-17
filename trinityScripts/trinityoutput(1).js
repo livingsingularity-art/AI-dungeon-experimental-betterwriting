@@ -249,6 +249,143 @@ const modifier = (text) => {
         }
     }
 
+    // === DIVERSITY ANALYSIS ===
+    // Analyze output diversity and generate user feedback
+    if (CONFIG.diversity && CONFIG.diversity.enabled) {
+        const analyzeDiversity = (outputText) => {
+            // Initialize diversity state if needed
+            if (!state.diversity) {
+                state.diversity = {
+                    scoreHistory: [],
+                    avgScore: 1.0,
+                    blockedPhrases: [],
+                    rerollCount: 0,
+                    lastDiversityScore: 1.0,
+                    alertThreshold: CONFIG.diversity.alertThreshold,
+                    interventionLevel: 'none',
+                    outputTexts: []
+                };
+            }
+
+            const ds = state.diversity;
+
+            // Get history texts from diversity state
+            const historyTexts = ds.outputTexts || [];
+
+            // Calculate diversity score
+            const diversityResult = DiversityEngine.calculateDiversityScore(outputText, historyTexts);
+
+            // Update state
+            ds.lastDiversityScore = diversityResult.score;
+            ds.scoreHistory.push(diversityResult.score);
+            if (ds.scoreHistory.length > 20) ds.scoreHistory.shift();
+
+            // Calculate running average
+            ds.avgScore = ds.scoreHistory.reduce((a, b) => a + b, 0) / ds.scoreHistory.length;
+
+            // Assess and set intervention level
+            const assessment = DiversityEngine.assessDiversity(diversityResult.score);
+            ds.interventionLevel = assessment.action;
+
+            // Detect specific issues
+            const issues = [];
+
+            const exactRepeats = DiversityEngine.detectExactRepetition(outputText);
+            if (exactRepeats.length > 0) {
+                issues.push({ type: 'exact', items: exactRepeats });
+            }
+
+            const structuralRepeats = DiversityEngine.detectStructuralRepetition(outputText);
+            if (structuralRepeats.length > 0) {
+                issues.push({ type: 'structural', items: structuralRepeats });
+            }
+
+            // Add overlapping phrases to blocked list
+            if (CONFIG.diversity.autoBlockPhrases && diversityResult.details.overlappingPhrases) {
+                diversityResult.details.overlappingPhrases.forEach(phrase => {
+                    if (!ds.blockedPhrases.includes(phrase)) {
+                        ds.blockedPhrases.push(phrase);
+                    }
+                });
+                // Maintain max size
+                if (ds.blockedPhrases.length > CONFIG.diversity.maxBlockedPhrases) {
+                    ds.blockedPhrases = ds.blockedPhrases.slice(-20);
+                }
+            }
+
+            // Store current output in diversity history
+            ds.outputTexts.push(outputText);
+            if (ds.outputTexts.length > 5) ds.outputTexts.shift();
+
+            return {
+                score: diversityResult.score,
+                assessment: assessment,
+                issues: issues,
+                overlappingPhrases: diversityResult.details.overlappingPhrases
+            };
+        };
+
+        const generateDiversityFeedback = (diversityAnalysis) => {
+            const ds = state.diversity;
+            const { score, assessment, issues } = diversityAnalysis;
+
+            // Only show feedback for concerning scores
+            if (score >= 0.65) {
+                // Good diversity - reset reroll counter
+                ds.rerollCount = 0;
+
+                // Occasional positive feedback (every 5 turns)
+                if ((state.turnCount || 0) % 5 === 0 && CONFIG.diversity.showFeedback) {
+                    return `${assessment.color} Diversity healthy: ${Math.round(score * 100)}%`;
+                }
+                return null;
+            }
+
+            // Build alert message
+            let message = `${assessment.color} Diversity Alert (${assessment.level})\n`;
+            message += `Score: ${Math.round(score * 100)}% | Avg: ${Math.round(ds.avgScore * 100)}%\n`;
+
+            if (issues.length > 0) {
+                issues.forEach(issue => {
+                    if (issue.type === 'exact') {
+                        message += `• Exact repetition detected\n`;
+                    } else if (issue.type === 'structural') {
+                        message += `• Structural repetition: "${issue.items[0].pattern}..." (${issue.items[0].count}x)\n`;
+                    }
+                });
+            }
+
+            // Recommendations
+            if (score < 0.35) {
+                message += `\n💡 Recommendation: Click Retry for a fresh response`;
+                ds.rerollCount++;
+            }
+
+            return message;
+        };
+
+        // Run diversity analysis
+        const diversityAnalysis = analyzeDiversity(text);
+
+        // Log diversity status
+        if (CONFIG.diversity.debugLogging) {
+            const da = diversityAnalysis;
+            safeLog(`📊 Diversity: ${Math.round(da.score * 100)}% (${da.assessment.level})`,
+                    da.score < 0.5 ? 'warn' : 'info');
+        }
+
+        // Generate user feedback if enabled
+        if (CONFIG.diversity.showFeedback) {
+            const diversityFeedback = generateDiversityFeedback(diversityAnalysis);
+            if (diversityFeedback) {
+                // Combine with existing state.message or set new
+                state.message = state.message
+                    ? state.message + '\n\n' + diversityFeedback
+                    : diversityFeedback;
+            }
+        }
+    }
+
     // === CROSS-OUTPUT TRACKING ===
     // Track last 3 outputs with n-grams to detect repeated phrases across turns
 
