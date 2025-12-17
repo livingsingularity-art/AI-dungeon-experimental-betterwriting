@@ -100,10 +100,21 @@ const modifier = (text) => {
     text = formatDialogue(text);
 
     // ═══════════════════════════════════════════════════════════════
-    // AUTOCARDS INTEGRATION HOOK
+    // AUTO-CARDS INTEGRATION
+    // Process output through AutoCards if available and enabled
     // ═══════════════════════════════════════════════════════════════
+    if (typeof AutoCards === 'function' && CONFIG.integrations.autoCards) {
+        const autoCardsResult = AutoCards("output", text, false);
 
-    text = autoCardsOutputHook(text);
+        // AutoCards returns modified text
+        if (autoCardsResult && typeof autoCardsResult === 'object') {
+            text = autoCardsResult.text || text;
+        } else if (typeof autoCardsResult === 'string') {
+            text = autoCardsResult;
+        }
+
+        safeLog('[OUTPUT] AutoCards output processing complete', 'debug');
+    }
 
     // ═══════════════════════════════════════════════════════════════
     // QUALITY SYSTEMS HOOKS (P4 placeholders)

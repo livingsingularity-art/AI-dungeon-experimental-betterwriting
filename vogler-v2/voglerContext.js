@@ -63,10 +63,25 @@ const modifier = (text) => {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // AUTOCARDS INTEGRATION HOOK
+    // AUTO-CARDS INTEGRATION
+    // Process context through AutoCards if available and enabled
     // ═══════════════════════════════════════════════════════════════
+    if (typeof AutoCards === 'function' && CONFIG.integrations.autoCards) {
+        // In AI Dungeon, 'stop' is a global in context modifier scope
+        // Use globalThis.stop or default to false if not defined
+        const stopParam = (typeof stop !== 'undefined') ? stop : false;
+        const autoCardsResult = AutoCards("context", text, stopParam);
 
-    text = autoCardsContextHook(text, null);
+        // AutoCards returns { text, stop } - extract both values
+        if (autoCardsResult && typeof autoCardsResult === 'object') {
+            text = autoCardsResult.text || text;
+            // Note: stop is read-only in AI Dungeon context modifier
+        } else if (typeof autoCardsResult === 'string') {
+            text = autoCardsResult;
+        }
+
+        safeLog('[CONTEXT] AutoCards context processing complete', 'debug');
+    }
 
     // ═══════════════════════════════════════════════════════════════
     // LOGGING
