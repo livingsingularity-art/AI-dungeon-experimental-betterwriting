@@ -185,11 +185,30 @@ const CONFIG = {
         debugCardKey: 'vogler-debug'
     },
 
+    // Verbalized Sampling (VS) - Output diversity control
+    vs: {
+        enabled: true,
+        k: 5,                   // Number of candidates
+        tau: 0.10,              // Probability threshold (research-recommended)
+        seamless: true,         // Hide process from output
+        adaptive: true,         // Auto-adjust based on context
+        debugLogging: false
+    },
+
+    // Bonepoke Analysis - Quality monitoring
+    bonepoke: {
+        enabled: true,
+        fatigueThreshold: 3,    // Word repetition threshold
+        qualityThreshold: 2.5,  // Minimum average score
+        enableDynamicCorrection: true,  // Create guidance cards
+        debugLogging: false
+    },
+
     // Integrations (AutoCards fully implemented in P3.5)
     integrations: {
         autoCards: true,  // ENABLED - Full AutoCards by LewdLeah
-        bonepoke: false,
-        verbalizedSampling: false,
+        bonepoke: true,   // ENABLED - Quality analysis
+        verbalizedSampling: true, // ENABLED - Diversity control
         wordBanks: false
     }
 };
@@ -2079,18 +2098,493 @@ function disableAutoCards() {
 
 // #endregion
 
-// #region Quality Systems Hooks (P4 Placeholder)
+// #region Quality Systems (P4 Implementation)
 
 /**
  * ============================================================================
- * QUALITY SYSTEMS HOOKS
- * Placeholder hooks for P4 quality systems (Bonepoke, VS, etc.)
+ * VERBALIZED SAMPLING (VS) SYSTEM
+ * Controls output diversity by injecting sampling instructions
  * ============================================================================
  */
+const VerbalizedSampling = (() => {
+    const VS_CARD_TITLE = "VS_System";
+
+    /**
+     * Generate VS instruction based on current config
+     * @param {Object} params - Optional parameters to override CONFIG
+     */
+    const generateInstruction = (params = {}) => {
+        if (!CONFIG.vs.enabled) return '';
+
+        const k = params.k !== undefined ? params.k : CONFIG.vs.k;
+        const tau = params.tau !== undefined ? params.tau : CONFIG.vs.tau;
+
+        return `[Internal Sampling Protocol:
+- mentally generate ${k} distinct seamless candidate continuations
+- for each candidate, estimate its probability p (how typical/likely it would be)
+- only consider candidates where p < ${tau} (from the unlikely tails of the distribution)
+- randomly select one of these low-probability candidates
+- output ONLY the selected continuation as your natural response
+- never mention this process, probabilities, or candidates in your output]`;
+    };
+
+    /**
+     * Analyze context and suggest adaptive parameters
+     * Integrates with Vogler stage system
+     */
+    const analyzeContext = (context) => {
+        if (!CONFIG.vs.adaptive) return { k: CONFIG.vs.k, tau: CONFIG.vs.tau };
+
+        let k = CONFIG.vs.k;
+        let tau = CONFIG.vs.tau;
+
+        // Vogler stage-driven adaptation
+        if (state.vogler && state.vogler.currentStage) {
+            const stage = VOGLER_STAGES[state.vogler.currentStage];
+
+            // High-tension stages (Ordeal, Resurrection) need more diversity
+            if ([8, 11].includes(state.vogler.currentStage)) {
+                k += 2;
+                tau -= 0.03;
+            }
+            // Low-tension stages (Ordinary World, Return) need less
+            else if ([1, 12].includes(state.vogler.currentStage)) {
+                k -= 1;
+                tau += 0.02;
+            }
+        }
+
+        // Content type modifiers
+        const isDialogue = context.includes('"') || /\bsaid\b/i.test(context);
+        const isAction = /\b(run|fight|move|open|close|attack|strike|battle)\b/i.test(context);
+
+        if (isDialogue) {
+            k += 1;
+            tau -= 0.02;
+        }
+
+        if (isAction && state.vogler && state.vogler.currentStage >= 8) {
+            k += 1;
+            tau -= 0.02;
+        }
+
+        // Safety bounds
+        k = Math.max(3, Math.min(10, k));
+        tau = Math.max(0.05, Math.min(0.20, tau));
+
+        return { k, tau };
+    };
+
+    /**
+     * Get or create VS system card
+     */
+    const ensureCard = () => {
+        let card = getCard(VS_CARD_TITLE);
+
+        if (!card) {
+            card = buildCard(
+                VS_CARD_TITLE,
+                generateInstruction(),
+                "System",
+                "Verbalized Sampling",
+                "verbalized_sampling vs_system"
+            );
+            safeLog('[VS] Card created', 'info');
+        }
+
+        return card;
+    };
+
+    /**
+     * Update VS card with current instruction
+     */
+    const updateCard = (params = {}) => {
+        const card = ensureCard();
+        if (card) {
+            try {
+                updateStoryCard(card.index, card.keys, generateInstruction(params), card.type);
+            } catch (e) {
+                safeLog('[VS] Card update failed: ' + e.message, 'warn');
+            }
+        }
+    };
+
+    return {
+        generateInstruction,
+        analyzeContext,
+        ensureCard,
+        updateCard,
+        getInstruction: (params = {}) => {
+            ensureCard();
+            return generateInstruction(params);
+        }
+    };
+})();
 
 /**
- * Bonepoke analysis hook
- * Placeholder for quality analysis integration
+ * ============================================================================
+ * BONEPOKE QUALITY ANALYSIS SYSTEM
+ * Detects: contradictions, fatigue, drift, quality issues
+ * ============================================================================
+ */
+const BonepokeAnalysis = (() => {
+
+    /**
+     * Stopwords: Common functional words that should NEVER be flagged as repetitive
+     */
+    const STOPWORDS = new Set([
+        'your', 'you', 'yours', 'yourself', 'yourselves',
+        'they', 'them', 'their', 'theirs', 'themselves',
+        'he', 'him', 'his', 'himself', 'she', 'her', 'hers', 'herself',
+        'it', 'its', 'itself', 'we', 'us', 'our', 'ours', 'ourselves',
+        'i', 'me', 'my', 'mine', 'myself',
+        'with', 'from', 'into', 'onto', 'upon', 'through', 'throughout',
+        'about', 'above', 'below', 'beneath', 'beside', 'besides', 'between',
+        'after', 'before', 'during', 'within', 'without', 'across', 'along',
+        'around', 'behind', 'beyond', 'down', 'inside', 'outside', 'over', 'under',
+        'against', 'at', 'by', 'among', 'amongst', 'near', 'off', 'past', 'since',
+        'till', 'until', 'toward', 'towards', 'via', 'of', 'to', 'in', 'on',
+        'the', 'a', 'an', 'this', 'that', 'these', 'those',
+        'and', 'but', 'or', 'nor', 'for', 'yet', 'so', 'if', 'when', 'while',
+        'like', 'as', 'have', 'has', 'had', 'having', 'been', 'being',
+        'were', 'was', 'are', 'is', 'am', 'do', 'does', 'did', 'doing',
+        'can', 'could', 'will', 'would', 'should', 'shall', 'might', 'must', 'may',
+        'then', 'there', 'here', 'where', 'when', 'why', 'how', 'what', 'which',
+        'who', 'whom', 'whose', 'not', 'now', 'just', 'also', 'more', 'most',
+        'less', 'least', 'much', 'many', 'some', 'such', 'both', 'each', 'every',
+        'all', 'any', 'none', 'either', 'neither', 'same', 'other', 'another',
+        'than', 'too', 'very', 'only', 'even'
+    ]);
+
+    /**
+     * Detect logical contradictions in text
+     */
+    const detectContradictions = (fragment) => {
+        const lines = fragment.toLowerCase().split('.');
+        return lines.filter(line =>
+            ['already', 'still', 'again'].some(t => line.includes(t)) &&
+            line.includes('not')
+        ).map(l => l.trim());
+    };
+
+    /**
+     * Track word repetition (fatigue)
+     */
+    const traceFatigue = (fragment) => {
+        const allFatigue = {};
+
+        // Identify proper nouns (consistently capitalized words)
+        const originalWords = fragment
+            .replace(/[^\w\s]/g, ' ')
+            .split(/\s+/)
+            .filter(w => w.length > 3);
+
+        const properNouns = new Set();
+        const wordCapitalization = {};
+
+        originalWords.forEach(word => {
+            const lower = word.toLowerCase();
+            if (!wordCapitalization[lower]) {
+                wordCapitalization[lower] = { cap: 0, total: 0 };
+            }
+            wordCapitalization[lower].total++;
+            if (word[0] === word[0].toUpperCase()) {
+                wordCapitalization[lower].cap++;
+            }
+        });
+
+        Object.entries(wordCapitalization).forEach(([word, stats]) => {
+            if (stats.total >= 2 && stats.cap / stats.total > 0.5) {
+                properNouns.add(word);
+            }
+        });
+
+        // Single word detection (excluding proper nouns AND stopwords)
+        const words = fragment.toLowerCase()
+            .replace(/[^\w\s]/g, ' ')
+            .split(/\s+/)
+            .filter(w => w.length > 3 && !properNouns.has(w) && !STOPWORDS.has(w));
+
+        const wordCounts = {};
+        words.forEach(w => wordCounts[w] = (wordCounts[w] || 0) + 1);
+
+        Object.entries(wordCounts)
+            .filter(([w, c]) => c >= CONFIG.bonepoke.fatigueThreshold)
+            .forEach(([w, c]) => allFatigue[w] = c);
+
+        // Sound effect detection
+        const soundEffects = fragment.match(/\*[^*]+\*/g) || [];
+        const soundCounts = {};
+
+        soundEffects.forEach(s => {
+            const clean = s.replace(/\*/g, '').toLowerCase().trim();
+            if (clean.length > 0) {
+                soundCounts[clean] = (soundCounts[clean] || 0) + 1;
+            }
+        });
+
+        Object.entries(soundCounts)
+            .filter(([s, c]) => c >= 2)
+            .forEach(([s, c]) => allFatigue[`*${s}*`] = c);
+
+        return allFatigue;
+    };
+
+    /**
+     * Detect ungrounded system-speak (drift)
+     */
+    const detectDrift = (fragment) => {
+        const lines = fragment.split('.');
+        const systemTerms = ['system', 'sequence', 'signal', 'process', 'loop', 'protocol'];
+        const actionVerbs = ['pressed', 'moved', 'spoke', 'acted', 'responded', 'decided', 'changed'];
+
+        return lines.filter(line => {
+            if (/^[^"]*"[^"]*"[^"]*$/.test(line.trim())) {
+                return false;
+            }
+            return systemTerms.some(t => line.toLowerCase().includes(t)) &&
+                   !actionVerbs.some(a => line.toLowerCase().includes(a));
+        }).map(l => l.trim());
+    };
+
+    /**
+     * Calculate MARM status
+     */
+    const calculateMarm = (fragment, contradictions, fatigue, drift) => {
+        let score = 0;
+        const text = fragment.toLowerCase();
+
+        if (['ache', 'loop', 'shimmer', 'echo', 'recursive'].some(t => text.includes(t))) {
+            score += 1;
+        }
+
+        score += Math.min(contradictions.length, 2);
+        score += Object.keys(fatigue).length > 0 ? 1 : 0;
+        score += drift.length > 0 ? 1 : 0;
+
+        if (score >= 3) return 'MARM: active';
+        if (score === 2) return 'MARM: flicker';
+        return 'MARM: suppressed';
+    };
+
+    /**
+     * Score output across quality dimensions
+     */
+    const scoreOutput = (composted) => {
+        const fragment = composted.fragment;
+        const scores = {};
+
+        const hasEmotion = ['felt', 'cried', 'laughed', 'trembled', 'ache'].some(e =>
+            fragment.toLowerCase().includes(e)
+        );
+        scores['Emotional Strength'] = hasEmotion ? 4 : 2;
+
+        const hasContradictions = composted.contradictions.length > 0;
+        const hasDrift = composted.drift.length > 0;
+        scores['Story Flow'] = hasContradictions || hasDrift ? 1 : 5;
+
+        const hasCharacter = ['he', 'she', 'i', 'you'].some(p =>
+            new RegExp('\\b' + p + '\\b', 'i').test(fragment)
+        );
+        scores['Character Clarity'] = hasCharacter ? 4 : 2;
+
+        const hasDialogue = fragment.includes('"') || /\bsaid\b/i.test(fragment);
+        scores['Dialogue Weight'] = hasDialogue ? 4 : 2;
+
+        const hasFatigue = Object.keys(composted.fatigue).length > 0;
+        scores['Word Variety'] = hasFatigue ? 1 : 5;
+
+        return scores;
+    };
+
+    /**
+     * Generate salvage suggestions
+     */
+    const generateSuggestions = (composted) => {
+        const suggestions = [];
+
+        composted.contradictions.forEach(line => {
+            suggestions.push(`Contradiction: "${line.slice(0, 40)}..." - clarify temporal logic`);
+        });
+
+        composted.drift.forEach(line => {
+            suggestions.push(`Ungrounded: "${line.slice(0, 40)}..." - add concrete action`);
+        });
+
+        Object.entries(composted.fatigue).forEach(([word, count]) => {
+            suggestions.push(`Overused: "${word}" (${count}x) - use synonyms`);
+        });
+
+        return suggestions;
+    };
+
+    /**
+     * Perform complete analysis
+     */
+    const analyze = (fragment) => {
+        if (!CONFIG.bonepoke.enabled || !fragment) {
+            return null;
+        }
+
+        const contradictions = detectContradictions(fragment);
+        const fatigue = traceFatigue(fragment);
+        const drift = detectDrift(fragment);
+        const marm = calculateMarm(fragment, contradictions, fatigue, drift);
+
+        const composted = {
+            fragment,
+            contradictions,
+            fatigue,
+            drift,
+            marm,
+            timestamp: Date.now()
+        };
+
+        const scores = scoreOutput(composted);
+        const suggestions = generateSuggestions(composted);
+
+        const avgScore = Object.values(scores).reduce((a, b) => a + b, 0) /
+                        Object.keys(scores).length;
+
+        return {
+            composted,
+            scores,
+            avgScore,
+            suggestions,
+            quality: avgScore >= 4 ? 'excellent' :
+                    avgScore >= 3 ? 'good' :
+                    avgScore >= 2 ? 'fair' : 'poor'
+        };
+    };
+
+    return {
+        analyze,
+        detectContradictions,
+        traceFatigue,
+        detectDrift,
+        scoreOutput,
+        generateSuggestions
+    };
+})();
+
+/**
+ * ============================================================================
+ * DYNAMIC CORRECTION SYSTEM
+ * Creates temporary story cards to correct detected quality issues
+ * ============================================================================
+ */
+const DynamicCorrection = (() => {
+    const CARD_PREFIX = "DynamicCorrection_";
+
+    /**
+     * Create correction card for fatigue
+     */
+    const correctFatigue = (fatigueWords) => {
+        const words = Object.keys(fatigueWords).slice(0, 5);
+        const cardTitle = `${CARD_PREFIX}Variety`;
+
+        removeCardSafe(cardTitle);
+
+        buildCard(
+            cardTitle,
+            `[Style guidance: Avoid repeating these overused words: ${words.join(', ')}. Use synonyms, varied phrasing, and fresh descriptions.]`,
+            "guidance",
+            cardTitle,
+            "Auto-generated variety correction"
+        );
+
+        state.dynamicCards = state.dynamicCards || [];
+        state.dynamicCards.push(cardTitle);
+        safeLog(`[Bonepoke] Fatigue correction applied for: ${words.join(', ')}`, 'warn');
+    };
+
+    /**
+     * Create correction card for drift
+     */
+    const correctDrift = () => {
+        const cardTitle = `${CARD_PREFIX}Grounding`;
+
+        removeCardSafe(cardTitle);
+
+        buildCard(
+            cardTitle,
+            `[Style guidance: Focus on concrete, physical actions. Show visible responses, character decisions, and tangible events. Avoid abstract system references.]`,
+            "guidance",
+            cardTitle,
+            "Auto-generated grounding correction"
+        );
+
+        state.dynamicCards = state.dynamicCards || [];
+        state.dynamicCards.push(cardTitle);
+        safeLog('[Bonepoke] Drift correction applied - grounding narrative', 'warn');
+    };
+
+    /**
+     * Create correction card for contradictions
+     */
+    const correctContradictions = () => {
+        const cardTitle = `${CARD_PREFIX}Coherence`;
+
+        removeCardSafe(cardTitle);
+
+        buildCard(
+            cardTitle,
+            `[Style guidance: Maintain logical consistency. Check temporal sequence (before/after/already). Ensure cause and effect make sense. Verify character knowledge is consistent.]`,
+            "guidance",
+            cardTitle,
+            "Auto-generated coherence correction"
+        );
+
+        state.dynamicCards = state.dynamicCards || [];
+        state.dynamicCards.push(cardTitle);
+        safeLog('[Bonepoke] Contradiction correction applied - enforcing coherence', 'warn');
+    };
+
+    /**
+     * Clean up old dynamic cards
+     */
+    const cleanup = () => {
+        state.dynamicCards = state.dynamicCards || [];
+        state.dynamicCards.forEach(title => removeCardSafe(title));
+        state.dynamicCards = [];
+    };
+
+    /**
+     * Apply corrections based on analysis
+     */
+    const applyCorrections = (analysis) => {
+        if (!CONFIG.bonepoke.enableDynamicCorrection || !analysis) {
+            return;
+        }
+
+        cleanup();
+
+        const { composted } = analysis;
+
+        if (Object.keys(composted.fatigue).length > 0) {
+            correctFatigue(composted.fatigue);
+        }
+
+        if (composted.drift.length > 0) {
+            correctDrift();
+        }
+
+        if (composted.contradictions.length > 0) {
+            correctContradictions();
+        }
+    };
+
+    return {
+        correctFatigue,
+        correctDrift,
+        correctContradictions,
+        cleanup,
+        applyCorrections
+    };
+})();
+
+/**
+ * Bonepoke analysis hook - Now uses full BonepokeAnalysis system
  * @param {string} text - Text to analyze
  * @returns {object|null} Analysis results or null if disabled
  */
@@ -2099,15 +2593,21 @@ function bonepokeAnalysisHook(text) {
         return null;
     }
 
-    // Placeholder for Bonepoke quality analysis
-    // Will analyze for: fatigue indicators, drift, MARM scores
-    safeLog('[Bonepoke] Analysis hook called (not yet implemented)', 'debug');
-    return null;
+    const analysis = BonepokeAnalysis.analyze(text);
+
+    if (analysis && CONFIG.bonepoke.enableDynamicCorrection) {
+        DynamicCorrection.applyCorrections(analysis);
+    }
+
+    if (analysis && CONFIG.bonepoke.debugLogging) {
+        safeLog('[Bonepoke] Quality: ' + analysis.quality + ' (avg: ' + analysis.avgScore.toFixed(2) + ')', 'info');
+    }
+
+    return analysis;
 }
 
 /**
- * Verbalized Sampling hook
- * Placeholder for VS diversity control
+ * Verbalized Sampling hook - Now uses full VerbalizedSampling system
  * @returns {string} VS instruction string or empty
  */
 function verbalizedSamplingHook() {
@@ -2115,15 +2615,12 @@ function verbalizedSamplingHook() {
         return '';
     }
 
-    // Placeholder for Verbalized Sampling
-    // Will provide diversity control instructions
-    safeLog('[VS] Hook called (not yet implemented)', 'debug');
-    return '';
+    return VerbalizedSampling.getInstruction();
 }
 
 /**
  * Word bank processing hook
- * Placeholder for word replacement/banning
+ * Placeholder for word replacement/banning (future implementation)
  * @param {string} text - Text to process
  * @returns {string} Processed text
  */
@@ -2132,9 +2629,7 @@ function wordBankHook(text) {
         return text;
     }
 
-    // Placeholder for word bank processing
-    // Will handle: banned words, aggressive removal, replacements
-    safeLog('[WordBank] Hook called (not yet implemented)', 'debug');
+    // Future: word bank processing
     return text;
 }
 

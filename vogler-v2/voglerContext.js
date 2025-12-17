@@ -63,6 +63,20 @@ const modifier = (text) => {
     }
 
     // ═══════════════════════════════════════════════════════════════
+    // VERBALIZED SAMPLING (VS) INTEGRATION
+    // Ensures VS card is active for output diversity
+    // ═══════════════════════════════════════════════════════════════
+    if (CONFIG.integrations.verbalizedSampling && typeof VerbalizedSampling !== 'undefined') {
+        // Analyze context and update VS card with adaptive parameters
+        const vsParams = VerbalizedSampling.analyzeContext(text);
+        VerbalizedSampling.updateCard(vsParams);
+
+        if (CONFIG.vs.debugLogging) {
+            safeLog('[CONTEXT] VS params: k=' + vsParams.k + ', tau=' + vsParams.tau, 'debug');
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     // AUTO-CARDS INTEGRATION
     // Process context through AutoCards if available and enabled
     // ═══════════════════════════════════════════════════════════════
