@@ -197,18 +197,20 @@ const updateTurnCounters = (text) => {
 
 // ============================================================================
 // DIRECTOR PATTERN USAGE
-// Chain functions together - NO manual modifier(text) call
+// Define modifier that AI Dungeon will call
 // ============================================================================
 
-director.output(
-    detectAIBeatCompletion,       // First: check if AI completed a beat
-    parseBridgeResponse,          // Second: extract bridge events if requested
-    cleanOutputArtifacts,         // Third: remove leaked markers
-    processStageAdvancement,      // Fourth: check if stage should advance
-    addUserFeedback,              // Fifth: add progress info (if verbose)
-    restoreAuthorsNote,           // Sixth: restore author's note for next turn
-    updateTurnCounters            // Seventh: update counters
-);
+const modifier = (text) => {
+    return director.output(
+        detectAIBeatCompletion,       // First: check if AI completed a beat
+        parseBridgeResponse,          // Second: extract bridge events if requested
+        cleanOutputArtifacts,         // Third: remove leaked markers
+        processStageAdvancement,      // Fourth: check if stage should advance
+        addUserFeedback,              // Fifth: add progress info (if verbose)
+        restoreAuthorsNote,           // Sixth: restore author's note for next turn
+        updateTurnCounters            // Seventh: update counters
+    );
+};
 
-// ✅ CORRECT: End with void 0, NO manual modifier(text) call
-void 0;
+// AI Dungeon calls modifier(text) automatically
+modifier(text);

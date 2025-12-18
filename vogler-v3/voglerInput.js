@@ -178,16 +178,18 @@ const preventEmptyInput = (text) => {
 
 // ============================================================================
 // DIRECTOR PATTERN USAGE
-// Chain functions together - NO manual modifier() call
+// Define modifier that AI Dungeon will call
 // ============================================================================
 
-director.input(
-    processDebugCommands,     // First: handle /vogler commands
-    processPlayerCommands,    // Second: handle @stage, @beat, @bridge
-    detectBeatCompletion,     // Third: auto-detect beat completion
-    enhanceSayActions,        // Fourth: improve say action formatting
-    preventEmptyInput         // Fifth: safety check for empty input
-);
+const modifier = (text) => {
+    return director.input(
+        processDebugCommands,     // First: handle /vogler commands
+        processPlayerCommands,    // Second: handle @stage, @beat, @bridge
+        detectBeatCompletion,     // Third: auto-detect beat completion
+        enhanceSayActions,        // Fourth: improve say action formatting
+        preventEmptyInput         // Fifth: safety check for empty input
+    );
+};
 
-// ✅ CORRECT: End with void 0, NO manual modifier(text) call
-void 0;
+// AI Dungeon calls modifier(text) automatically
+modifier(text);

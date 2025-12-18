@@ -106,16 +106,18 @@ const manageContextLength = (text) => {
 
 // ============================================================================
 // DIRECTOR PATTERN USAGE
-// Chain functions together - NO manual modifier() call
+// Define modifier that AI Dungeon will call
 // ============================================================================
 
-director.context(
-    injectLayeredAuthorsNote,     // First: build layered author's note
-    injectFrontMemoryGuidance,    // Second: add critical stage guidance
-    handleBridgePrompt,           // Third: handle bridge generation (if active)
-    addTurnCounter,               // Fourth: add debug info (if verbose)
-    manageContextLength           // Fifth: warn if context too long
-);
+const modifier = (text) => {
+    return director.context(
+        injectLayeredAuthorsNote,     // First: build layered author's note
+        injectFrontMemoryGuidance,    // Second: add critical stage guidance
+        handleBridgePrompt,           // Third: handle bridge generation (if active)
+        addTurnCounter,               // Fourth: add debug info (if verbose)
+        manageContextLength           // Fifth: warn if context too long
+    );
+};
 
-// ✅ CORRECT: End with void 0, NO manual modifier(text) call
-void 0;
+// AI Dungeon calls modifier(text) automatically
+modifier(text);
