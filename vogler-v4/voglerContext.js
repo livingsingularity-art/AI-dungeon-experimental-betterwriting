@@ -317,17 +317,19 @@ const finalBlockedPhraseInjection = (text) => {
 };
 
 // Chain all context processing functions with Director pattern
-director.context(
-    applyDynamicCorrections,     // Trinity: dynamic correction system
-    buildLayeredAuthorsNote,     // Trinity: NGO layered author's note
-    injectVoglerGuidance,        // Vogler: stage guidance injection
-    adaptVSConfiguration,        // Trinity: adaptive VS
-    handleContinue,              // Trinity: continue handling
-    injectVSInstruction,         // Trinity: VS instruction
-    trackContextSize,            // Trinity: analytics
-    processAutoCards,            // Trinity: AutoCards integration
-    finalBlockedPhraseInjection  // Trinity: blocked phrases
-);
+const modifier = (text) => {
+    return director.context(
+        applyDynamicCorrections,     // Trinity: dynamic correction system
+        buildLayeredAuthorsNote,     // Trinity: NGO layered author's note
+        injectVoglerGuidance,        // Vogler: stage guidance injection
+        adaptVSConfiguration,        // Trinity: adaptive VS
+        handleContinue,              // Trinity: continue handling
+        injectVSInstruction,         // Trinity: VS instruction
+        trackContextSize,            // Trinity: analytics
+        processAutoCards,            // Trinity: AutoCards integration
+        finalBlockedPhraseInjection  // Trinity: blocked phrases
+    );
+};
 
 // CRITICAL: Always end with void 0
 void 0

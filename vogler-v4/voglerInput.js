@@ -242,18 +242,20 @@ const processAutoCards = (text) => {
 };
 
 // Chain all input processing functions with Director pattern
-director.input(
-    trackInputMetadata,
-    processVoglerInput,      // Vogler: process commands, handle stop
-    processNGOCommands,      // Trinity: NGO commands
-    processDiversityCommands, // Trinity: diversity commands
-    enhanceSayActions,       // Trinity: dialogue formatting
-    normalizeWhitespace,     // Trinity: whitespace normalization
-    analyzePlayerConflict,   // Trinity: NGO conflict analysis
-    incrementTurns,          // Vogler: increment turn counters
-    storeProcessedInput,     // Trinity: store for context
-    processAutoCards         // Trinity: AutoCards integration
-);
+const modifier = (text) => {
+    return director.input(
+        trackInputMetadata,
+        processVoglerInput,      // Vogler: process commands, handle stop
+        processNGOCommands,      // Trinity: NGO commands
+        processDiversityCommands, // Trinity: diversity commands
+        enhanceSayActions,       // Trinity: dialogue formatting
+        normalizeWhitespace,     // Trinity: whitespace normalization
+        analyzePlayerConflict,   // Trinity: NGO conflict analysis
+        incrementTurns,          // Vogler: increment turn counters
+        storeProcessedInput,     // Trinity: store for context
+        processAutoCards         // Trinity: AutoCards integration
+    );
+};
 
 // CRITICAL: Always end with void 0
 void 0

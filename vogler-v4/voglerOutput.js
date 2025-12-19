@@ -640,27 +640,29 @@ const safetyCheckEmpty = (text) => {
 };
 
 // Chain all output processing functions with Director pattern
-director.output(
-    initializeQualityTracking,   // Initialize counters
-    restoreAuthorsNote,          // Trinity: NGO author's note restoration
-    processAutoCards,            // Trinity: AutoCards integration
-    parseBridgeOutput,           // Vogler: parse bridge generation
-    cleanOutput,                 // Trinity: clean VS instructions
-    formatDialogue,              // Trinity: dialogue formatting
-    analyzeBonepokeQuality,      // Trinity: Bonepoke analysis
-    processNGOTurn,              // Trinity: NGO turn processing
-    analyzeAIConflict,           // Trinity: NGO AI conflict analysis
-    integrateBonepokeNGO,        // Trinity: Bonepoke-NGO integration
-    analyzeDiversity,            // Trinity: diversity analysis
-    trackCrossOutputRepetition,  // Trinity: cross-output tracking
-    applyWordProcessing,         // Trinity: word removal/replacement
-    removeDuplicateStart,        // Trinity: remove duplicates
-    addLeadingSpace,             // Trinity: add space
-    processVoglerOutput,         // Vogler: progressive removal + advancement
-    detectRequestFulfillment,    // Trinity: NGO request fulfillment
-    recordAnalytics,             // Trinity: analytics
-    safetyCheckEmpty             // Trinity: safety check
-);
+const modifier = (text) => {
+    return director.output(
+        initializeQualityTracking,   // Initialize counters
+        restoreAuthorsNote,          // Trinity: NGO author's note restoration
+        processAutoCards,            // Trinity: AutoCards integration
+        parseBridgeOutput,           // Vogler: parse bridge generation
+        cleanOutput,                 // Trinity: clean VS instructions
+        formatDialogue,              // Trinity: dialogue formatting
+        analyzeBonepokeQuality,      // Trinity: Bonepoke analysis
+        processNGOTurn,              // Trinity: NGO turn processing
+        analyzeAIConflict,           // Trinity: NGO AI conflict analysis
+        integrateBonepokeNGO,        // Trinity: Bonepoke-NGO integration
+        analyzeDiversity,            // Trinity: diversity analysis
+        trackCrossOutputRepetition,  // Trinity: cross-output tracking
+        applyWordProcessing,         // Trinity: word removal/replacement
+        removeDuplicateStart,        // Trinity: remove duplicates
+        addLeadingSpace,             // Trinity: add space
+        processVoglerOutput,         // Vogler: progressive removal + advancement
+        detectRequestFulfillment,    // Trinity: NGO request fulfillment
+        recordAnalytics,             // Trinity: analytics
+        safetyCheckEmpty             // Trinity: safety check
+    );
+};
 
 // CRITICAL: Always end with void 0
 void 0
