@@ -11628,7 +11628,7 @@ const VOGLER_STAGES = {
         name: "Ordinary World",
         act: 1,
         description: "Establish the hero's normal life before the adventure",
-        guidance: "Show protagonist's daily routine, relationships, unfulfilled desires. Build sympathy.",
+        guidance: "Establish the protagonist's normal life, relationships, and world. Show what they have to lose. Build sympathy and connection with the character. Keep tone grounded and relatable. Pacing: Slow, measured. Build character connection. Tone: Grounded, relatable, everyday",
         keyBeats: [
             "introduce protagonist",
             "show normal life",
@@ -11646,7 +11646,7 @@ const VOGLER_STAGES = {
         name: "Call to Adventure",
         act: 1,
         description: "Something disrupts the ordinary world",
-        guidance: "Present challenge or opportunity demanding response. Create tension between comfort and adventure.",
+        guidance: "Introduce a problem, threat, or opportunity that disrupts the normal world. Make the stakes clear. Create conflict between staying safe and accepting the challenge. Show concrete consequences of inaction. Pacing: Building, urgent. Tone: Tension, possibility, danger",
         keyBeats: [
             "inciting incident",
             "messenger arrives",
@@ -11664,7 +11664,7 @@ const VOGLER_STAGES = {
         name: "Refusal of the Call",
         act: 1,
         description: "Hero hesitates or refuses initially",
-        guidance: "Show fear, reluctance, or duty keeping hero back. Internal conflict intensifies.",
+        guidance: "Show the protagonist's fears, obligations, or doubts about accepting the adventure. Reveal what holds them back - past trauma, responsibility, self-doubt. Make the internal conflict visible through action and dialogue. Pacing: Contemplative, hesitant. Tone: Doubt, fear, resistance",
         keyBeats: [
             "express fear",
             "cite duty",
@@ -11682,7 +11682,7 @@ const VOGLER_STAGES = {
         name: "Meeting the Mentor",
         act: 1,
         description: "Hero receives guidance, training, or magical aid",
-        guidance: "Introduce wise figure providing tools, knowledge, or confidence. May be person, book, or inner wisdom.",
+        guidance: "Introduce a mentor figure who provides wisdom, training, tools, or encouragement. Show the mentor's experience and the specific lessons they impart. The mentor may give a physical gift, advice, or simply belief in the hero. Pacing: Deliberate, instructive. Tone: Wisdom, preparation, hope",
         keyBeats: [
             "mentor appears",
             "receive training",
@@ -11700,7 +11700,7 @@ const VOGLER_STAGES = {
         name: "Crossing the First Threshold",
         act: 1,
         description: "Hero commits to adventure and enters the Special World",
-        guidance: "Mark clear departure from ordinary world. Point of no return. Guardian or test at threshold.",
+        guidance: "Show the protagonist making the definitive choice to begin the journey. Cross into unfamiliar territory - physically, emotionally, or both. Include a threshold guardian or test. Make it clear there's no easy way back. Pacing: Decisive, accelerating. Tone: Commitment, anticipation, danger",
         keyBeats: [
             "make commitment",
             "pass threshold guardian",
@@ -11719,7 +11719,7 @@ const VOGLER_STAGES = {
         name: "Tests, Allies, and Enemies",
         act: 2,
         description: "Hero learns rules of Special World through challenges",
-        guidance: "Series of tests teaching hero about new world. Introduce allies and enemies. Build skills.",
+        guidance: "Present a series of challenges that reveal the new world's rules. Introduce supporting characters who become allies or reveal themselves as enemies. Show the protagonist learning, adapting, and growing in competence. Include both successes and failures. Pacing: Varied, episodic. Tone: Discovery, camaraderie, conflict",
         keyBeats: [
             "face first test",
             "meet ally",
@@ -11737,7 +11737,7 @@ const VOGLER_STAGES = {
         name: "Approach to the Inmost Cave",
         act: 2,
         description: "Hero prepares for the major challenge",
-        guidance: "Build tension toward Ordeal. Preparations, reconnaissance, team bonding. Calm before storm.",
+        guidance: "Build mounting tension as the protagonist approaches the central crisis. Show preparation - gathering intelligence, making plans, final training. Include moments of doubt and team bonding. Create the calm before the storm. Pacing: Deliberate, building. Tone: Anticipation, dread, determination",
         keyBeats: [
             "gather intelligence",
             "make plans",
@@ -11755,7 +11755,7 @@ const VOGLER_STAGES = {
         name: "The Ordeal",
         act: 2,
         description: "Hero faces greatest fear - death and rebirth moment",
-        guidance: "CENTRAL CRISIS. Hero confronts death (literal or ego-death). Must appear all is lost. Transformation moment.",
+        guidance: "THE CENTRAL CRISIS. The protagonist faces death - literal death, ego death, or the death of who they were. Make the stakes maximum. Show the moment when all seems lost. Include a revelation or transformation. This is the story's darkest point. Pacing: Intense, crisis. Tone: Desperate, dark, transformative",
         keyBeats: [
             "face death",
             "all seems lost",
@@ -11773,7 +11773,7 @@ const VOGLER_STAGES = {
         name: "Reward (Seizing the Sword)",
         act: 2,
         description: "Hero survives death and claims reward",
-        guidance: "Celebration of survival. Hero gains treasure, knowledge, or reconciliation. Brief respite.",
+        guidance: "Show the protagonist surviving the Ordeal and claiming their reward - treasure, knowledge, love, reconciliation. Include celebration and acknowledgment of growth. Allow a brief respite before the next challenge. The hero has been transformed. Pacing: Relief, celebration. Tone: Victory, accomplishment, rest",
         keyBeats: [
             "claim reward",
             "celebrate survival",
@@ -11792,7 +11792,7 @@ const VOGLER_STAGES = {
         name: "The Road Back",
         act: 3,
         description: "Hero begins journey back to Ordinary World",
-        guidance: "Chase scenes, pursuit by villain remnants. Recommitment to completing adventure. Ticking clock.",
+        guidance: "Show the protagonist recommitting to complete the mission and return home. Include pursuit by enemies, setbacks, or complications. Create urgency with time pressure or mounting danger. The hero must prove their commitment to finishing what they started. Pacing: Fast, urgent. Tone: Chase, escape, determination",
         keyBeats: [
             "pursue or be pursued",
             "recommit to goal",
@@ -11810,7 +11810,7 @@ const VOGLER_STAGES = {
         name: "Resurrection",
         act: 3,
         description: "Final climactic confrontation - second death/rebirth",
-        guidance: "CLIMAX. Hero uses all lessons learned. Final transformation. Higher stakes than Ordeal.",
+        guidance: "THE FINAL CLIMAX. The protagonist faces the ultimate test, applying everything learned. Stakes are higher than the Ordeal. Show final transformation as the hero sacrifices their old self completely. Victory must require the new, transformed version of the hero. This is the story's peak. Pacing: Maximum intensity. Tone: Ultimate stakes, sacrifice, triumph",
         keyBeats: [
             "final battle",
             "use all skills",
@@ -11828,7 +11828,7 @@ const VOGLER_STAGES = {
         name: "Return with the Elixir",
         act: 3,
         description: "Hero returns transformed with boon for community",
-        guidance: "RESOLUTION. Show changed hero. Demonstrate transformation. Share wisdom with ordinary world.",
+        guidance: "RESOLUTION. Show the protagonist returning home fundamentally changed. Demonstrate how they're different from the beginning. Share the lesson, gift, or wisdom gained with their community. Establish a new normal that reflects growth. Provide satisfying closure. Pacing: Settling, reflective. Tone: Peace, wisdom, new beginning",
         keyBeats: [
             "return home",
             "share wisdom",
@@ -12728,6 +12728,18 @@ function getBeatsStatus() {
 // #endregion
 
 // #endregion
+
+// ============================================================================
+// INITIALIZATION
+// Initialize Vogler system when library loads
+// ============================================================================
+
+director.library(() => {
+    // Initialize Vogler state if not already initialized
+    if (!state.vogler || !state.vogler.initialized) {
+        initializeVoglerState();
+    }
+});
 
 // Best Practice: Always end shared library with void 0
 void 0;
